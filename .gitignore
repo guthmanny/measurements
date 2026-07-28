@@ -1,0 +1,42 @@
+# Build directories
+build/
+*/build/
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled Object files
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+DartConfiguration.tcl
+CPackConfig.cmake
+CPackSourceConfig.cmake
+.ninja_deps
+.ninja_log
+.ninja
+
+# Juce generated
+JuceHeader.h
+Defs.txt
+Info.txt
+
+# Binary files
+*.exe
+*.out
+*.app

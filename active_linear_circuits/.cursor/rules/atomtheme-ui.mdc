@@ -1,0 +1,39 @@
+---
+description: Use AtomTheme widget types instead of raw JUCE controls in UI code
+globs: Source/**/*.{h,hpp,cpp}
+alwaysApply: false
+---
+
+# AtomTheme UI Controls
+
+When a project links `juce_atom_theme` and uses `AtomLookAndFeel`, **do not use raw JUCE widgets** for themed controls. AtomTheme styling only applies to `atom::` component types that register with `AtomLookAndFeel`.
+
+## Use AtomTheme types
+
+| Need | Use | Avoid |
+|------|-----|-------|
+| Dropdown | `atom::ComboBox` | `juce::ComboBox` |
+| Slider | `atom::Slider` | `juce::Slider` |
+| Label | `atom::Label` | `juce::Label` |
+| Button | `atom::TextButton`, `atom::ToggleButton`, `atom::ToolButton` | `juce::TextButton` |
+| Look and feel | `AtomLookAndFeel` via `setLookAndFeel(&atomLookAndFeel)` on root component | Default JUCE LAF |
+
+## Setup checklist
+
+1. Root component calls `setLookAndFeel(&atomLookAndFeel)` before adding children.
+2. ComboBoxes: `combo.setJustificationType(juce::Justification::centredLeft);`
+3. Sliders: prefer `atom::Slider{style, textBoxStyle}` and `setValueLabelPos(...)`.
+4. On theme switch: call `label.refreshTheme()` for `atom::Label` instances.
+
+## Example
+
+```cpp
+// BAD — renders with default JUCE ComboBox colours
+juce::ComboBox modelBox;
+
+// GOOD — AtomTheme drawComboBox / applyComboBoxTheme
+atom::ComboBox modelBox{"modelBox"};
+modelBox.setJustificationType(juce::Justification::centredLeft);
+```
+
+Reference implementations: `AtomTheme/demos/collections_app/`, `measurements/Chorus/Source/`.
