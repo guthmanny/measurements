@@ -24,8 +24,21 @@ endif()
 
 include(FetchContent)
 
-set(ATOM_THEME_LOCAL "$ENV{HOME}/source/AtomTheme")
-if(EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt")
+set(_atomtheme_candidates
+    "$ENV{HOME}/source/AtomTheme"
+    "$ENV{USERPROFILE}/source/AtomTheme"
+    "D:/myCode/AtomTheme"
+    "${CMAKE_SOURCE_DIR}/../../AtomTheme"
+)
+set(ATOM_THEME_LOCAL "")
+foreach(_candidate IN LISTS _atomtheme_candidates)
+    if(_candidate AND EXISTS "${_candidate}/CMakeLists.txt")
+        set(ATOM_THEME_LOCAL "${_candidate}")
+        break()
+    endif()
+endforeach()
+
+if(NOT ATOM_THEME_LOCAL STREQUAL "")
     message(STATUS "AtomTheme found at ${ATOM_THEME_LOCAL}")
     juce_add_module("${ATOM_THEME_LOCAL}/modules/juce_atom_theme" ALIAS_NAMESPACE juce)
 else()
@@ -36,17 +49,20 @@ else()
         GIT_SHALLOW TRUE
     )
     FetchContent_MakeAvailable(AtomTheme)
-    juce_add_module("${AtomTheme_SOURCE_DIR}/modules/juce_atom_theme" ALIAS_NAMESPACE juce)
 endif()
 
 set(_nudsp_candidates
     "$ENV{HOME}/source/MuDSP"
+    "$ENV{USERPROFILE}/source/MuDSP"
     "$ENV{HOME}/NuDSP"
+    "$ENV{USERPROFILE}/NuDSP"
+    "D:/myCode/NuDSP"
     "${CMAKE_SOURCE_DIR}/../../MuDSP"
+    "${CMAKE_SOURCE_DIR}/../../NuDSP"
 )
 set(NUDSP_LOCAL "")
 foreach(_candidate IN LISTS _nudsp_candidates)
-    if(EXISTS "${_candidate}/CMakeLists.txt")
+    if(_candidate AND EXISTS "${_candidate}/CMakeLists.txt")
         set(NUDSP_LOCAL "${_candidate}")
         break()
     endif()
