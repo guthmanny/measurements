@@ -24,12 +24,17 @@ endif()
 
 include(FetchContent)
 
+# Prefer explicit Windows checkouts. Do not use "$ENV{HOME}/..." when HOME is
+# empty: on Windows that collapses to absolute root paths like "/NuDSP" and can
+# silently pick a stale D:\NuDSP clone over D:\myCode\NuDSP.
 set(_atomtheme_candidates
-    "$ENV{HOME}/source/AtomTheme"
-    "$ENV{USERPROFILE}/source/AtomTheme"
     "D:/myCode/AtomTheme"
     "${CMAKE_SOURCE_DIR}/../../AtomTheme"
+    "$ENV{USERPROFILE}/source/AtomTheme"
 )
+if(DEFINED ENV{HOME} AND NOT "$ENV{HOME}" STREQUAL "")
+    list(APPEND _atomtheme_candidates "$ENV{HOME}/source/AtomTheme")
+endif()
 set(ATOM_THEME_LOCAL "")
 foreach(_candidate IN LISTS _atomtheme_candidates)
     if(_candidate AND EXISTS "${_candidate}/CMakeLists.txt")
@@ -52,14 +57,18 @@ else()
 endif()
 
 set(_nudsp_candidates
-    "$ENV{HOME}/source/MuDSP"
-    "$ENV{USERPROFILE}/source/MuDSP"
-    "$ENV{HOME}/NuDSP"
-    "$ENV{USERPROFILE}/NuDSP"
     "D:/myCode/NuDSP"
-    "${CMAKE_SOURCE_DIR}/../../MuDSP"
     "${CMAKE_SOURCE_DIR}/../../NuDSP"
+    "${CMAKE_SOURCE_DIR}/../../MuDSP"
+    "$ENV{USERPROFILE}/source/MuDSP"
+    "$ENV{USERPROFILE}/NuDSP"
 )
+if(DEFINED ENV{HOME} AND NOT "$ENV{HOME}" STREQUAL "")
+    list(APPEND _nudsp_candidates
+        "$ENV{HOME}/source/MuDSP"
+        "$ENV{HOME}/NuDSP"
+    )
+endif()
 set(NUDSP_LOCAL "")
 foreach(_candidate IN LISTS _nudsp_candidates)
     if(_candidate AND EXISTS "${_candidate}/CMakeLists.txt")

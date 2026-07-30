@@ -1,12 +1,12 @@
+#include "AefJuceIncludes.h"
 #include "AppSettingsPanel.h"
 
 #include "AudioSettingsPanel.h"
 #include "CalibrationSettingsPanel.h"
-#include "ChorusMidiCcSettingsPanel.h"
-#include "ChorusSettingsPanel.h"
 #include "NoiseGateSettingsPanel.h"
+#include "OversamplingSettingsPanel.h"
 #include "PeakDisplaySettingsPanel.h"
-#include "PluginProcessor.h"
+#include "AudioEffectFrameworkProcessor.h"
 
 namespace
 {
@@ -66,7 +66,7 @@ private:
 };
 
 AppSettingsPanel::AppSettingsPanel (juce::AudioDeviceManager& deviceManagerIn,
-                                    ChorusAudioProcessor& processorIn,
+                                    AudioEffectFrameworkProcessor& processorIn,
                                     AtomLookAndFeel& lookAndFeel)
     : deviceManager (deviceManagerIn),
       processor (processorIn),
@@ -86,14 +86,12 @@ AppSettingsPanel::AppSettingsPanel (juce::AudioDeviceManager& deviceManagerIn,
     noiseGatePage = std::make_unique<NoiseGateSettingsPanel> (processor, atomLookAndFeel);
     peakDisplayPage = std::make_unique<PeakDisplaySettingsPanel> (processor, atomLookAndFeel);
     calibrationPage = std::make_unique<CalibrationSettingsPanel> (processor, atomLookAndFeel);
-    chorusPage = std::make_unique<ChorusSettingsPanel> (processor, atomLookAndFeel);
-    chorusMidiCcPage = std::make_unique<ChorusMidiCcSettingsPanel> (processor, atomLookAndFeel);
+    oversamplingPage = std::make_unique<OversamplingSettingsPanel> (processor, atomLookAndFeel);
     contentHost.addChildComponent (*audioPage);
     contentHost.addChildComponent (*noiseGatePage);
     contentHost.addChildComponent (*peakDisplayPage);
     contentHost.addChildComponent (*calibrationPage);
-    contentHost.addChildComponent (*chorusPage);
-    contentHost.addChildComponent (*chorusMidiCcPage);
+    contentHost.addChildComponent (*oversamplingPage);
 
     rebuildNav();
     selectPage (Page::AudioSettings);
@@ -119,8 +117,7 @@ void AppSettingsPanel::rebuildNav()
     addItem ("Noise Gate", Page::NoiseGate);
     addItem ("Peak Display", Page::PeakDisplay);
     addItem ("Input Calibration", Page::InputCalibration);
-    addItem ("Chorus", Page::Chorus);
-    addItem ("MIDI CC", Page::ChorusMidiCc);
+    addItem ("Oversampling", Page::Oversampling);
 }
 
 void AppSettingsPanel::selectPage (Page page)
@@ -142,10 +139,8 @@ void AppSettingsPanel::showSelectedPage()
         peakDisplayPage->setVisible (selectedPage == Page::PeakDisplay);
     if (calibrationPage != nullptr)
         calibrationPage->setVisible (selectedPage == Page::InputCalibration);
-    if (chorusPage != nullptr)
-        chorusPage->setVisible (selectedPage == Page::Chorus);
-    if (chorusMidiCcPage != nullptr)
-        chorusMidiCcPage->setVisible (selectedPage == Page::ChorusMidiCc);
+    if (oversamplingPage != nullptr)
+        oversamplingPage->setVisible (selectedPage == Page::Oversampling);
 }
 
 int AppSettingsPanel::getMinimumWidth() const noexcept
@@ -171,11 +166,8 @@ int AppSettingsPanel::measureTallestPageHeight()
     if (calibrationPage != nullptr)
         tallest = juce::jmax (tallest, calibrationPage->getPreferredPanelHeight());
 
-    if (chorusPage != nullptr)
-        tallest = juce::jmax (tallest, chorusPage->getPreferredPanelHeight());
-
-    if (chorusMidiCcPage != nullptr)
-        tallest = juce::jmax (tallest, chorusMidiCcPage->getPreferredPanelHeight());
+    if (oversamplingPage != nullptr)
+        tallest = juce::jmax (tallest, oversamplingPage->getPreferredPanelHeight());
 
     return juce::jmax (360, tallest);
 }
@@ -187,7 +179,6 @@ int AppSettingsPanel::getPreferredHeight()
 
 int AppSettingsPanel::getMinimumHeight() const noexcept
 {
-    // Allow shrinking below the natural preferred height; floor at 360.
     return 360;
 }
 
@@ -226,8 +217,6 @@ void AppSettingsPanel::resized()
         peakDisplayPage->setBounds (contentHost.getLocalBounds());
     if (calibrationPage != nullptr)
         calibrationPage->setBounds (contentHost.getLocalBounds());
-    if (chorusPage != nullptr)
-        chorusPage->setBounds (contentHost.getLocalBounds());
-    if (chorusMidiCcPage != nullptr)
-        chorusMidiCcPage->setBounds (contentHost.getLocalBounds());
+    if (oversamplingPage != nullptr)
+        oversamplingPage->setBounds (contentHost.getLocalBounds());
 }

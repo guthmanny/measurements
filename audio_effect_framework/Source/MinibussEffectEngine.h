@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <span>
 #include <string_view>
@@ -11,27 +12,25 @@
 #include "minibuss/static_plugin_format.hpp"
 
 /** Owns a minibuss AudioEngine with one stereo track:
-    Gain → NoiseGate → MonoChorus → Phase90 → Level
-    Exactly one of Chorus/Phase90 is active based on EffectModel. */
-class MinibussChorusEngine
+    Gain → NoiseGate → Upsampler → [middle] → Downsampler → Level
+
+    Insert your effect processor between upsampler and downsampler via
+    installMiddleProcessors(). */
+class MinibussEffectEngine
 {
 public:
-    enum class EffectModel
-    {
-        Chorus = 0,
-        Phase90 = 1
-    };
+    MinibussEffectEngine();
+    ~MinibussEffectEngine();
 
-    MinibussChorusEngine();
-    ~MinibussChorusEngine();
-
+    /** Builds the graph on first call. Subsequent calls with the same sample rate
+        and a block size that fits the prepared max are no-ops (e.g. ASIO channel
+        toggles that re-enter prepareToPlay without needing DSP re-init). */
     void prepare (float sampleRate, std::uint32_t maxBlockSize);
     void release();
 
-    void setEffectModel (EffectModel model);
-    EffectModel getEffectModel() const noexcept { return model_; }
-
     void setBypass (bool shouldBypass);
+
+    void setProcessorBypassed (minibuss::ObjectId processorId, bool bypassed);
 
     /** Push domain value to a processor parameter (uses minibuss reflection). */
     void setParamDomain (minibuss::ObjectId processorId, std::string_view paramId, float domainValue);
@@ -42,12 +41,15 @@ public:
     [[nodiscard]] const minibuss::ParameterDescriptor* paramDescriptor (
         minibuss::ObjectId processorId, std::string_view paramId) const;
 
-    /** Map MIDI CC (0..1 control) to domain using NuDSP taper from @p paramId. */
-    [[nodiscard]] float mapControlToDomain (minibuss::ObjectId processorId,
-                                            std::string_view paramId,
-                                            float controlNormalized,
-                                            float minDomain,
-                                            float maxDomain) const noexcept;
+    /**
+     * Oversampling around the middle processor.
+     * @param factor 2 / 4 / 8
+     * @param upMode   nx upsampler_mode_e
+     * @param downMode nx downsampler_mode_e
+     */
+    void setOversampling (int factor, int upMode, int downMode);
+
+    [[nodiscard]] int oversampleFactor() const noexcept { return oversampleFactor_; }
 
     void process (std::span<const float* const> inputs,
                   std::span<float* const> outputs,
@@ -60,19 +62,31 @@ public:
 
     minibuss::ObjectId gainId() const noexcept { return gainId_; }
     minibuss::ObjectId gateId() const noexcept { return gateId_; }
-    minibuss::ObjectId chorusId() const noexcept { return chorusId_; }
-    minibuss::ObjectId phase90Id() const noexcept { return phase90Id_; }
+    minibuss::ObjectId upsamplerId() const noexcept { return upsamplerId_; }
+    minibuss::ObjectId downsamplerId() const noexcept { return downsamplerId_; }
     minibuss::ObjectId levelId() const noexcept { return levelId_; }
+    minibuss::ObjectId middleProcessorId() const noexcept { return middleProcessorId_; }
+
+protected:
+    using ProcessorCreateFn = std::function<minibuss::ObjectId (const char* uid,
+                                                                  const char* name,
+                                                                  const char* instance)>;
+
+    /** Override in plugin-specific engines to insert processors between upsampler and downsampler. */
+    virtual bool installMiddleProcessors (const ProcessorCreateFn& create);
+
+    minibuss::ObjectId middleProcessorId_ = minibuss::kInvalidObjectId;
 
 private:
     [[nodiscard]] minibuss::PluginDescription makeDesc (const char* uid,
                                                         const char* name,
                                                         std::uint32_t io = 2) const;
-    void applyModelBypass();
     void sendProcessorBypass (minibuss::ObjectId processorId, bool bypassed);
     [[nodiscard]] minibuss::Processor* processor (minibuss::ObjectId id) const noexcept;
     void cacheProcessorPointers();
     void clearProcessorPointers() noexcept;
+    void applyOversamplingToPlugins();
+    void reprepareTrack();
 
     minibuss::PluginFormatManager formats_;
     std::unique_ptr<minibuss::AudioEngine> engine_;
@@ -80,18 +94,23 @@ private:
     minibuss::ObjectId trackId_ = minibuss::kInvalidObjectId;
     minibuss::ObjectId gainId_ = minibuss::kInvalidObjectId;
     minibuss::ObjectId gateId_ = minibuss::kInvalidObjectId;
-    minibuss::ObjectId chorusId_ = minibuss::kInvalidObjectId;
-    minibuss::ObjectId phase90Id_ = minibuss::kInvalidObjectId;
+    minibuss::ObjectId upsamplerId_ = minibuss::kInvalidObjectId;
+    minibuss::ObjectId downsamplerId_ = minibuss::kInvalidObjectId;
     minibuss::ObjectId levelId_ = minibuss::kInvalidObjectId;
 
-    // Non-owning; valid while engine_/container holds the processors.
     minibuss::Processor* gainProc_ = nullptr;
     minibuss::Processor* gateProc_ = nullptr;
-    minibuss::Processor* chorusProc_ = nullptr;
-    minibuss::Processor* phase90Proc_ = nullptr;
+    minibuss::Processor* upsamplerProc_ = nullptr;
+    minibuss::Processor* middleProcessorProc_ = nullptr;
+    minibuss::Processor* downsamplerProc_ = nullptr;
     minibuss::Processor* levelProc_ = nullptr;
 
-    EffectModel model_ = EffectModel::Chorus;
     bool ready_ = false;
     bool bypassAll_ = false;
+    float preparedSampleRate_ = 0.f;
+    std::uint32_t preparedMaxBlockSize_ = 0;
+
+    int oversampleFactor_ = 2;
+    int upsamplerMode_ = 4;   // NX_UPSAMPLER_MODE_CUBIC
+    int downsamplerMode_ = 3; // NX_DOWNSAMPLER_MODE_CUBIC
 };

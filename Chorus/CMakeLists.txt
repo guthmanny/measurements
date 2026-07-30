@@ -61,18 +61,31 @@ endif()
 #
 # Resolution order:
 #   1. $ENV{HOME}/source/AtomTheme   — local development checkout
-#   2. FetchContent from GitHub      — automatic download for third-party builds
+#   2. Common Windows checkout paths
+#   3. FetchContent from GitHub      — automatic download for third-party builds
+#
+# AtomTheme's CMakeLists already calls juce_add_module, so after
+# add_subdirectory / FetchContent_MakeAvailable we only need the demos path.
 # ---------------------------------------------------------------------------
 include(FetchContent)
 
 set(ATOM_THEME_LOCAL "$ENV{HOME}/source/AtomTheme")
+if(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt" AND EXISTS "D:/myCode/AtomTheme/CMakeLists.txt")
+    set(ATOM_THEME_LOCAL "D:/myCode/AtomTheme")
+elseif(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt" AND EXISTS "D:/source/AtomTheme/CMakeLists.txt")
+    set(ATOM_THEME_LOCAL "D:/source/AtomTheme")
+endif()
+
 if(EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt")
     message(STATUS "AtomTheme found at ${ATOM_THEME_LOCAL} — using local checkout")
-    juce_add_module("${ATOM_THEME_LOCAL}/modules/juce_atom_theme"
-                    ALIAS_NAMESPACE juce)
+    set(ATOMTHEME_BUILD_DEMOS OFF CACHE BOOL "" FORCE)
+    add_subdirectory("${ATOM_THEME_LOCAL}"
+                     "${CMAKE_BINARY_DIR}/AtomTheme"
+                     EXCLUDE_FROM_ALL)
     set(ATOM_COLLECTIONS_APP_DIR "${ATOM_THEME_LOCAL}/demos/collections_app")
 else()
     message(STATUS "AtomTheme not found locally — fetching from GitHub")
+    set(ATOMTHEME_BUILD_DEMOS OFF CACHE BOOL "" FORCE)
     FetchContent_Declare(
         AtomTheme
         GIT_REPOSITORY  https://github.com/guthmanny/AtomTheme.git
@@ -80,8 +93,6 @@ else()
         GIT_SHALLOW     TRUE
     )
     FetchContent_MakeAvailable(AtomTheme)
-    juce_add_module("${AtomTheme_SOURCE_DIR}/modules/juce_atom_theme"
-                    ALIAS_NAMESPACE juce)
     set(ATOM_COLLECTIONS_APP_DIR "${AtomTheme_SOURCE_DIR}/demos/collections_app")
 endif()
 
@@ -161,6 +172,8 @@ target_sources(Chorus PRIVATE
     Source/NoiseGateSettingsPanel.h
     Source/PeakDisplaySettingsPanel.cpp
     Source/PeakDisplaySettingsPanel.h
+    Source/CalibrationSettingsPanel.cpp
+    Source/CalibrationSettingsPanel.h
     Source/ChorusMidiCcSettingsPanel.cpp
     Source/ChorusMidiCcSettingsPanel.h
     Source/ChorusSettingsPanel.cpp
@@ -203,23 +216,30 @@ target_compile_definitions(Chorus
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
-        JUCE_JACK=1
+        $<$<NOT:$<PLATFORM_ID:Windows>>:JUCE_JACK=1>
     PRIVATE
         JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1
 )
 
 if(WIN32)
-    target_compile_definitions(Chorus PRIVATE JUCE_ASIO=1)
+    # windows.h min/max macros break std::min/std::max and JUCE audio headers.
+    target_compile_definitions(Chorus PRIVATE
+        NOMINMAX
+        WIN32_LEAN_AND_MEAN
+        JUCE_ASIO=1
+    )
 
     if(CHORUS_ASIO_SDK_INCLUDE)
         target_include_directories(Chorus PRIVATE "${CHORUS_ASIO_SDK_INCLUDE}")
     endif()
 endif()
 
-target_compile_options(Chorus PRIVATE
-    -Wno-switch-enum
-    -Wno-overloaded-virtual
-)
+if(NOT MSVC)
+    target_compile_options(Chorus PRIVATE
+        -Wno-switch-enum
+        -Wno-overloaded-virtual
+    )
+endif()
 
 target_link_libraries(Chorus PRIVATE
     juce::juce_audio_utils

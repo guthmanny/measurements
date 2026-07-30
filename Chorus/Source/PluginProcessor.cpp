@@ -467,6 +467,85 @@ void ChorusAudioProcessor::ensureTunerSampleRate()
   tunerDetector.setPeriodicityThreshold(tunerPeriodicityThreshold.load());
 }
 
+void ChorusAudioProcessor::setInputRmsMeteringEnabled (bool shouldEnable) noexcept
+{
+  inputRmsMeteringEnabled.store (shouldEnable);
+  if (! shouldEnable)
+  {
+    inputRmsMono.store (0.0f);
+    inputRmsBlockCounter = 0;
+  }
+}
+
+void ChorusAudioProcessor::updateInputRms (const AudioSampleBuffer& buffer, int numChannels, int numSamples)
+{
+  // Keep the audio callback cheap: only measure while the calibration page is open.
+  if (! inputRmsMeteringEnabled.load (std::memory_order_relaxed))
+    return;
+
+  if (numChannels <= 0 || numSamples <= 0)
+  {
+    inputRmsMono.store (0.0f, std::memory_order_relaxed);
+    return;
+  }
+
+  // Decimate: ~once every 16 blocks is enough for a 350 ms UI smoother.
+  if ((++inputRmsBlockCounter & 15) != 0)
+    return;
+
+  // Light subsampled mean-square (avoids a full-buffer getRMSLevel sweep).
+  auto meanSquare = [numSamples] (const float* data) noexcept -> float
+  {
+    if (data == nullptr || numSamples <= 0)
+      return 0.0f;
+
+    const int step = juce::jmax (1, numSamples / 64);
+    float sum = 0.0f;
+    int count = 0;
+    for (int i = 0; i < numSamples; i += step)
+    {
+      const float s = data[i];
+      sum += s * s;
+      ++count;
+    }
+    return count > 0 ? sum / (float) count : 0.0f;
+  };
+
+  float ms = meanSquare (buffer.getReadPointer (0));
+  if (numChannels > 1)
+    ms = 0.5f * (ms + meanSquare (buffer.getReadPointer (1)));
+
+  inputRmsMono.store (std::sqrt (juce::jmax (0.0f, ms)), std::memory_order_relaxed);
+}
+
+bool ChorusAudioProcessor::calibrateInputFromReference (float referenceVoltage, float rms)
+{
+  const float volts = juce::jmax (0.0f, referenceVoltage);
+  calibrationRefVoltage.store (volts);
+
+  constexpr float kMinRms = 1.0e-6f;
+  if (rms < kMinRms)
+    return false;
+
+  calibrationK.store (volts / rms);
+  return true;
+}
+
+void ChorusAudioProcessor::setCalibrationK (float k) noexcept
+{
+  calibrationK.store (juce::jmax (0.0f, k));
+}
+
+void ChorusAudioProcessor::setCalibrationReferenceVoltage (float volts) noexcept
+{
+  calibrationRefVoltage.store (juce::jmax (0.0f, volts));
+}
+
+void ChorusAudioProcessor::resetCalibration() noexcept
+{
+  calibrationK.store (1.0f);
+}
+
 void ChorusAudioProcessor::pushTunerMono(const AudioSampleBuffer& buffer, int numChannels, int numSamples)
 {
   if (!tunerEnabled.load())
@@ -613,7 +692,8 @@ void ChorusAudioProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& m
   const int bufCh = jmax(1, jmax(numInputChannels, numOutputChannels));
   ensureScratchBuffers(bufCh, numSamples);
 
-  // Capture host input for tuner before anything else touches the block.
+  // Capture host input for tuner / calibration before anything else touches the block.
+  updateInputRms (buffer, numInputChannels, numSamples);
   pushTunerMono(buffer, numInputChannels, numSamples);
 
   handleIncomingMidi (midiMessages);
@@ -793,6 +873,11 @@ void ChorusAudioProcessor::handleIncomingMidi (const MidiBuffer& midiMessages)
 void ChorusAudioProcessor::getStateInformation(MemoryBlock& destData)
 {
   std::unique_ptr<XmlElement> xml(parameters.valueTreeState.state.createXml());
+  if (xml != nullptr)
+  {
+    xml->setAttribute ("calibrationK", (double) calibrationK.load());
+    xml->setAttribute ("calibrationRefVoltage", (double) calibrationRefVoltage.load());
+  }
   copyXmlToBinary(*xml, destData);
 }
 
@@ -801,7 +886,14 @@ void ChorusAudioProcessor::setStateInformation(const void* data, int sizeInBytes
   std::unique_ptr<XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
   if (xmlState != nullptr)
     if (xmlState->hasTagName(parameters.valueTreeState.state.getType()))
+    {
+      if (xmlState->hasAttribute ("calibrationK"))
+        calibrationK.store ((float) xmlState->getDoubleAttribute ("calibrationK", 1.0));
+      if (xmlState->hasAttribute ("calibrationRefVoltage"))
+        calibrationRefVoltage.store ((float) xmlState->getDoubleAttribute ("calibrationRefVoltage", 1.0));
+
       parameters.valueTreeState.state = ValueTree::fromXml(*xmlState);
+    }
 
   applyChorusLimits (false);
 }

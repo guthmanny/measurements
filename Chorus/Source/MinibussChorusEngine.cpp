@@ -30,13 +30,48 @@ minibuss::PluginDescription MinibussChorusEngine::makeDesc (const char* uid,
     return d;
 }
 
-minibuss::Processor* MinibussChorusEngine::processor (minibuss::ObjectId id) const
+minibuss::Processor* MinibussChorusEngine::processor (minibuss::ObjectId id) const noexcept
 {
-    if (engine_ == nullptr || id == minibuss::kInvalidObjectId)
+    if (id == minibuss::kInvalidObjectId)
         return nullptr;
-    if (auto shared = engine_->processors().processor (id))
-        return shared.get();
+    if (id == gainId_)
+        return gainProc_;
+    if (id == gateId_)
+        return gateProc_;
+    if (id == chorusId_)
+        return chorusProc_;
+    if (id == phase90Id_)
+        return phase90Proc_;
+    if (id == levelId_)
+        return levelProc_;
     return nullptr;
+}
+
+void MinibussChorusEngine::clearProcessorPointers() noexcept
+{
+    gainProc_ = gateProc_ = chorusProc_ = phase90Proc_ = levelProc_ = nullptr;
+}
+
+void MinibussChorusEngine::cacheProcessorPointers()
+{
+    clearProcessorPointers();
+    if (engine_ == nullptr)
+        return;
+
+    auto resolve = [this] (minibuss::ObjectId id) -> minibuss::Processor*
+    {
+        if (id == minibuss::kInvalidObjectId)
+            return nullptr;
+        if (auto shared = engine_->processors().processor (id))
+            return shared.get();
+        return nullptr;
+    };
+
+    gainProc_ = resolve (gainId_);
+    gateProc_ = resolve (gateId_);
+    chorusProc_ = resolve (chorusId_);
+    phase90Proc_ = resolve (phase90Id_);
+    levelProc_ = resolve (levelId_);
 }
 
 void MinibussChorusEngine::setParamDomain (minibuss::ObjectId processorId,
@@ -158,6 +193,14 @@ void MinibussChorusEngine::prepare (float sampleRate, std::uint32_t maxBlockSize
     engine_->connect_audio_output (0, 0, trackId_);
     engine_->connect_audio_output (1, 1, trackId_);
 
+    cacheProcessorPointers();
+    if (gainProc_ == nullptr || gateProc_ == nullptr || chorusProc_ == nullptr
+        || phase90Proc_ == nullptr || levelProc_ == nullptr)
+    {
+        release();
+        return;
+    }
+
     applyModelBypass();
     ready_ = true;
 }
@@ -165,6 +208,7 @@ void MinibussChorusEngine::prepare (float sampleRate, std::uint32_t maxBlockSize
 void MinibussChorusEngine::release()
 {
     ready_ = false;
+    clearProcessorPointers();
     engine_.reset();
     formats_ = minibuss::PluginFormatManager {};
     trackId_ = gainId_ = gateId_ = chorusId_ = phase90Id_ = levelId_ = minibuss::kInvalidObjectId;
@@ -185,12 +229,16 @@ void MinibussChorusEngine::applyModelBypass()
 
 void MinibussChorusEngine::setEffectModel (EffectModel model)
 {
+    if (model_ == model)
+        return;
     model_ = model;
     applyModelBypass();
 }
 
 void MinibussChorusEngine::setBypass (bool shouldBypass)
 {
+    if (bypassAll_ == shouldBypass)
+        return;
     bypassAll_ = shouldBypass;
     applyModelBypass();
 }
@@ -208,9 +256,9 @@ void MinibussChorusEngine::readPostGainPeaks (float& leftPeak, float& rightPeak)
 {
     leftPeak = 0.f;
     rightPeak = 0.f;
-    if (auto* gain = processor (gainId_))
+    if (gainProc_ != nullptr)
     {
-        leftPeak = gain->read_meter (0);
-        rightPeak = gain->read_meter (1);
+        leftPeak = gainProc_->read_meter (0);
+        rightPeak = gainProc_->read_meter (1);
     }
 }

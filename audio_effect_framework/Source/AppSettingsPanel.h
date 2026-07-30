@@ -9,10 +9,9 @@
 
 class AudioSettingsPanel;
 class CalibrationSettingsPanel;
-class ChorusAudioProcessor;
-class ChorusMidiCcSettingsPanel;
-class ChorusSettingsPanel;
+class AudioEffectFrameworkProcessor;
 class NoiseGateSettingsPanel;
+class OversamplingSettingsPanel;
 class PeakDisplaySettingsPanel;
 
 /** App-wide settings shell: left category list, right page content. */
@@ -25,12 +24,11 @@ public:
         NoiseGate,
         PeakDisplay,
         InputCalibration,
-        Chorus,
-        ChorusMidiCc
+        Oversampling
     };
 
     AppSettingsPanel (juce::AudioDeviceManager& deviceManager,
-                      ChorusAudioProcessor& processor,
+                      AudioEffectFrameworkProcessor& processor,
                       AtomLookAndFeel& lookAndFeel);
     ~AppSettingsPanel() override;
 
@@ -41,7 +39,6 @@ public:
     Page getSelectedPage() const noexcept { return selectedPage; }
 
     int getPreferredWidth() const noexcept { return 760; }
-    /** Default height = tallest nav page content (Audio / Noise Gate / Chorus / MIDI CC). */
     int getPreferredHeight();
     int getMinimumWidth() const noexcept;
     int getMinimumHeight() const noexcept;
@@ -54,7 +51,7 @@ private:
     int measureTallestPageHeight();
 
     juce::AudioDeviceManager& deviceManager;
-    ChorusAudioProcessor& processor;
+    AudioEffectFrameworkProcessor& processor;
     AtomLookAndFeel& atomLookAndFeel;
 
     juce::Component sidebar;
@@ -65,8 +62,7 @@ private:
     std::unique_ptr<NoiseGateSettingsPanel> noiseGatePage;
     std::unique_ptr<PeakDisplaySettingsPanel> peakDisplayPage;
     std::unique_ptr<CalibrationSettingsPanel> calibrationPage;
-    std::unique_ptr<ChorusSettingsPanel> chorusPage;
-    std::unique_ptr<ChorusMidiCcSettingsPanel> chorusMidiCcPage;
+    std::unique_ptr<OversamplingSettingsPanel> oversamplingPage;
     std::vector<std::unique_ptr<NavItem>> navItems;
 
     Page selectedPage = Page::AudioSettings;

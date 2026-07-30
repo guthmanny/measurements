@@ -1,37 +1,32 @@
 /*
   ==============================================================================
 
-    Chorus / Phase90 plugin — DSP via minibuss Track + Processors.
+    Audio effect template — DSP via minibuss Track + Processors.
 
   ==============================================================================
 */
 
 #pragma once
 
-#include <array>
 #include <atomic>
-#include <cstdint>
 #include <memory>
 #include <vector>
 
-#include "../JuceLibraryCode/JuceHeader.h"
-#include "MinibussChorusEngine.h"
-#include "ChorusNuDspDefaults.h"
+#include "AefJuceIncludes.h"
+#include "MinibussEffectEngine.h"
 #include "TunerDetector.h"
 #include "SpectrumAnalyzer.h"
 #include "PluginParameter.h"
 
 //==============================================================================
 
-class ChorusAudioProcessor : public AudioProcessor,
-                             public ChangeBroadcaster,
-                             private juce::AudioProcessorValueTreeState::Listener
+class AudioEffectFrameworkProcessor : public AudioProcessor
 {
  public:
   //==============================================================================
 
-  ChorusAudioProcessor();
-  ~ChorusAudioProcessor() override;
+  AudioEffectFrameworkProcessor();
+  ~AudioEffectFrameworkProcessor() override;
 
   //==============================================================================
 
@@ -45,27 +40,22 @@ class ChorusAudioProcessor : public AudioProcessor,
   void getStateInformation(MemoryBlock& destData) override;
   void setStateInformation(const void* data, int sizeInBytes) override;
 
-  //==============================================================================
-
-  AudioProcessorEditor* createEditor() override;
-  bool hasEditor() const override;
-
-  //==============================================================================
-
 #ifndef JucePlugin_PreferredChannelConfigurations
   bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 #endif
 
   //==============================================================================
 
+  AudioProcessorEditor* createEditor() override = 0;
+  bool hasEditor() const override;
+
+  // Plugin identity — override in subclass (uses JucePlugin_* from generated header)
   const String getName() const override;
 
   bool acceptsMidi() const override;
   bool producesMidi() const override;
   bool isMidiEffect() const override;
   double getTailLengthSeconds() const override;
-
-  //==============================================================================
 
   int getNumPrograms() override;
   int getCurrentProgram() override;
@@ -75,11 +65,9 @@ class ChorusAudioProcessor : public AudioProcessor,
 
   //==============================================================================
 
-  enum EffectModel { kChorus = 0, kPhase90 = 1 };
-
   PluginParametersManager parameters;
 
-  // Shared parameters (both effect models)
+  // Shared infrastructure parameters
   PluginParameterLinSlider paramInputGain;
   PluginParameterLinSlider paramGateThreshold;
   PluginParameterLinSlider paramGateThreshMin;
@@ -93,44 +81,20 @@ class ChorusAudioProcessor : public AudioProcessor,
   PluginParameterLinSlider paramOutputGain;
   PluginParameterToggle paramBypass;
 
-  // Settings → Peak Display：header meter ballistics
+  // Settings → Peak Display
   PluginParameterLinSlider paramMeterAttack;
   PluginParameterLinSlider paramMeterRelease;
   PluginParameterComboBox paramMeterDisplayRange;
 
-  // Settings → Chorus: engine limits (Rate / Delay / Amount ranges)
-  PluginParameterLinSlider paramChorusMaxDelayTime;
-  PluginParameterLinSlider paramChorusMinLfoFreq;
-  PluginParameterLinSlider paramChorusMaxLfoFreq;
-  PluginParameterLinSlider paramChorusMaxAmount;
-
-  // Chorus model parameters (MonoChorus reflection ids)
-  PluginParameterLinSlider paramChorusRate;
-  PluginParameterComboBox paramChorusLfoShape;
-  PluginParameterLinSlider paramChorusDelay;
-  PluginParameterLinSlider paramChorusAmount;
-  PluginParameterLinSlider paramChorusWet;
-  PluginParameterLinSlider paramChorusFeedback;
-
-  // Settings → MIDI CC: CC assignment for Chorus params (0=Off, 1..128 = CC0..CC127)
-  PluginParameterComboBox paramMidiCcChorusRate;
-  PluginParameterComboBox paramMidiCcChorusDelay;
-  PluginParameterComboBox paramMidiCcChorusAmount;
-  PluginParameterComboBox paramMidiCcChorusWet;
-  PluginParameterComboBox paramMidiCcChorusFeedback;
-
-  // Phase90 model parameters
-  PluginParameterLogSlider paramPhase90Rate;
-  PluginParameterLogSlider paramCenter;
-  PluginParameterLinSlider paramPhase90Amount;
-  PluginParameterLinSlider paramPhase90Feedback;
-  PluginParameterLinSlider paramMix;
+  // Footer QUALITY + Settings → Oversampling
+  PluginParameterComboBox paramOversampleQuality;
+  PluginParameterComboBox paramUpsamplerMode;
+  PluginParameterComboBox paramDownsamplerMode;
 
   float getMeterLevelMono() const noexcept { return meterInputMono.load(); }
   float getMeterLevelLeft() const noexcept { return meterLeft.load(); }
   float getMeterLevelRight() const noexcept { return meterRight.load(); }
 
-  /** Single shared meter envelope + dB display (header + Peak Display). */
   void updateMeterDisplay (float attackMs, float releaseSec, int displayRangeDbSpan, float dtSec);
   float getMeterEnvelopeMono() const noexcept { return meterDisplayEnvelopeInputMono; }
   float getMeterEnvelopeLeft() const noexcept { return meterDisplayEnvelopeLeft; }
@@ -139,36 +103,19 @@ class ChorusAudioProcessor : public AudioProcessor,
   float getMeterDisplayLeftNormalized() const noexcept { return meterDisplayLeftNorm; }
   float getMeterDisplayRightNormalized() const noexcept { return meterDisplayRightNorm; }
 
-  /** Digital mono RMS of host input (full-scale = 1.0). Updated only while metering is enabled. */
   float getInputRms() const noexcept { return inputRmsMono.load(); }
-  /** Calibration scale: V_external = digital * K. Default 1.0 (unity). */
   float getCalibrationK() const noexcept { return calibrationK.load(); }
   float getCalibrationReferenceVoltage() const noexcept { return calibrationRefVoltage.load(); }
-  /** Mapped external voltage from current RMS: V = RMS * K. */
   float getMappedInputVoltage() const noexcept { return getInputRms() * getCalibrationK(); }
-  /** Enable/disable audio-thread RMS capture (UI should enable only while calibration page is shown). */
   void setInputRmsMeteringEnabled (bool shouldEnable) noexcept;
   bool isInputRmsMeteringEnabled() const noexcept { return inputRmsMeteringEnabled.load(); }
-  /** Set K = V_ref / rms. Pass a stable (UI-smoothed) rms for calibration. */
   bool calibrateInputFromReference (float referenceVoltage, float rms);
   void setCalibrationK (float k) noexcept;
   void setCalibrationReferenceVoltage (float volts) noexcept;
   void resetCalibration() noexcept;
 
-  EffectModel getEffectModel() const noexcept { return currentModel.load(); }
-  void setEffectModel(EffectModel model) noexcept;
-
-  [[nodiscard]] ChorusNuDspLimits getChorusNuDspLimits() const noexcept;
-  float getChorusMaxDelayTime() const noexcept;
-  float getChorusMinLfoFreq() const noexcept;
-  float getChorusMaxLfoFreq() const noexcept;
-  float getChorusMaxAmount() const noexcept;
-  /** Update Rate/Delay/Amount ranges; optionally reset them to NuDSP defaults. */
-  void applyChorusLimits (bool resetChorusDefaults);
-
   void setTunerEnabled(bool shouldEnable) noexcept;
   bool isTunerEnabled() const noexcept { return tunerEnabled.load(); }
-  /** True while tuner is open: FX bypassed on output to avoid monitor feedback. */
   bool isTuningModeActive() const noexcept { return tunerEnabled.load(); }
   float getTunerInputDbFs() const noexcept { return tunerInputDbFs.load(); }
   float getTunerInputDbFsRight() const noexcept { return tunerInputDbFsRight.load(); }
@@ -181,20 +128,29 @@ class ChorusAudioProcessor : public AudioProcessor,
   void setSpectrumEnabled(bool shouldEnable) noexcept;
   bool isSpectrumEnabled() const noexcept { return spectrumEnabled.load(); }
   void setSpectrumFftSize(int fftSize);
-  /** Copies new spectrum data into @p dest if frame advanced since @p lastFrameId. */
   bool copySpectrumMagnitudesIfNew (uint32_t& lastFrameId, std::vector<float>& dest) const;
   int getSpectrumFftSize() const noexcept { return spectrumFftSize.load(); }
   double getSpectrumSampleRate() const noexcept { return currentSampleRate; }
 
+  /** Override in plugin subclass to push effect-specific minibuss parameters. */
+  virtual void updateCustomEffectParameters() {}
+
+ protected:
+  /** Override to supply a plugin-specific minibuss engine (e.g. with a middle processor). */
+  virtual std::unique_ptr<MinibussEffectEngine> createEffectEngine();
+
+  void ensureEffectEngine();
+
+  MinibussEffectEngine& getMinibussEngine() noexcept { return *effectEngine_; }
+  [[nodiscard]] const MinibussEffectEngine& getMinibussEngine() const noexcept { return *effectEngine_; }
+
+  float readParameterValue(const String& paramId, float fallback) const;
+
  private:
   //==============================================================================
 
-  static constexpr int maxChannels = 2;
-
-  float readParameterValue(const String& paramId, float fallback) const;
   void syncParametersFromValueTree();
   void updateEffectParameters();
-  void setParameterDomainValue (const String& paramId, float domainValue);
   void ensureScratchBuffers(int numChannels, int numSamples);
   void mixToMonoBuffer(const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void pushTunerMono(const AudioSampleBuffer& buffer, int numChannels, int numSamples);
@@ -202,20 +158,8 @@ class ChorusAudioProcessor : public AudioProcessor,
   void updateInputRms (const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void processTuningOutput(int numSamples, int numInputChannels);
   void ensureTunerSampleRate();
-  void handleIncomingMidi (const MidiBuffer& midiMessages);
-  void parameterChanged (const String& parameterID, float newValue) override;
-  void applyMidiCcToParameter (PluginParameterLinSlider& target, float controllerNormalized);
-  void applyMidiCcToChorusParameter (const String& paramId,
-                                     std::string_view minibussParamId,
-                                     float minDomain,
-                                     float maxDomain,
-                                     float controllerNormalized);
-  void syncChorusLfoShapeToEngine();
 
-  /** Choice index 0 = Off; 1..128 = CC 0..127. Returns -1 if Off. */
-  static int midiCcChoiceToNumber (float choiceValue) noexcept;
-
-  MinibussChorusEngine minibussEngine;
+  std::unique_ptr<MinibussEffectEngine> effectEngine_;
   AudioSampleBuffer dryBuffer;
   AudioSampleBuffer monoBuffer;
   AudioSampleBuffer processBuffer;
@@ -239,8 +183,6 @@ class ChorusAudioProcessor : public AudioProcessor,
   float meterDisplayLeftNorm = 0.0f;
   float meterDisplayRightNorm = 0.0f;
 
-  std::atomic<EffectModel> currentModel{kChorus};
-
   std::atomic<bool> tunerEnabled{false};
   std::atomic<float> tunerPeriodicityThreshold{0.7f};
   std::atomic<float> tunerInputDbFs{-100.0f};
@@ -253,5 +195,5 @@ class ChorusAudioProcessor : public AudioProcessor,
   std::atomic<int> spectrumFftSize{1 << SpectrumAnalyzer::defaultFftOrder};
   SpectrumAnalyzer spectrumAnalyzer;
 
-  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ChorusAudioProcessor)
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioEffectFrameworkProcessor)
 };
