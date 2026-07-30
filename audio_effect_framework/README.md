@@ -17,12 +17,13 @@ measurements/
 
 1. Copy `template_audio_effects/` to `MyEffect/`
 2. Edit `CMakeLists.txt`: change `project()`, `juce_add_plugin()`, `PLUGIN_CODE`, `PRODUCT_NAME`
-3. Subclass `AudioEffectFrameworkProcessor`:
+3. Subclass `MinibussEffectEngine` and override `installMiddleProcessors()` to insert your effect between upsampler and downsampler (see `template_audio_effects/Source/TemplateEffectEngine.cpp` or `ds1/Ds1EffectEngine.cpp`).
+4. Subclass `AudioEffectFrameworkProcessor`:
+   - Override `createEffectEngine()` to return your engine subclass
    - Add effect parameters in the constructor
-   - Override `updateCustomEffectParameters()` to push values to minibuss
+   - Override `updateCustomEffectParameters()` to push values to the middle processor via `getMinibussEngine().middleProcessorId()`
    - Override `createEditor()` (use `AudioEffectFrameworkEditor` or subclass it)
    - Override `getName()`, `acceptsMidi()`, etc. using `JucePlugin_*` macros
-4. Insert your processor in `MinibussEffectEngine::prepare()` (or extend the engine in your plugin)
 
 ## CMake snippet
 
