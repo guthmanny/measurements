@@ -5,6 +5,13 @@ set(CMAKE_CXX_STANDARD 20)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../audio_effect_framework/cmake")
 include(AudioEffectFramework)
 
+# Precomputed NuDSP NL tables for white_box DS-1 (compile-time; no runtime switch).
+# Use none to fall back to Newton tabulate on prepare.
+set(NUDSP_NL_TABLE_PROFILE "full" CACHE STRING "NuDSP NL LUT bake: none|full|balanced|tiny")
+set_property(CACHE NUDSP_NL_TABLE_PROFILE PROPERTY STRINGS none full balanced tiny)
+set(NUDSP_NL_TABLE_RATES "48000" CACHE STRING "NuDSP baked NL table sample rates")
+set(NUDSP_NL_TABLE_MODULES "ds1" CACHE STRING "NuDSP NL bake module groups")
+
 aef_setup_dependencies()
 
 set(AEF_BUILD_STANDALONE ON CACHE BOOL "" FORCE)

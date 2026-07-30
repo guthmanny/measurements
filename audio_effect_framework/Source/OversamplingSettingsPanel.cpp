@@ -102,12 +102,14 @@ OversamplingSettingsPanel::OversamplingSettingsPanel (AudioEffectFrameworkProces
                                                       AtomLookAndFeel& lookAndFeel)
     : processor (processorIn),
       atomLookAndFeel (lookAndFeel),
-      introLabel ("oversamplingIntro", "Oversampling")
+      introLabel ("modelingIntro", "Modeling")
 {
     setLookAndFeel (&atomLookAndFeel);
 
-    introLabel.setHintText ("QUALITY in the footer sets the factor (2× / 4× / 8×). "
-                            "These modes control how intermediate samples are generated and anti-aliased.");
+    introLabel.setHintText ("QUALITY in the footer sets the oversampling factor (2× / 4× / 8×). "
+                            "Modes control how intermediate samples are generated and anti-aliased. "
+                            "Nonlinear lookup tables for white-box DS-1 are selected at build time "
+                            "(NUDSP_NL_TABLE_PROFILE=none|full|balanced|tiny).");
     introLabel.setFont (AtomLookAndFeel::getUIFont (kIntroFontHeight, juce::Font::bold));
     addAndMakeVisible (introLabel);
 

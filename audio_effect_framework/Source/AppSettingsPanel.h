@@ -24,7 +24,7 @@ public:
         NoiseGate,
         PeakDisplay,
         InputCalibration,
-        Oversampling
+        Modeling
     };
 
     AppSettingsPanel (juce::AudioDeviceManager& deviceManager,

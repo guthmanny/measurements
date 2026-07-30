@@ -86,7 +86,7 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   PluginParameterLinSlider paramMeterRelease;
   PluginParameterComboBox paramMeterDisplayRange;
 
-  // Footer QUALITY + Settings → Oversampling
+  // Footer QUALITY + Settings → Modeling (oversampling modes)
   PluginParameterComboBox paramOversampleQuality;
   PluginParameterComboBox paramUpsamplerMode;
   PluginParameterComboBox paramDownsamplerMode;

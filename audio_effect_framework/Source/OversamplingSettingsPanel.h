@@ -8,7 +8,7 @@
 
 class AudioEffectFrameworkProcessor;
 
-/** Settings → Oversampling: up/down sampler interpolation / anti-alias modes. */
+/** Settings → Modeling: oversampling modes + (build-time) NL table bake. */
 class OversamplingSettingsPanel final : public juce::Component
 {
 public:

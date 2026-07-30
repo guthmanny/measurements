@@ -117,7 +117,7 @@ void AppSettingsPanel::rebuildNav()
     addItem ("Noise Gate", Page::NoiseGate);
     addItem ("Peak Display", Page::PeakDisplay);
     addItem ("Input Calibration", Page::InputCalibration);
-    addItem ("Oversampling", Page::Oversampling);
+    addItem ("Modeling", Page::Modeling);
 }
 
 void AppSettingsPanel::selectPage (Page page)
@@ -140,7 +140,7 @@ void AppSettingsPanel::showSelectedPage()
     if (calibrationPage != nullptr)
         calibrationPage->setVisible (selectedPage == Page::InputCalibration);
     if (oversamplingPage != nullptr)
-        oversamplingPage->setVisible (selectedPage == Page::Oversampling);
+        oversamplingPage->setVisible (selectedPage == Page::Modeling);
 }
 
 int AppSettingsPanel::getMinimumWidth() const noexcept
