@@ -90,7 +90,7 @@ void applySystemNativeTitleBarTheme(juce::Component& target)
 #endif
 }  // namespace
 
-AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProcessor& p)
+AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProcessor& p, bool deferBodyBuild)
     : juce::AudioProcessorEditor(&p), processor(p)
 {
   juce::LookAndFeel::setDefaultLookAndFeel(&atomLookAndFeel);
@@ -167,8 +167,34 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
   sliderAttachments.add(
       new SliderAttachment(processor.parameters.valueTreeState, "outputgain", headerBar.getSliderOutput()));
 
-  const juce::Array<juce::AudioProcessorParameter*>& parameters = processor.getParameters();
   bodyContentHeight = bodyMargin;
+
+  if (! deferBodyBuild)
+    completeBodyConstruction();
+
+#if JucePlugin_Build_Standalone
+  juce::Desktop::getInstance().addDarkModeSettingListener(this);
+#endif
+}
+
+void AudioEffectFrameworkEditor::completeBodyConstruction()
+{
+  buildParameterBodyRows();
+  bodyContentHeight += bodyMargin;
+  applyZoom(1.0f);
+  startTimerHz (meter_display::kRefreshHz);
+}
+
+int AudioEffectFrameworkEditor::getBodyComponentBaseHeight (const juce::Component* component) const noexcept
+{
+  if (dynamic_cast<const atom::Slider*> (component) != nullptr)
+    return sliderRowHeight;
+  return cardRowHeight;
+}
+
+void AudioEffectFrameworkEditor::buildParameterBodyRows()
+{
+  const juce::Array<juce::AudioProcessorParameter*>& parameters = processor.getParameters();
 
   const juce::StringArray headerParamIds{"inputgain", "gatethreshold", "outputgain"};
   const juce::StringArray settingsOnlyParamIds{"gatethreshmin", "gatethreshmax", "gateoffatmin", "gateratio",
@@ -205,9 +231,6 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
   const float labelReserveDlu = maxParamLabelWidth > 0.0f ? maxParamLabelWidth * 8.0f / uiFontHeight : 0.0f;
   const float valueReserveDlu = maxValueTextWidth > 0.0f ? (maxValueTextWidth + 12.0f) * 8.0f / uiFontHeight : 0.0f;
 
-  static constexpr int sliderHeight = 50;
-  static constexpr int cardRowHeight = 48;
-
   for (int i = 0; i < parameters.size(); ++i)
   {
     if (const auto* parameter = dynamic_cast<const juce::AudioProcessorParameterWithID*>(parameters[i]))
@@ -232,7 +255,7 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
 
         bodyContent.addAndMakeVisible(aSlider);
         bodyComponents.add(aSlider);
-        bodyContentHeight += sliderHeight + bodyPadding;
+        bodyContentHeight += getBodyComponentBaseHeight (aSlider) + bodyPadding;
       }
       else if (processor.parameters.parameterTypes[i] == "ToggleButton")
       {
@@ -246,7 +269,7 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
         settingRows.add(row);
         bodyContent.addAndMakeVisible(row);
         bodyComponents.add(row);
-        bodyContentHeight += cardRowHeight + bodyPadding;
+        bodyContentHeight += getBodyComponentBaseHeight (row) + bodyPadding;
       }
       else if (processor.parameters.parameterTypes[i] == "ComboBox")
       {
@@ -267,19 +290,10 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
         settingRows.add(row);
         bodyContent.addAndMakeVisible(row);
         bodyComponents.add(row);
-        bodyContentHeight += cardRowHeight + bodyPadding;
+        bodyContentHeight += getBodyComponentBaseHeight (row) + bodyPadding;
       }
     }
   }
-
-  bodyContentHeight += bodyMargin;
-
-  applyZoom(1.0f);
-  startTimerHz (meter_display::kRefreshHz);
-
-#if JucePlugin_Build_Standalone
-  juce::Desktop::getInstance().addDarkModeSettingListener(this);
-#endif
 }
 
 AudioEffectFrameworkEditor::~AudioEffectFrameworkEditor()
@@ -437,6 +451,8 @@ void AudioEffectFrameworkEditor::timerCallback()
                                                         processor.getSpectrumSampleRate(),
                                                         processor.getSpectrumFftSize());
   }
+
+  onEditorTimerTick();
 }
 
 void AudioEffectFrameworkEditor::paint(juce::Graphics& g)
@@ -463,16 +479,11 @@ void AudioEffectFrameworkEditor::resized()
   bodyContent.setSize(juce::jmax(getWidth(), getEditorWidth()), juce::jmax(getBodyContentHeight(), bounds.getHeight()));
 
   auto area = bodyContent.getLocalBounds().reduced(juce::roundToInt((float)bodyMargin * zoomFactor), 0);
-  static constexpr int sliderHeight = 50;
-  static constexpr int cardRowHeight = 48;
 
   for (auto* component : bodyComponents)
   {
     if (!component->isVisible()) continue;
-    const int rowHeight = juce::roundToInt ((float) (dynamic_cast<const atom::Slider*>(component) != nullptr
-                                                         ? sliderHeight
-                                                         : cardRowHeight)
-                                            * zoomFactor);
+    const int rowHeight = juce::roundToInt ((float) getBodyComponentBaseHeight (component) * zoomFactor);
     component->setBounds(area.removeFromTop(rowHeight));
     area.removeFromTop(juce::roundToInt((float)bodyPadding * zoomFactor));
   }

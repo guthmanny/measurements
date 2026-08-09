@@ -29,7 +29,11 @@ class AudioEffectFrameworkEditor : public juce::AudioProcessorEditor,
 #endif
 {
 public:
-    explicit AudioEffectFrameworkEditor (AudioEffectFrameworkProcessor&);
+    /** @param deferBodyBuild If true, call completeBodyConstruction() from the
+        derived constructor after inserting custom body rows (virtuals are not
+        available during the base constructor). */
+    explicit AudioEffectFrameworkEditor (AudioEffectFrameworkProcessor&,
+                                         bool deferBodyBuild = false);
     ~AudioEffectFrameworkEditor() override;
 
     void paint (juce::Graphics& g) override;
@@ -43,6 +47,44 @@ public:
     void setTunerVisible (bool shouldShow);
     void setSpectrumVisible (bool shouldShow);
 
+protected:
+    /** Finish APVTS body rows + zoom/timer. Call once from a derived ctor when
+        constructed with deferBodyBuild=true. */
+    void completeBodyConstruction();
+
+    /** Unzoomed height for a body row (override for custom components). */
+    virtual int getBodyComponentBaseHeight (const juce::Component* component) const noexcept;
+
+    /** Extra per-tick UI work after meters/overlays update. */
+    virtual void onEditorTimerTick() {}
+
+    AudioEffectFrameworkProcessor& processor;
+
+    static constexpr int headerBaseHeight = 80;
+    static constexpr int footerBaseHeight = 32;
+    static constexpr int bodyPadding = 10;
+    static constexpr int bodyMargin = 20;
+    static constexpr int sliderRowHeight = 50;
+    static constexpr int cardRowHeight = 48;
+
+    float zoomFactor = 1.0f;
+    int bodyContentHeight = 0;
+
+    AtomLookAndFeel atomLookAndFeel { atom::ThemeType::Dark };
+    EffectHeaderComponent headerBar;
+    EffectFooterComponent footerBar;
+    EffectBodyContent bodyContent;
+    juce::Viewport bodyViewport;
+    juce::Array<juce::Component*> bodyComponents;
+
+    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
+    using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
+    using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
+
+    juce::OwnedArray<SliderAttachment> sliderAttachments;
+    juce::OwnedArray<ButtonAttachment> buttonAttachments;
+    juce::OwnedArray<ComboBoxAttachment> comboBoxAttachments;
+
 private:
     void timerCallback() override;
 #if JucePlugin_Build_Standalone
@@ -55,22 +97,8 @@ private:
     int getHeaderHeight() const noexcept;
     int getFooterHeight() const noexcept;
     int getBodyContentHeight() const noexcept;
+    void buildParameterBodyRows();
 
-    AudioEffectFrameworkProcessor& processor;
-
-    static constexpr int headerBaseHeight = 80;
-    static constexpr int footerBaseHeight = 32;
-    static constexpr int bodyPadding = 10;
-    static constexpr int bodyMargin = 20;
-
-    float zoomFactor = 1.0f;
-    int bodyContentHeight = 0;
-
-    AtomLookAndFeel atomLookAndFeel { atom::ThemeType::Dark };
-    EffectHeaderComponent headerBar;
-    EffectFooterComponent footerBar;
-    EffectBodyContent bodyContent;
-    juce::Viewport bodyViewport;
     TunerOverlay tunerOverlay;
     SpectrumOverlay spectrumOverlay;
     std::vector<float> spectrumScratch;
@@ -80,15 +108,6 @@ private:
     juce::OwnedArray<atom::ToggleButton> toggles;
     juce::OwnedArray<atom::ComboBox> comboBoxes;
     juce::OwnedArray<juce::Component> settingRows;
-    juce::Array<juce::Component*> bodyComponents;
-
-    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
-    using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
-    using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
-
-    juce::OwnedArray<SliderAttachment> sliderAttachments;
-    juce::OwnedArray<ButtonAttachment> buttonAttachments;
-    juce::OwnedArray<ComboBoxAttachment> comboBoxAttachments;
 
 #if JucePlugin_Build_Standalone
     juce::Component::SafePointer<juce::DialogWindow> appSettingsDialog;
