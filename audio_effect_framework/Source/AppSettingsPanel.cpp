@@ -116,7 +116,7 @@ void AppSettingsPanel::rebuildNav()
     addItem ("Audio Settings", Page::AudioSettings);
     addItem ("Noise Gate", Page::NoiseGate);
     addItem ("Peak Display", Page::PeakDisplay);
-    addItem ("Input Calibration", Page::InputCalibration);
+    addItem ("Calibration", Page::Calibration);
     addItem ("Modeling", Page::Modeling);
 }
 
@@ -138,7 +138,7 @@ void AppSettingsPanel::showSelectedPage()
     if (peakDisplayPage != nullptr)
         peakDisplayPage->setVisible (selectedPage == Page::PeakDisplay);
     if (calibrationPage != nullptr)
-        calibrationPage->setVisible (selectedPage == Page::InputCalibration);
+        calibrationPage->setVisible (selectedPage == Page::Calibration);
     if (oversamplingPage != nullptr)
         oversamplingPage->setVisible (selectedPage == Page::Modeling);
 }

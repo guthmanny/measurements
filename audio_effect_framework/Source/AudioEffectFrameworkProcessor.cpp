@@ -329,6 +329,26 @@ void AudioEffectFrameworkProcessor::updateInputRms (const AudioSampleBuffer& buf
   inputRmsMono.store (std::sqrt (juce::jmax (0.0f, ms)), std::memory_order_relaxed);
 }
 
+void AudioEffectFrameworkProcessor::updateInputMeter (const AudioSampleBuffer& buffer, int numChannels,
+                                                      int numSamples)
+{
+  if (numChannels <= 0 || numSamples <= 0)
+  {
+    meterInputMono.store (0.0f);
+    return;
+  }
+
+  const float inputGain =
+      Decibels::decibelsToGain (readParameterValue (paramInputGain.paramID, paramInputGain.defaultValue));
+
+  float left = buffer.getMagnitude (0, 0, numSamples) * inputGain;
+  float right = left;
+  if (numChannels > 1)
+    right = buffer.getMagnitude (1, 0, numSamples) * inputGain;
+
+  meterInputMono.store (numChannels > 1 ? 0.5f * (left + right) : left);
+}
+
 bool AudioEffectFrameworkProcessor::calibrateInputFromReference (float referenceVoltage, float rms)
 {
   const float volts = juce::jmax (0.0f, referenceVoltage);
@@ -338,13 +358,36 @@ bool AudioEffectFrameworkProcessor::calibrateInputFromReference (float reference
   if (rms < kMinRms)
     return false;
 
-  calibrationK.store (volts / rms);
+  calibrationKi.store (volts / rms);
   return true;
 }
 
-void AudioEffectFrameworkProcessor::setCalibrationK (float k) noexcept
+bool AudioEffectFrameworkProcessor::calibrateOutputFromMeasured (float measuredOutputVoltage)
 {
-  calibrationK.store (juce::jmax (0.0f, k));
+  const float measured = juce::jmax (0.0f, measuredOutputVoltage);
+  calibrationMeasuredOutputVoltage.store (measured);
+
+  constexpr float kMinVolts = 1.0e-6f;
+  if (measured < kMinVolts)
+    return false;
+
+  const float refV = calibrationRefVoltage.load();
+  if (refV < kMinVolts)
+    return false;
+
+  // Ko compensates measured external output toward the shared Reference V.
+  calibrationKo.store (refV / measured);
+  return true;
+}
+
+void AudioEffectFrameworkProcessor::setCalibrationKi (float ki) noexcept
+{
+  calibrationKi.store (juce::jmax (0.0f, ki));
+}
+
+void AudioEffectFrameworkProcessor::setCalibrationKo (float ko) noexcept
+{
+  calibrationKo.store (juce::jmax (0.0f, ko));
 }
 
 void AudioEffectFrameworkProcessor::setCalibrationReferenceVoltage (float volts) noexcept
@@ -352,9 +395,55 @@ void AudioEffectFrameworkProcessor::setCalibrationReferenceVoltage (float volts)
   calibrationRefVoltage.store (juce::jmax (0.0f, volts));
 }
 
+void AudioEffectFrameworkProcessor::setCalibrationMeasuredOutputVoltage (float volts) noexcept
+{
+  calibrationMeasuredOutputVoltage.store (juce::jmax (0.0f, volts));
+}
+
+void AudioEffectFrameworkProcessor::resetInputCalibration() noexcept
+{
+  calibrationKi.store (1.0f);
+}
+
+void AudioEffectFrameworkProcessor::resetOutputCalibration() noexcept
+{
+  calibrationKo.store (1.0f);
+}
+
 void AudioEffectFrameworkProcessor::resetCalibration() noexcept
 {
-  calibrationK.store (1.0f);
+  resetInputCalibration();
+  resetOutputCalibration();
+}
+
+void AudioEffectFrameworkProcessor::applyInputCalibration (AudioSampleBuffer& buffer,
+                                                           int numChannels,
+                                                           int numSamples) const noexcept
+{
+  if (numChannels <= 0 || numSamples <= 0)
+    return;
+
+  const float ki = calibrationKi.load (std::memory_order_relaxed);
+  if (! std::isfinite (ki) || ki <= 0.0f || std::abs (ki - 1.0f) <= 1.0e-6f)
+    return;
+
+  for (int ch = 0; ch < numChannels; ++ch)
+    buffer.applyGain (ch, 0, numSamples, ki);
+}
+
+void AudioEffectFrameworkProcessor::applyOutputCalibration (AudioSampleBuffer& buffer,
+                                                            int numChannels,
+                                                            int numSamples) const noexcept
+{
+  if (numChannels <= 0 || numSamples <= 0)
+    return;
+
+  const float ko = calibrationKo.load (std::memory_order_relaxed);
+  if (! std::isfinite (ko) || ko <= 0.0f || std::abs (ko - 1.0f) <= 1.0e-6f)
+    return;
+
+  for (int ch = 0; ch < numChannels; ++ch)
+    buffer.applyGain (ch, 0, numSamples, ko);
 }
 
 void AudioEffectFrameworkProcessor::pushTunerMono(const AudioSampleBuffer& buffer, int numChannels, int numSamples)
@@ -409,22 +498,6 @@ void AudioEffectFrameworkProcessor::pushSpectrumMono(const AudioSampleBuffer& bu
 
   mixToMonoBuffer(buffer, numChannels, numSamples);
   spectrumAnalyzer.pushSamples(monoBuffer.getReadPointer(0), numSamples);
-}
-
-void AudioEffectFrameworkProcessor::processTuningOutput(const int numSamples, const int numInputChannels)
-{
-  juce::ignoreUnused (numSamples);
-
-  const float inputGain =
-      Decibels::decibelsToGain(readParameterValue(paramInputGain.paramID, paramInputGain.defaultValue));
-  const float postGainLeft = processBuffer.getMagnitude(0, 0, numSamples) * inputGain;
-  const float postGainRight =
-      numInputChannels > 1 && processBuffer.getNumChannels() > 1
-          ? processBuffer.getMagnitude(1, 0, numSamples) * inputGain
-          : postGainLeft;
-  const float postGainMono =
-      numInputChannels > 1 ? 0.5f * (postGainLeft + postGainRight) : postGainLeft;
-  meterInputMono.store(postGainMono);
 }
 
 void AudioEffectFrameworkProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
@@ -494,6 +567,7 @@ void AudioEffectFrameworkProcessor::processBlock(AudioSampleBuffer& buffer, Midi
   pushTunerMono(buffer, numInputChannels, numSamples);
 
   updateEffectParameters();
+  updateInputMeter (buffer, numInputChannels, numSamples);
 
   constexpr int engCh = 2;
   for (int ch = 0; ch < engCh; ++ch)
@@ -505,32 +579,19 @@ void AudioEffectFrameworkProcessor::processBlock(AudioSampleBuffer& buffer, Midi
       processBuffer.clear(ch, 0, numSamples);
   }
 
+  // Pre-FX input calibration (Ki); input meter above uses raw ADC x Input Gain only.
+  applyInputCalibration (processBuffer, engCh, numSamples);
+
   for (int ch = 0; ch < engCh; ++ch)
     dryBuffer.clear(ch, 0, numSamples);
 
   const float* inPtrs[2] = { processBuffer.getReadPointer(0), processBuffer.getReadPointer(1) };
   float* outPtrs[2] = { dryBuffer.getWritePointer(0), dryBuffer.getWritePointer(1) };
 
-  if (getMinibussEngine().isReady())
-  {
-    if (tunerEnabled.load())
-      processTuningOutput(numSamples, numInputChannels);
-    else
-    {
-      getMinibussEngine().process(inPtrs, outPtrs, (std::uint32_t) numSamples);
+  if (getMinibussEngine().isReady() && ! tunerEnabled.load())
+    getMinibussEngine().process (inPtrs, outPtrs, (std::uint32_t) numSamples);
 
-      float postGainLeft = 0.0f, postGainRight = 0.0f;
-      getMinibussEngine().readPostGainPeaks(postGainLeft, postGainRight);
-      const float postGainMono =
-          numInputChannels > 1 ? 0.5f * (postGainLeft + postGainRight) : postGainLeft;
-      meterInputMono.store(postGainMono);
-    }
-  }
-  else
-  {
-    meterInputMono.store(0.0f);
-  }
-
+  // FX output is in dryBuffer. Host buffer is filled from that, then Ko is applied last.
   const int procChannels = jmin(numOutputChannels, engCh);
   for (int ch = 0; ch < procChannels; ++ch)
     buffer.copyFrom(ch, 0, dryBuffer, ch, 0, numSamples);
@@ -538,7 +599,10 @@ void AudioEffectFrameworkProcessor::processBlock(AudioSampleBuffer& buffer, Midi
   for (int ch = procChannels; ch < numOutputChannels; ++ch)
     buffer.clear(ch, 0, numSamples);
 
-  pushSpectrumMono(dryBuffer, procChannels, numSamples);
+  // Post-FX output calibration only (after Gain→Gate→OS→Effect→Level).
+  applyOutputCalibration (buffer, numOutputChannels, numSamples);
+
+  pushSpectrumMono(buffer, procChannels, numSamples);
 
   float leftPeak = 0.0f, rightPeak = 0.0f;
   if (numOutputChannels > 0) leftPeak = buffer.getMagnitude(0, 0, numSamples);
@@ -579,8 +643,13 @@ void AudioEffectFrameworkProcessor::getStateInformation(MemoryBlock& destData)
   std::unique_ptr<XmlElement> xml(parameters.valueTreeState.state.createXml());
   if (xml != nullptr)
   {
-    xml->setAttribute ("calibrationK", (double) calibrationK.load());
+    xml->setAttribute ("calibrationKi", (double) calibrationKi.load());
+    xml->setAttribute ("calibrationKo", (double) calibrationKo.load());
     xml->setAttribute ("calibrationRefVoltage", (double) calibrationRefVoltage.load());
+    xml->setAttribute ("calibrationMeasuredOutputVoltage",
+                       (double) calibrationMeasuredOutputVoltage.load());
+    // Legacy alias for older sessions.
+    xml->setAttribute ("calibrationK", (double) calibrationKi.load());
   }
   copyXmlToBinary(*xml, destData);
 }
@@ -591,10 +660,20 @@ void AudioEffectFrameworkProcessor::setStateInformation(const void* data, int si
   if (xmlState != nullptr)
     if (xmlState->hasTagName(parameters.valueTreeState.state.getType()))
     {
-      if (xmlState->hasAttribute ("calibrationK"))
-        calibrationK.store ((float) xmlState->getDoubleAttribute ("calibrationK", 1.0));
+      if (xmlState->hasAttribute ("calibrationKi"))
+        calibrationKi.store ((float) xmlState->getDoubleAttribute ("calibrationKi", 1.0));
+      else if (xmlState->hasAttribute ("calibrationK"))
+        calibrationKi.store ((float) xmlState->getDoubleAttribute ("calibrationK", 1.0));
+
+      if (xmlState->hasAttribute ("calibrationKo"))
+        calibrationKo.store ((float) xmlState->getDoubleAttribute ("calibrationKo", 1.0));
+
       if (xmlState->hasAttribute ("calibrationRefVoltage"))
         calibrationRefVoltage.store ((float) xmlState->getDoubleAttribute ("calibrationRefVoltage", 1.0));
+
+      if (xmlState->hasAttribute ("calibrationMeasuredOutputVoltage"))
+        calibrationMeasuredOutputVoltage.store (
+            (float) xmlState->getDoubleAttribute ("calibrationMeasuredOutputVoltage", 1.0));
 
       parameters.valueTreeState.state = ValueTree::fromXml(*xmlState);
     }

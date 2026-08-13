@@ -23,7 +23,7 @@ public:
         AudioSettings = 0,
         NoiseGate,
         PeakDisplay,
-        InputCalibration,
+        Calibration,
         Modeling
     };
 

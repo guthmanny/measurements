@@ -104,15 +104,33 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   float getMeterDisplayRightNormalized() const noexcept { return meterDisplayRightNorm; }
 
   float getInputRms() const noexcept { return inputRmsMono.load(); }
-  float getCalibrationK() const noexcept { return calibrationK.load(); }
+  /** Pre-FX input scale: Ki = V_ref / RMS; applied before the effect chain. */
+  float getCalibrationKi() const noexcept { return calibrationKi.load(); }
+  /** Alias for getCalibrationKi() (legacy name). */
+  float getCalibrationK() const noexcept { return getCalibrationKi(); }
+  /** Post-FX output compensation: Ko = V_ref / V_out_measured (applied after the effect chain). */
+  float getCalibrationKo() const noexcept { return calibrationKo.load(); }
   float getCalibrationReferenceVoltage() const noexcept { return calibrationRefVoltage.load(); }
-  float getMappedInputVoltage() const noexcept { return getInputRms() * getCalibrationK(); }
+  float getCalibrationMeasuredOutputVoltage() const noexcept { return calibrationMeasuredOutputVoltage.load(); }
+  float getMappedInputVoltage() const noexcept { return getInputRms() * getCalibrationKi(); }
   void setInputRmsMeteringEnabled (bool shouldEnable) noexcept;
   bool isInputRmsMeteringEnabled() const noexcept { return inputRmsMeteringEnabled.load(); }
   bool calibrateInputFromReference (float referenceVoltage, float rms);
-  void setCalibrationK (float k) noexcept;
+  /** Ko = V_ref / measuredOutputVoltage; uses stored Reference V. */
+  bool calibrateOutputFromMeasured (float measuredOutputVoltage);
+  void setCalibrationKi (float ki) noexcept;
+  void setCalibrationK (float k) noexcept { setCalibrationKi (k); }
+  void setCalibrationKo (float ko) noexcept;
   void setCalibrationReferenceVoltage (float volts) noexcept;
+  void setCalibrationMeasuredOutputVoltage (float volts) noexcept;
   void resetCalibration() noexcept;
+  void resetInputCalibration() noexcept;
+  void resetOutputCalibration() noexcept;
+
+  /** Pre-FX: multiply effect input by Ki. */
+  void applyInputCalibration (juce::AudioSampleBuffer& buffer, int numChannels, int numSamples) const noexcept;
+  /** Post-FX: multiply host output by Ko. */
+  void applyOutputCalibration (juce::AudioSampleBuffer& buffer, int numChannels, int numSamples) const noexcept;
 
   void setTunerEnabled(bool shouldEnable) noexcept;
   bool isTunerEnabled() const noexcept { return tunerEnabled.load(); }
@@ -156,7 +174,8 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   void pushTunerMono(const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void pushSpectrumMono(const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void updateInputRms (const AudioSampleBuffer& buffer, int numChannels, int numSamples);
-  void processTuningOutput(int numSamples, int numInputChannels);
+  /** Header input meter: raw ADC x Input Gain, before Ki. */
+  void updateInputMeter (const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void ensureTunerSampleRate();
 
   std::unique_ptr<MinibussEffectEngine> effectEngine_;
@@ -171,8 +190,10 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   std::atomic<float> meterRight{0.0f};
 
   std::atomic<float> inputRmsMono{0.0f};
-  std::atomic<float> calibrationK{1.0f};
+  std::atomic<float> calibrationKi{1.0f};
+  std::atomic<float> calibrationKo{1.0f};
   std::atomic<float> calibrationRefVoltage{1.0f};
+  std::atomic<float> calibrationMeasuredOutputVoltage{1.0f};
   std::atomic<bool> inputRmsMeteringEnabled{false};
   int inputRmsBlockCounter = 0;
 
