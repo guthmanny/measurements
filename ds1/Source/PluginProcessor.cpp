@@ -30,7 +30,7 @@ void mixBufferToMonoDual (juce::AudioSampleBuffer& buffer, int numChannels, int 
 Ds1AudioProcessor::Ds1AudioProcessor()
     : paramDs1Gain (parameters, "Distortion", "", 0.0f, 1.0f, 0.5f),
       paramDs1Tone (parameters, "Tone", "", 0.0f, 1.0f, 0.5f),
-      paramDs1Level (parameters, "Pedal Level", "dB", -40.0f, 0.0f, -6.0f)
+      paramDs1Level (parameters, "Pedal Level", "", 0.0f, 1.0f, 0.5f)
 {
     setParameterDefault (parameters.valueTreeState, paramInputGain.paramID, -12.0f);
     setParameterDefault (parameters.valueTreeState, paramGateThreshold.paramID, -80.0f);
@@ -60,7 +60,7 @@ void Ds1AudioProcessor::updateCustomEffectParameters()
         readParameterValue (paramDs1Gain.paramID, paramDs1Gain.defaultValue));
     getMinibussEngine().setParamNormalized (ds1Id, "tone",
         readParameterValue (paramDs1Tone.paramID, paramDs1Tone.defaultValue));
-    getMinibussEngine().setParamDomain (ds1Id, "level",
+    getMinibussEngine().setParamNormalized (ds1Id, "level",
         readParameterValue (paramDs1Level.paramID, paramDs1Level.defaultValue));
 }
 
