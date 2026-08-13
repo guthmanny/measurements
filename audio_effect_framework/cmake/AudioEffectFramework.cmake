@@ -57,8 +57,10 @@ function(aef_setup_dependencies)
 
     include(FetchContent)
 
-    set(ATOM_THEME_LOCAL "$ENV{HOME}/source/AtomTheme")
-    if(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt" AND EXISTS "D:/myCode/AtomTheme/CMakeLists.txt")
+    set(ATOM_THEME_LOCAL "$ENV{HOME}/myCode/AtomTheme")
+    if(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt" AND EXISTS "$ENV{HOME}/source/AtomTheme/CMakeLists.txt")
+        set(ATOM_THEME_LOCAL "$ENV{HOME}/source/AtomTheme")
+    elseif(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt" AND EXISTS "D:/myCode/AtomTheme/CMakeLists.txt")
         set(ATOM_THEME_LOCAL "D:/myCode/AtomTheme")
     elseif(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt" AND EXISTS "D:/source/AtomTheme/CMakeLists.txt")
         set(ATOM_THEME_LOCAL "D:/source/AtomTheme")

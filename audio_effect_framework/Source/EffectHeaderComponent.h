@@ -3,7 +3,16 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_atom_theme/juce_atom_theme.h>
 
-class EffectHeaderComponent final : public juce::Component
+/**
+    The audio-effect-specific Header.
+
+    Inherits the generic atom::HeaderBar layout skeleton and registers this
+    framework's own child controls (meters, INPUT/GATE/OUTPUT rotary sliders,
+    Settings/Tuner/Spectrum buttons, tap tempo) via addItem().  It also owns the
+    audio-domain meter logic (peak display levels / dB range) that is not part
+    of the generic AtomTheme skeleton.
+*/
+class EffectHeaderComponent final : public atom::HeaderBar
 {
 public:
     EffectHeaderComponent();
@@ -22,13 +31,9 @@ public:
     void setMeterDisplayLevels (float monoNorm, float leftNorm, float rightNorm);
     void applyMeterSettings (int displayRangeDbSpan);
 
-    void lookAndFeelChanged() override;
-    void paint (juce::Graphics& g) override;
-    void resized() override;
-
-    int getMinimumContentWidth (int heightHint = 0);
-
 private:
+    void setupRotarySlider (atom::Slider& slider, const juce::String& label, double min, double max, double value);
+
     atom::MeterBar meterLeft;
     atom::MeterBar meterRight;
     atom::ShapeButton btnSettings { "btnSettings", AtomIconLibrary::Icon::CogWheel };
