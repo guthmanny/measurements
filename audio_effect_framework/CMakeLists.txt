@@ -13,7 +13,7 @@ if(TARGET audio_effect_framework)
     return()
 endif()
 
-set(AEF_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/.." CACHE INTERNAL "")
+set(AEF_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "")
 
 add_library(audio_effect_framework STATIC
     Source/AudioEffectFrameworkProcessor.cpp
@@ -21,6 +21,9 @@ add_library(audio_effect_framework STATIC
     Source/AudioEffectFrameworkEditor.h
     Source/MinibussEffectEngine.cpp
     Source/MinibussEffectEngine.h
+    Source/MiddleProcessorEffectEngine.cpp
+    Source/MiddleProcessorEffectEngine.h
+    Source/AefAudioUtils.h
     Source/EffectHeaderComponent.cpp
     Source/EffectHeaderComponent.h
     Source/EffectFooterComponent.cpp
@@ -41,6 +44,11 @@ add_library(audio_effect_framework STATIC
     Source/PeakDisplaySettingsPanel.h
     Source/CalibrationSettingsPanel.cpp
     Source/CalibrationSettingsPanel.h
+    Source/EffectTopologyChainComponent.cpp
+    Source/EffectTopologyChainComponent.h
+    Source/EffectTopologyModule.h
+    Source/TopologySettingsPanel.cpp
+    Source/TopologySettingsPanel.h
     Source/OversamplingSettingsPanel.cpp
     Source/OversamplingSettingsPanel.h
     Source/MeterDisplayUtils.h

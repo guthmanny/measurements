@@ -30,13 +30,10 @@ juce_generate_juce_header(MoogLadder)
 target_sources(MoogLadder PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
-    Source/MoogLadderEffectEngine.cpp
-    Source/MoogLadderEffectEngine.h
     Source/MoogLadderFrCurveComponent.cpp
     Source/MoogLadderFrCurveComponent.h
     Source/MoogLadderEditor.cpp
     Source/MoogLadderEditor.h
-    Source/StandaloneMain.cpp
 )
 
 target_include_directories(MoogLadder PRIVATE

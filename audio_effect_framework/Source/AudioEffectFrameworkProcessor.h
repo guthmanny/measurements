@@ -17,6 +17,7 @@
 #include "TunerDetector.h"
 #include "SpectrumAnalyzer.h"
 #include "PluginParameter.h"
+#include "EffectTopologyModule.h"
 
 //==============================================================================
 
@@ -150,10 +151,18 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   int getSpectrumFftSize() const noexcept { return spectrumFftSize.load(); }
   double getSpectrumSampleRate() const noexcept { return currentSampleRate; }
 
+  /** Middle effect internal module chain (empty if unsupported). */
+  juce::Array<EffectTopologyModule> getEffectTopologyModules() const;
+  juce::String getEffectTopologyTitle() const;
+  bool setEffectTopologyModuleBypassed (const juce::String& moduleId, bool bypassed);
+
   /** Override in plugin subclass to push effect-specific minibuss parameters. */
   virtual void updateCustomEffectParameters() {}
 
  protected:
+  /** When true, bypass noise gate after prepare (typical for guitar pedals). */
+  virtual bool bypassNoiseGateOnStartup() const { return false; }
+
   /** Override to supply a plugin-specific minibuss engine (e.g. with a middle processor). */
   virtual std::unique_ptr<MinibussEffectEngine> createEffectEngine();
 
@@ -177,6 +186,8 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   /** Header input meter: raw ADC x Input Gain, before Ki. */
   void updateInputMeter (const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void ensureTunerSampleRate();
+  void applyEffectTopologyBypassOverrides();
+  void captureEffectTopologyBypassForState (juce::XmlElement& xml) const;
 
   std::unique_ptr<MinibussEffectEngine> effectEngine_;
   AudioSampleBuffer dryBuffer;
@@ -215,6 +226,9 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   std::atomic<bool> spectrumEnabled{false};
   std::atomic<int> spectrumFftSize{1 << SpectrumAnalyzer::defaultFftOrder};
   SpectrumAnalyzer spectrumAnalyzer;
+
+  /** Loaded from preset; applied after effect engine prepare. */
+  juce::HashMap<juce::String, bool> effectTopologyBypassOverrides_;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioEffectFrameworkProcessor)
 };

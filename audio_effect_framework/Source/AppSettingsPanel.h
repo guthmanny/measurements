@@ -9,6 +9,7 @@
 
 class AudioSettingsPanel;
 class CalibrationSettingsPanel;
+class TopologySettingsPanel;
 class AudioEffectFrameworkProcessor;
 class NoiseGateSettingsPanel;
 class OversamplingSettingsPanel;
@@ -24,6 +25,7 @@ public:
         NoiseGate,
         PeakDisplay,
         Calibration,
+        Topology,
         Modeling
     };
 
@@ -62,6 +64,7 @@ private:
     std::unique_ptr<NoiseGateSettingsPanel> noiseGatePage;
     std::unique_ptr<PeakDisplaySettingsPanel> peakDisplayPage;
     std::unique_ptr<CalibrationSettingsPanel> calibrationPage;
+    std::unique_ptr<TopologySettingsPanel> topologyPage;
     std::unique_ptr<OversamplingSettingsPanel> oversamplingPage;
     std::vector<std::unique_ptr<NavItem>> navItems;
 

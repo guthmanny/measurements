@@ -9,6 +9,8 @@
 
 #include "AudioEffectFrameworkProcessor.h"
 
+#include "minibuss/processor.hpp"
+
 #include <algorithm>
 #include <cmath>
 
@@ -542,6 +544,15 @@ void AudioEffectFrameworkProcessor::prepareToPlay(double sampleRate, int samples
   ensureEffectEngine();
   getMinibussEngine().prepare((float)sampleRate, (std::uint32_t)jmax(1, samplesPerBlock));
   updateEffectParameters();
+
+  if (bypassNoiseGateOnStartup())
+  {
+    auto& engine = getMinibussEngine();
+    if (engine.gateId() != minibuss::kInvalidObjectId)
+      engine.setProcessorBypassed (engine.gateId(), true);
+  }
+
+  applyEffectTopologyBypassOverrides();
 }
 
 void AudioEffectFrameworkProcessor::releaseResources()
@@ -638,6 +649,87 @@ void AudioEffectFrameworkProcessor::updateMeterDisplay (float attackMs, float re
 
 //==============================================================================
 
+//==============================================================================
+
+juce::Array<EffectTopologyModule> AudioEffectFrameworkProcessor::getEffectTopologyModules() const
+{
+  juce::Array<EffectTopologyModule> modules;
+
+  if (effectEngine_ == nullptr || ! effectEngine_->isReady())
+    return modules;
+
+  if (auto* proc = effectEngine_->getMiddleProcessor())
+  {
+    for (const auto& entry : proc->get_module_topology())
+    {
+      EffectTopologyModule mod;
+      mod.id = juce::String (entry.id);
+      mod.displayName = juce::String (entry.label);
+      mod.bypassed = entry.bypassed;
+      modules.add (std::move (mod));
+    }
+  }
+
+  return modules;
+}
+
+juce::String AudioEffectFrameworkProcessor::getEffectTopologyTitle() const
+{
+  if (effectEngine_ == nullptr || ! effectEngine_->isReady())
+    return {};
+
+  if (auto* proc = effectEngine_->getMiddleProcessor())
+    return juce::String (proc->description().name) + " internal signal chain";
+
+  return {};
+}
+
+bool AudioEffectFrameworkProcessor::setEffectTopologyModuleBypassed (const juce::String& moduleId, bool bypassed)
+{
+  if (effectEngine_ == nullptr || ! effectEngine_->isReady())
+    return false;
+
+  if (auto* proc = effectEngine_->getMiddleProcessor())
+  {
+    if (proc->set_module_bypass (moduleId.toStdString(), bypassed) == minibuss::Status::Ok)
+    {
+      effectTopologyBypassOverrides_.set (moduleId, bypassed);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void AudioEffectFrameworkProcessor::applyEffectTopologyBypassOverrides()
+{
+  if (effectTopologyBypassOverrides_.size() == 0)
+    return;
+
+  if (effectEngine_ == nullptr || ! effectEngine_->isReady())
+    return;
+
+  if (auto* proc = effectEngine_->getMiddleProcessor())
+  {
+    for (auto it = effectTopologyBypassOverrides_.begin(); it != effectTopologyBypassOverrides_.end(); ++it)
+      proc->set_module_bypass (it.getKey().toStdString(), it.getValue());
+  }
+}
+
+void AudioEffectFrameworkProcessor::captureEffectTopologyBypassForState (juce::XmlElement& xml) const
+{
+  const auto modules = getEffectTopologyModules();
+  if (modules.isEmpty())
+    return;
+
+  auto* topo = xml.createNewChildElement ("effectTopologyBypass");
+  for (const auto& mod : modules)
+  {
+    if (mod.bypassed)
+      topo->setAttribute (mod.id, 1);
+  }
+}
+
 void AudioEffectFrameworkProcessor::getStateInformation(MemoryBlock& destData)
 {
   std::unique_ptr<XmlElement> xml(parameters.valueTreeState.state.createXml());
@@ -650,6 +742,7 @@ void AudioEffectFrameworkProcessor::getStateInformation(MemoryBlock& destData)
                        (double) calibrationMeasuredOutputVoltage.load());
     // Legacy alias for older sessions.
     xml->setAttribute ("calibrationK", (double) calibrationKi.load());
+    captureEffectTopologyBypassForState (*xml);
   }
   copyXmlToBinary(*xml, destData);
 }
@@ -675,7 +768,19 @@ void AudioEffectFrameworkProcessor::setStateInformation(const void* data, int si
         calibrationMeasuredOutputVoltage.store (
             (float) xmlState->getDoubleAttribute ("calibrationMeasuredOutputVoltage", 1.0));
 
+      effectTopologyBypassOverrides_.clear();
+      if (auto* topo = xmlState->getChildByName ("effectTopologyBypass"))
+      {
+        for (int i = 0; i < topo->getNumAttributes(); ++i)
+        {
+          const auto name = topo->getAttributeName (i);
+          if (topo->getIntAttribute (name, 0) != 0)
+            effectTopologyBypassOverrides_.set (name, true);
+        }
+      }
+
       parameters.valueTreeState.state = ValueTree::fromXml(*xmlState);
+      applyEffectTopologyBypassOverrides();
     }
 }
 

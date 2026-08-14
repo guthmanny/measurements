@@ -24,9 +24,6 @@ juce_generate_juce_header(TemplateAudioEffects)
 target_sources(TemplateAudioEffects PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
-    Source/TemplateEffectEngine.cpp
-    Source/TemplateEffectEngine.h
-    Source/StandaloneMain.cpp
 )
 
 target_include_directories(TemplateAudioEffects PRIVATE

@@ -4,7 +4,6 @@
 
 #include "AudioEffectFrameworkProcessor.h"
 #include "AudioEffectFrameworkEditor.h"
-#include "TemplateEffectEngine.h"
 
 /** Minimal example plugin — add parameters and wire them in updateCustomEffectParameters(). */
 class TemplateAudioProcessor final : public AudioEffectFrameworkProcessor

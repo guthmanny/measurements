@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "AudioEffectFrameworkProcessor.h"
-#include "MoogLadderEffectEngine.h"
 
 /** Moog Ladder filter — NuDSP SSMEL model via minibuss.
  *
@@ -26,12 +25,12 @@ class MoogLadderAudioProcessor final : public AudioEffectFrameworkProcessor
   const juce::String getName() const override;
   bool acceptsMidi() const override;
 
-  void prepareToPlay(double sampleRate, int samplesPerBlock) override;
   void processBlock(juce::AudioSampleBuffer& buffer, juce::MidiBuffer& midiMessages) override;
 
  protected:
   std::unique_ptr<MinibussEffectEngine> createEffectEngine() override;
   void updateCustomEffectParameters() override;
+  bool bypassNoiseGateOnStartup() const override { return true; }
 
  private:
   PluginParameterLogSlider paramCutoff;

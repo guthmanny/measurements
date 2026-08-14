@@ -1,30 +1,9 @@
 #include "PluginProcessor.h"
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "AefAudioUtils.h"
+#include "MiddleProcessorEffectEngine.h"
 #include "MoogLadderEditor.h"
-
-namespace
-{
-void setParameterDefault(juce::AudioProcessorValueTreeState& state, const juce::String& paramId, float domainValue)
-{
-  if (auto* param = state.getParameter(paramId)) param->setValueNotifyingHost(param->convertTo0to1(domainValue));
-}
-
-void mixBufferToMonoDual(juce::AudioSampleBuffer& buffer, int numChannels, int numSamples)
-{
-  if (numChannels < 2 || numSamples <= 0) return;
-
-  float* left = buffer.getWritePointer(0);
-  float* right = buffer.getWritePointer(1);
-
-  for (int i = 0; i < numSamples; ++i)
-  {
-    const float mono = 0.5f * (left[i] + right[i]);
-    left[i] = mono;
-    right[i] = mono;
-  }
-}
-}  // namespace
 
 MoogLadderAudioProcessor::MoogLadderAudioProcessor()
     : paramCutoff(parameters, "Cutoff", "Hz", 20.0f, 20000.0f, 1000.0f),
@@ -35,21 +14,14 @@ MoogLadderAudioProcessor::MoogLadderAudioProcessor()
       paramQuality(parameters, "Quality", juce::StringArray{"Static", "Relinearized", "Outer2"}, 1),
       paramAdaa(parameters, "ADAA", juce::StringArray{"Off", "On"}, 1)
 {
-  setParameterDefault(parameters.valueTreeState, paramInputGain.paramID, -12.0f);
-  setParameterDefault(parameters.valueTreeState, paramGateThreshold.paramID, -80.0f);
+  aef::setParameterDefault(parameters.valueTreeState, paramInputGain.paramID, -12.0f);
+  aef::setParameterDefault(parameters.valueTreeState, paramGateThreshold.paramID, -80.0f);
 }
 
 std::unique_ptr<MinibussEffectEngine> MoogLadderAudioProcessor::createEffectEngine()
 {
-  return std::make_unique<MoogLadderEffectEngine>();
-}
-
-void MoogLadderAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
-{
-  AudioEffectFrameworkProcessor::prepareToPlay(sampleRate, samplesPerBlock);
-
-  auto& engine = getMinibussEngine();
-  if (engine.gateId() != minibuss::kInvalidObjectId) engine.setProcessorBypassed(engine.gateId(), true);
+  return std::make_unique<MiddleProcessorEffectEngine>(
+      "com.minibuss.nudsp.ssmel.moog_ladder", "Moog Ladder", "moog_ladder");
 }
 
 void MoogLadderAudioProcessor::updateCustomEffectParameters()
@@ -59,38 +31,23 @@ void MoogLadderAudioProcessor::updateCustomEffectParameters()
 
   auto& engine = getMinibussEngine();
 
-  // Cutoff: log slider, push as domain value (Hz)
   engine.setParamDomain(moogId, "cutoff", readParameterValue(paramCutoff.paramID, paramCutoff.defaultValue));
-
-  // Resonance: linear 0..1, push as domain value
   engine.setParamDomain(moogId, "resonance", readParameterValue(paramResonance.paramID, paramResonance.defaultValue));
-
-  // Drive: log slider, push as domain value
   engine.setParamDomain(moogId, "drive", readParameterValue(paramDrive.paramID, paramDrive.defaultValue));
-
-  // Mode: discrete enum, push as normalized 0..1
   engine.setParamNormalized(moogId, "mode", readParameterValue(paramMode.paramID, (float)paramMode.defaultChoice));
-
-  // Saturator: discrete enum, push as normalized 0..1
   engine.setParamNormalized(moogId, "saturator",
                             readParameterValue(paramSaturator.paramID, (float)paramSaturator.defaultChoice));
-
-  // Quality: discrete enum, push as normalized 0..1
   engine.setParamNormalized(moogId, "quality",
                             readParameterValue(paramQuality.paramID, (float)paramQuality.defaultChoice));
-
-  // ADAA: discrete enum, push as normalized 0..1
   engine.setParamNormalized(moogId, "adaa_enabled",
                             readParameterValue(paramAdaa.paramID, (float)paramAdaa.defaultChoice));
 }
 
 void MoogLadderAudioProcessor::processBlock(juce::AudioSampleBuffer& buffer, juce::MidiBuffer& midiMessages)
 {
-  mixBufferToMonoDual(buffer, getTotalNumInputChannels(), buffer.getNumSamples());
+  aef::mixBufferToMonoDual(buffer, getTotalNumInputChannels(), buffer.getNumSamples());
   AudioEffectFrameworkProcessor::processBlock(buffer, midiMessages);
-
-  if (getTotalNumOutputChannels() >= 2 && buffer.getNumSamples() > 0)
-    buffer.copyFrom(1, 0, buffer, 0, 0, buffer.getNumSamples());
+  aef::duplicateMonoToStereoOutput(buffer, getTotalNumOutputChannels(), buffer.getNumSamples());
 }
 
 AudioProcessorEditor* MoogLadderAudioProcessor::createEditor() { return new MoogLadderEditor(*this); }

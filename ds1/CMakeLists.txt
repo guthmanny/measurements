@@ -31,9 +31,6 @@ juce_generate_juce_header(Ds1)
 target_sources(Ds1 PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
-    Source/Ds1EffectEngine.cpp
-    Source/Ds1EffectEngine.h
-    Source/StandaloneMain.cpp
 )
 
 target_include_directories(Ds1 PRIVATE

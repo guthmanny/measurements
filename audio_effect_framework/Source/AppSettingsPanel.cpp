@@ -3,6 +3,7 @@
 
 #include "AudioSettingsPanel.h"
 #include "CalibrationSettingsPanel.h"
+#include "TopologySettingsPanel.h"
 #include "NoiseGateSettingsPanel.h"
 #include "OversamplingSettingsPanel.h"
 #include "PeakDisplaySettingsPanel.h"
@@ -86,11 +87,13 @@ AppSettingsPanel::AppSettingsPanel (juce::AudioDeviceManager& deviceManagerIn,
     noiseGatePage = std::make_unique<NoiseGateSettingsPanel> (processor, atomLookAndFeel);
     peakDisplayPage = std::make_unique<PeakDisplaySettingsPanel> (processor, atomLookAndFeel);
     calibrationPage = std::make_unique<CalibrationSettingsPanel> (processor, atomLookAndFeel);
+    topologyPage = std::make_unique<TopologySettingsPanel> (processor, atomLookAndFeel);
     oversamplingPage = std::make_unique<OversamplingSettingsPanel> (processor, atomLookAndFeel);
     contentHost.addChildComponent (*audioPage);
     contentHost.addChildComponent (*noiseGatePage);
     contentHost.addChildComponent (*peakDisplayPage);
     contentHost.addChildComponent (*calibrationPage);
+    contentHost.addChildComponent (*topologyPage);
     contentHost.addChildComponent (*oversamplingPage);
 
     rebuildNav();
@@ -117,6 +120,7 @@ void AppSettingsPanel::rebuildNav()
     addItem ("Noise Gate", Page::NoiseGate);
     addItem ("Peak Display", Page::PeakDisplay);
     addItem ("Calibration", Page::Calibration);
+    addItem ("Topology", Page::Topology);
     addItem ("Modeling", Page::Modeling);
 }
 
@@ -139,6 +143,8 @@ void AppSettingsPanel::showSelectedPage()
         peakDisplayPage->setVisible (selectedPage == Page::PeakDisplay);
     if (calibrationPage != nullptr)
         calibrationPage->setVisible (selectedPage == Page::Calibration);
+    if (topologyPage != nullptr)
+        topologyPage->setVisible (selectedPage == Page::Topology);
     if (oversamplingPage != nullptr)
         oversamplingPage->setVisible (selectedPage == Page::Modeling);
 }
@@ -165,6 +171,9 @@ int AppSettingsPanel::measureTallestPageHeight()
 
     if (calibrationPage != nullptr)
         tallest = juce::jmax (tallest, calibrationPage->getPreferredPanelHeight());
+
+    if (topologyPage != nullptr)
+        tallest = juce::jmax (tallest, topologyPage->getPreferredPanelHeight());
 
     if (oversamplingPage != nullptr)
         tallest = juce::jmax (tallest, oversamplingPage->getPreferredPanelHeight());
@@ -217,6 +226,8 @@ void AppSettingsPanel::resized()
         peakDisplayPage->setBounds (contentHost.getLocalBounds());
     if (calibrationPage != nullptr)
         calibrationPage->setBounds (contentHost.getLocalBounds());
+    if (topologyPage != nullptr)
+        topologyPage->setBounds (contentHost.getLocalBounds());
     if (oversamplingPage != nullptr)
         oversamplingPage->setBounds (contentHost.getLocalBounds());
 }

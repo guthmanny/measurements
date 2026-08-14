@@ -57,7 +57,17 @@ function(aef_setup_dependencies)
 
     include(FetchContent)
 
-    set(ATOM_THEME_LOCAL "$ENV{HOME}/myCode/AtomTheme")
+    if(WIN32)
+        if(EXISTS "D:/myCode/AtomTheme/CMakeLists.txt")
+            set(ATOM_THEME_LOCAL "D:/myCode/AtomTheme")
+        elseif(EXISTS "D:/source/AtomTheme/CMakeLists.txt")
+            set(ATOM_THEME_LOCAL "D:/source/AtomTheme")
+        endif()
+    endif()
+
+    if(NOT ATOM_THEME_LOCAL OR NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt")
+        set(ATOM_THEME_LOCAL "$ENV{HOME}/myCode/AtomTheme")
+    endif()
     if(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt" AND EXISTS "$ENV{HOME}/source/AtomTheme/CMakeLists.txt")
         set(ATOM_THEME_LOCAL "$ENV{HOME}/source/AtomTheme")
     elseif(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt" AND EXISTS "D:/myCode/AtomTheme/CMakeLists.txt")
@@ -117,7 +127,9 @@ endfunction()
 
 # Apply common compile/link settings to a juce_add_plugin target.
 function(aef_apply_plugin_target target)
-    target_sources(${target} PRIVATE "${AEF_EDITOR_CPP}")
+    target_sources(${target} PRIVATE
+        "${AEF_EDITOR_CPP}"
+        "${AEF_SOURCE_DIR}/Source/AefStandaloneMain.cpp")
 
     target_include_directories(${target} PRIVATE "${AEF_SOURCE_DIR}/Source")
 

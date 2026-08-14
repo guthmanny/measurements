@@ -66,6 +66,7 @@ public:
     minibuss::ObjectId downsamplerId() const noexcept { return downsamplerId_; }
     minibuss::ObjectId levelId() const noexcept { return levelId_; }
     minibuss::ObjectId middleProcessorId() const noexcept { return middleProcessorId_; }
+    minibuss::Processor* getMiddleProcessor() const noexcept { return middleProcessorProc_; }
 
 protected:
     using ProcessorCreateFn = std::function<minibuss::ObjectId (const char* uid,

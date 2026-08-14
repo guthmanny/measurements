@@ -21,11 +21,11 @@ EffectHeaderComponent::EffectHeaderComponent()
 {
   meter_display::configurePeakMeter(meterLeft, 1);
   meter_display::configurePeakMeter(meterRight, 2);
-  applyMeterSettings(80);
+  applyMeterSettings (80);
 
-  setupRotarySlider(sliderInput, "INPUT", -12.0, 12.0, 0.0);
-  setupRotarySlider(sliderGate, "GATE", -80.0, 0.0, -40.0);
-  setupRotarySlider(sliderOutput, "OUTPUT", -100.0, 0.0, 0.0);
+  ::setupRotarySlider (sliderInput, "INPUT", -12.0, 12.0, 0.0);
+  ::setupRotarySlider (sliderGate, "GATE", -80.0, 0.0, -40.0);
+  ::setupRotarySlider (sliderOutput, "OUTPUT", -100.0, 0.0, 0.0);
 
   btnSettings.setTooltip("Settings");
   btnTuner.setTooltip("Tuner");

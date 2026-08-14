@@ -1,9 +1,9 @@
 /*
-  Custom Standalone entry point for DS-1.
-  Uses the OS-native title bar, matching AtomTheme collections_app.
+  Shared Standalone entry for audio_effect_framework plugins.
+  Native title bar + Jack capture routing (matches AtomTheme collections_app).
 */
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include <JuceHeader.h>
 
 #include <juce_atom_theme/juce_atom_theme.h>
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
@@ -139,10 +139,10 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NativeStandaloneFilterWindow)
 };
 
-class Ds1StandaloneApp : public juce::JUCEApplication
+class AefStandaloneApp : public juce::JUCEApplication
 {
 public:
-    Ds1StandaloneApp()
+    AefStandaloneApp()
     {
         juce::PropertiesFile::Options options;
         options.applicationName     = getApplicationName();
@@ -224,5 +224,5 @@ private:
 
 juce::JUCEApplicationBase* juce_CreateApplication()
 {
-    return new Ds1StandaloneApp();
+    return new AefStandaloneApp();
 }

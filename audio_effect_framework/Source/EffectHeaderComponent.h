@@ -32,8 +32,6 @@ public:
     void applyMeterSettings (int displayRangeDbSpan);
 
 private:
-    void setupRotarySlider (atom::Slider& slider, const juce::String& label, double min, double max, double value);
-
     atom::MeterBar meterLeft;
     atom::MeterBar meterRight;
     atom::ShapeButton btnSettings { "btnSettings", AtomIconLibrary::Icon::CogWheel };
