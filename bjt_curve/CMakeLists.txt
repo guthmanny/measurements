@@ -2,74 +2,84 @@ cmake_minimum_required(VERSION 3.22)
 project(BjtCurveTracer VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 
-if(WIN32)
-    set(JUCE_PATH "${CMAKE_SOURCE_DIR}/../../JUCE" CACHE PATH "Path to JUCE source")
-    if(NOT EXISTS "${JUCE_PATH}/CMakeLists.txt")
-        set(JUCE_PATH "D:/source/JUCE")
-    endif()
-    add_subdirectory("${JUCE_PATH}" "${CMAKE_BINARY_DIR}/JUCE")
-else()
+set(_juce_candidates
+    "D:/source/JUCE"
+    "$ENV{USERPROFILE}/source/JUCE"
+    "${CMAKE_SOURCE_DIR}/../../JUCE"
+)
+if(NOT WIN32)
+    list(APPEND _juce_candidates "/home/guthman/source/JUCE")
     list(PREPEND CMAKE_PREFIX_PATH "/usr/local")
     find_package(JUCE CONFIG QUIET)
-    if(JUCE_FOUND)
-        message(STATUS "Using installed JUCE: ${JUCE_DIR}")
-    else()
-        set(JUCE_PATH "${CMAKE_SOURCE_DIR}/../../JUCE" CACHE PATH "Path to JUCE source")
-        if(NOT EXISTS "${JUCE_PATH}/CMakeLists.txt")
-            set(JUCE_PATH "/home/guthman/source/JUCE")
-        endif()
-        add_subdirectory("${JUCE_PATH}" "${CMAKE_BINARY_DIR}/JUCE")
-    endif()
 endif()
 
-include(FetchContent)
+if(JUCE_FOUND)
+    message(STATUS "Using installed JUCE: ${JUCE_DIR}")
+else()
+    set(JUCE_PATH "" CACHE PATH "Path to JUCE source")
+    foreach(_candidate IN LISTS _juce_candidates)
+        if(_candidate AND EXISTS "${_candidate}/CMakeLists.txt")
+            set(JUCE_PATH "${_candidate}" CACHE PATH "Path to JUCE source" FORCE)
+            break()
+        endif()
+    endforeach()
+    if(JUCE_PATH STREQUAL "" OR NOT EXISTS "${JUCE_PATH}/CMakeLists.txt")
+        message(FATAL_ERROR "JUCE not found locally. Expected checkout under D:/source/JUCE or set JUCE_PATH.")
+    endif()
+    message(STATUS "JUCE found at ${JUCE_PATH}")
+    add_subdirectory("${JUCE_PATH}" "${CMAKE_BINARY_DIR}/JUCE")
+endif()
 
-set(ATOM_THEME_LOCAL "$ENV{HOME}/source/AtomTheme")
-if(EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt")
+# Prefer explicit Windows checkouts. Do not use "$ENV{HOME}/..." when HOME is
+# empty: on Windows that collapses to absolute root paths like "/NuDSP" and can
+# silently pick a stale D:\NuDSP clone over D:\myCode\MuDSP.
+set(_atomtheme_candidates
+    "D:/myCode/AtomTheme"
+    "${CMAKE_SOURCE_DIR}/../../AtomTheme"
+    "$ENV{USERPROFILE}/source/AtomTheme"
+)
+if(DEFINED ENV{HOME} AND NOT "$ENV{HOME}" STREQUAL "")
+    list(APPEND _atomtheme_candidates "$ENV{HOME}/source/AtomTheme")
+endif()
+set(ATOM_THEME_LOCAL "")
+foreach(_candidate IN LISTS _atomtheme_candidates)
+    if(_candidate AND EXISTS "${_candidate}/CMakeLists.txt")
+        set(ATOM_THEME_LOCAL "${_candidate}")
+        break()
+    endif()
+endforeach()
+
+if(NOT ATOM_THEME_LOCAL STREQUAL "")
     message(STATUS "AtomTheme found at ${ATOM_THEME_LOCAL}")
     juce_add_module("${ATOM_THEME_LOCAL}/modules/juce_atom_theme" ALIAS_NAMESPACE juce)
 else()
-    FetchContent_Declare(
-        AtomTheme
-        GIT_REPOSITORY https://github.com/guthmanny/AtomTheme.git
-        GIT_TAG main
-        GIT_SHALLOW TRUE
-    )
-    FetchContent_MakeAvailable(AtomTheme)
-    juce_add_module("${AtomTheme_SOURCE_DIR}/modules/juce_atom_theme" ALIAS_NAMESPACE juce)
+    message(FATAL_ERROR "AtomTheme not found locally. Expected checkout under D:/myCode/AtomTheme or ${CMAKE_SOURCE_DIR}/../../AtomTheme")
 endif()
 
 set(_nudsp_candidates
-    "$ENV{HOME}/source/MuDSP"
-    "$ENV{HOME}/NuDSP"
+    "D:/myCode/MuDSP"
     "${CMAKE_SOURCE_DIR}/../../MuDSP"
+    "$ENV{USERPROFILE}/source/MuDSP"
 )
+if(DEFINED ENV{HOME} AND NOT "$ENV{HOME}" STREQUAL "")
+    list(APPEND _nudsp_candidates "$ENV{HOME}/source/MuDSP")
+endif()
 set(NUDSP_LOCAL "")
 foreach(_candidate IN LISTS _nudsp_candidates)
-    if(EXISTS "${_candidate}/CMakeLists.txt")
+    if(_candidate AND EXISTS "${_candidate}/CMakeLists.txt")
         set(NUDSP_LOCAL "${_candidate}")
         break()
     endif()
 endforeach()
 
 if(NOT NUDSP_LOCAL STREQUAL "")
-    message(STATUS "NuDSP found at ${NUDSP_LOCAL}")
+    message(STATUS "MuDSP found at ${NUDSP_LOCAL}")
     set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
     add_subdirectory("${NUDSP_LOCAL}" "${CMAKE_BINARY_DIR}/nudsp" EXCLUDE_FROM_ALL)
     set(NUDSP_CORE_INCLUDE "${NUDSP_LOCAL}/core")
 else()
-    message(STATUS "NuDSP not found locally — fetching from GitHub")
-    set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
-    FetchContent_Declare(
-        NuDSP
-        GIT_REPOSITORY https://github.com/guthmanny/NuDSP.git
-        GIT_TAG develop
-        GIT_SHALLOW TRUE
-    )
-    FetchContent_MakeAvailable(NuDSP)
-    set(NUDSP_CORE_INCLUDE "${NuDSP_SOURCE_DIR}/core")
+    message(FATAL_ERROR "MuDSP not found locally. Expected checkout under D:/myCode/MuDSP or ${CMAKE_SOURCE_DIR}/../../MuDSP")
 endif()
 
 if(TARGET nudsp AND NOT TARGET NuDSP::nudsp)

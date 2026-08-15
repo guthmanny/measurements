@@ -1,0 +1,10 @@
+^D:\MYCODE\MEASUREMENTS\DS1\BUILD_RECHECK\JUCE\TOOLS\CMAKEFILES\46CD17884AFBEC4F1636C405A8110D79\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/source/JUCE -BD:/myCode/measurements/ds1/build_recheck/JUCE/tools --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/myCode/measurements/ds1/build_recheck/JUCE/tools/JUCE.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

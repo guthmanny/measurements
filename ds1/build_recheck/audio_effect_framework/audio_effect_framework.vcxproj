@@ -1,0 +1,366 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{03FB94F6-7C6F-34D8-BC1E-5B6E60A9C32F}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.28000.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>audio_effect_framework</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\myCode\measurements\ds1\build_recheck\audio_effect_framework\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">audio_effect_framework.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">audio_effect_framework</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\myCode\measurements\ds1\build_recheck\audio_effect_framework\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">audio_effect_framework.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">audio_effect_framework</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\myCode\measurements\ds1\build_recheck\audio_effect_framework\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">audio_effect_framework.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">audio_effect_framework</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\myCode\measurements\ds1\build_recheck\audio_effect_framework\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">audio_effect_framework.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">audio_effect_framework</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.lib</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NOMINMAX;WIN32_LEAN_AND_MEAN;JucePlugin_Build_Standalone=1;JUCE_MODULE_AVAILABLE_juce_audio_processors=1;JUCE_MODULE_AVAILABLE_juce_gui_extra=1;JUCE_MODULE_AVAILABLE_juce_gui_basics=1;JUCE_MODULE_AVAILABLE_juce_graphics=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;DEBUG=1;_DEBUG=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_utils=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_audio_devices=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_atom_theme=1;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;NOMINMAX;WIN32_LEAN_AND_MEAN;JucePlugin_Build_Standalone=1;JUCE_MODULE_AVAILABLE_juce_audio_processors=1;JUCE_MODULE_AVAILABLE_juce_gui_extra=1;JUCE_MODULE_AVAILABLE_juce_gui_basics=1;JUCE_MODULE_AVAILABLE_juce_graphics=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;DEBUG=1;_DEBUG=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_utils=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_audio_devices=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_atom_theme=1;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;WIN32_LEAN_AND_MEAN;JucePlugin_Build_Standalone=1;JUCE_MODULE_AVAILABLE_juce_audio_processors=1;JUCE_MODULE_AVAILABLE_juce_gui_extra=1;JUCE_MODULE_AVAILABLE_juce_gui_basics=1;JUCE_MODULE_AVAILABLE_juce_graphics=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;NDEBUG=1;_NDEBUG=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_utils=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_audio_devices=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_atom_theme=1;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;WIN32_LEAN_AND_MEAN;JucePlugin_Build_Standalone=1;JUCE_MODULE_AVAILABLE_juce_audio_processors=1;JUCE_MODULE_AVAILABLE_juce_gui_extra=1;JUCE_MODULE_AVAILABLE_juce_gui_basics=1;JUCE_MODULE_AVAILABLE_juce_graphics=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;NDEBUG=1;_NDEBUG=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_utils=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_audio_devices=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_atom_theme=1;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;WIN32_LEAN_AND_MEAN;JucePlugin_Build_Standalone=1;JUCE_MODULE_AVAILABLE_juce_audio_processors=1;JUCE_MODULE_AVAILABLE_juce_gui_extra=1;JUCE_MODULE_AVAILABLE_juce_gui_basics=1;JUCE_MODULE_AVAILABLE_juce_graphics=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;NDEBUG=1;_NDEBUG=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_utils=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_audio_devices=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_atom_theme=1;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;WIN32_LEAN_AND_MEAN;JucePlugin_Build_Standalone=1;JUCE_MODULE_AVAILABLE_juce_audio_processors=1;JUCE_MODULE_AVAILABLE_juce_gui_extra=1;JUCE_MODULE_AVAILABLE_juce_gui_basics=1;JUCE_MODULE_AVAILABLE_juce_graphics=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;NDEBUG=1;_NDEBUG=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_utils=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_audio_devices=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_atom_theme=1;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /bigobj</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;WIN32_LEAN_AND_MEAN;JucePlugin_Build_Standalone=1;JUCE_MODULE_AVAILABLE_juce_audio_processors=1;JUCE_MODULE_AVAILABLE_juce_gui_extra=1;JUCE_MODULE_AVAILABLE_juce_gui_basics=1;JUCE_MODULE_AVAILABLE_juce_graphics=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;NDEBUG=1;_NDEBUG=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_utils=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_audio_devices=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_atom_theme=1;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NOMINMAX;WIN32_LEAN_AND_MEAN;JucePlugin_Build_Standalone=1;JUCE_MODULE_AVAILABLE_juce_audio_processors=1;JUCE_MODULE_AVAILABLE_juce_gui_extra=1;JUCE_MODULE_AVAILABLE_juce_gui_basics=1;JUCE_MODULE_AVAILABLE_juce_graphics=1;JUCE_MODULE_AVAILABLE_juce_events=1;JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1;NDEBUG=1;_NDEBUG=1;JUCE_MODULE_AVAILABLE_juce_core=1;JUCE_MODULE_AVAILABLE_juce_data_structures=1;JUCE_MODULE_AVAILABLE_juce_audio_basics=1;JUCE_MODULE_AVAILABLE_juce_audio_utils=1;JUCE_MODULE_AVAILABLE_juce_audio_formats=1;JUCE_MODULE_AVAILABLE_juce_audio_devices=1;JUCE_MODULE_AVAILABLE_juce_dsp=1;JUCE_MODULE_AVAILABLE_juce_atom_theme=1;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\myCode\measurements\audio_effect_framework\Source;D:\myCode\AtomTheme\demos\collections_app;D:\myCode\minibuss\include;D:\myCode\minibuss\src;\source\JUCE\modules;\source\JUCE\modules\juce_audio_processors\format_types\VST3_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lv2;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\serd;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sord\src;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\sratom;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv;\source\JUCE\modules\juce_audio_processors\format_types\LV2_SDK\lilv\src;D:\myCode\AtomTheme\modules;D:\myCode\AtomTheme\modules\juce_atom_theme\.;D:\myCode\AtomTheme\modules\juce_atom_theme\..\..;D:\myCode\AtomTheme;D:\myCode\NuDSP;D:\myCode\NuDSP\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\myCode\measurements\audio_effect_framework\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/myCode/measurements/audio_effect_framework/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/myCode/measurements/ds1 -BD:/myCode/measurements/ds1/build_recheck --check-stamp-file D:/myCode/measurements/ds1/build_recheck/audio_effect_framework/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\myCode\measurements\ds1\build_recheck\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\myCode\measurements\ds1\build_recheck\audio_effect_framework\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/myCode/measurements/audio_effect_framework/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/myCode/measurements/ds1 -BD:/myCode/measurements/ds1/build_recheck --check-stamp-file D:/myCode/measurements/ds1/build_recheck/audio_effect_framework/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\myCode\measurements\ds1\build_recheck\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\myCode\measurements\ds1\build_recheck\audio_effect_framework\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/myCode/measurements/audio_effect_framework/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/myCode/measurements/ds1 -BD:/myCode/measurements/ds1/build_recheck --check-stamp-file D:/myCode/measurements/ds1/build_recheck/audio_effect_framework/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\myCode\measurements\ds1\build_recheck\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\myCode\measurements\ds1\build_recheck\audio_effect_framework\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/myCode/measurements/audio_effect_framework/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/myCode/measurements/ds1 -BD:/myCode/measurements/ds1/build_recheck --check-stamp-file D:/myCode/measurements/ds1/build_recheck/audio_effect_framework/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\myCode\measurements\ds1\build_recheck\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\myCode\measurements\ds1\build_recheck\audio_effect_framework\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\AudioEffectFrameworkProcessor.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\AudioEffectFrameworkProcessor.h" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\AudioEffectFrameworkEditor.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\MinibussEffectEngine.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\MinibussEffectEngine.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\MiddleProcessorEffectEngine.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\MiddleProcessorEffectEngine.h" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\AefAudioUtils.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\EffectHeaderComponent.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\EffectHeaderComponent.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\EffectFooterComponent.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\EffectFooterComponent.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\TunerOverlayComponent.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\TunerOverlayComponent.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\SpectrumOverlayComponent.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\SpectrumOverlayComponent.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\SpectrumCurveComponent.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\SpectrumCurveComponent.h" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\SpectrumAnalyzer.h" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\TunerDetector.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\AppSettingsPanel.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\AppSettingsPanel.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\NoiseGateSettingsPanel.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\NoiseGateSettingsPanel.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\PeakDisplaySettingsPanel.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\PeakDisplaySettingsPanel.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\CalibrationSettingsPanel.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\CalibrationSettingsPanel.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\EffectTopologyChainComponent.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\EffectTopologyChainComponent.h" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\EffectTopologyModule.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\TopologySettingsPanel.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\TopologySettingsPanel.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\OversamplingSettingsPanel.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\OversamplingSettingsPanel.h" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\MeterDisplayUtils.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\CompressorCurveComponent.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\CompressorCurveComponent.h" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\CompressorKnee.h" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\PluginParameter.h" />
+    <ClCompile Include="D:\myCode\measurements\audio_effect_framework\Source\JackCaptureRouting.cpp" />
+    <ClInclude Include="D:\myCode\measurements\audio_effect_framework\Source\JackCaptureRouting.h" />
+    <ClCompile Include="D:\myCode\AtomTheme\demos\collections_app\AudioSettingsPanel.cpp" />
+    <ClInclude Include="D:\myCode\AtomTheme\demos\collections_app\AudioSettingsPanel.h" />
+    <ClCompile Include="\source\JUCE\modules\juce_audio_processors\juce_audio_processors.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_audio_processors\juce_audio_processors_ara.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_audio_processors\juce_audio_processors_lv2_libs.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_gui_extra\juce_gui_extra.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_gui_basics\juce_gui_basics.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_graphics\juce_graphics.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_graphics\juce_graphics_Harfbuzz.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_graphics\juce_graphics_Sheenbidi.c" />
+    <ClCompile Include="\source\JUCE\modules\juce_events\juce_events.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_core\juce_core.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_core\juce_core_CompilationTime.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_data_structures\juce_data_structures.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_audio_basics\juce_audio_basics.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_audio_utils\juce_audio_utils.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_audio_formats\juce_audio_formats.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_audio_devices\juce_audio_devices.cpp" />
+    <ClCompile Include="\source\JUCE\modules\juce_dsp\juce_dsp.cpp" />
+    <ClCompile Include="D:\myCode\AtomTheme\modules\juce_atom_theme\juce_atom_theme.cpp" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="D:\myCode\measurements\ds1\build_recheck\ZERO_CHECK.vcxproj">
+      <Project>{0E128941-1B66-3526-BA13-3228456F9E99}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\myCode\measurements\ds1\build_recheck\minibuss\minibuss_plugin.vcxproj">
+      <Project>{8391293D-B83F-38A5-BCAF-28B425625BD9}</Project>
+      <Name>minibuss_plugin</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\myCode\measurements\ds1\build_recheck\minibuss\NuDSP\nudsp.vcxproj">
+      <Project>{71598FAA-8164-3EFD-9D77-AFC548BAF0C6}</Project>
+      <Name>nudsp</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

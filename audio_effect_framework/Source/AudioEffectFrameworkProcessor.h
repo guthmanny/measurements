@@ -127,6 +127,8 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   void resetCalibration() noexcept;
   void resetInputCalibration() noexcept;
   void resetOutputCalibration() noexcept;
+  bool saveCalibrationToFile (const juce::File& file) const;
+  bool loadCalibrationFromFile (const juce::File& file);
 
   /** Pre-FX: multiply effect input by Ki. */
   void applyInputCalibration (juce::AudioSampleBuffer& buffer, int numChannels, int numSamples) const noexcept;

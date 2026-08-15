@@ -31,6 +31,9 @@ private:
     void calibrateOutputFromUi();
     void resetInputCalibration();
     void resetOutputCalibration();
+    void saveCalibrationFromUi();
+    void loadCalibrationFromUi();
+    void syncUiFromProcessor();
     void syncMeteringEnabled();
     void configureHorizontalSlider (atom::Slider& slider, double minV, double maxV, double interval,
                                     const juce::String& suffix);
@@ -49,6 +52,8 @@ private:
     atom::TextButton resetInputButton { "resetInputButton", "Reset Ki" };
     atom::TextButton calibrateOutputButton { "calibrateOutputButton", "Calibrate Ko" };
     atom::TextButton resetOutputButton { "resetOutputButton", "Reset Ko" };
+    atom::TextButton saveCalibrationButton { "saveCalibrationButton", "Save" };
+    atom::TextButton loadCalibrationButton { "loadCalibrationButton", "Load" };
     atom::Label statusLabel { "statusLabel", {} };
 
     std::unique_ptr<juce::Component> rmsRow;
@@ -61,8 +66,11 @@ private:
     std::unique_ptr<juce::Component> koRow;
     std::unique_ptr<juce::Component> calibrateOutputRow;
     std::unique_ptr<juce::Component> resetOutputRow;
+    std::unique_ptr<juce::Component> saveCalibrationRow;
+    std::unique_ptr<juce::Component> loadCalibrationRow;
     std::unique_ptr<juce::Component> inputSection;
     std::unique_ptr<juce::Component> outputSection;
+    std::unique_ptr<juce::Component> fileSection;
 
     float smoothedRms = 0.0f;
     bool rmsSmoothPrimed = false;

@@ -81,6 +81,7 @@ target_link_libraries(audio_effect_framework
         juce::juce_dsp
         juce::juce_gui_basics
         juce::juce_atom_theme
+        atom_theme_core_impl
         minibuss_plugin
         NuDSP::nudsp
 )

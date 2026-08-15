@@ -178,6 +178,8 @@ CalibrationSettingsPanel::CalibrationSettingsPanel (AudioEffectFrameworkProcesso
     resetInputButton.onClick = [this] { resetInputCalibration(); };
     calibrateOutputButton.onClick = [this] { calibrateOutputFromUi(); };
     resetOutputButton.onClick = [this] { resetOutputCalibration(); };
+    saveCalibrationButton.onClick = [this] { saveCalibrationFromUi(); };
+    loadCalibrationButton.onClick = [this] { loadCalibrationFromUi(); };
 
     rmsRow = std::make_unique<calibration_settings::SettingsCardRow> ("rmsRow", "INPUT RMS", rmsValueLabel, kRowHeight);
     voltageRow = std::make_unique<calibration_settings::SettingsCardRow> ("voltageRow", "MAPPED VOLTAGE",
@@ -198,6 +200,11 @@ CalibrationSettingsPanel::CalibrationSettingsPanel (AudioEffectFrameworkProcesso
     resetOutputRow = std::make_unique<calibration_settings::SettingsCardRow> ("resetOutputRow", "RESET",
                                                                                resetOutputButton, kRowHeight);
 
+    saveCalibrationRow = std::make_unique<calibration_settings::SettingsCardRow> (
+        "saveCalibrationRow", "SAVE", saveCalibrationButton, kRowHeight);
+    loadCalibrationRow = std::make_unique<calibration_settings::SettingsCardRow> (
+        "loadCalibrationRow", "LOAD", loadCalibrationButton, kRowHeight);
+
     auto inSection = std::make_unique<calibration_settings::SettingsSection> ("Input Calibration");
     inSection->addRow (static_cast<calibration_settings::SettingsCardRow&> (*rmsRow));
     inSection->addRow (static_cast<calibration_settings::SettingsCardRow&> (*voltageRow));
@@ -214,8 +221,14 @@ CalibrationSettingsPanel::CalibrationSettingsPanel (AudioEffectFrameworkProcesso
     outSection->addRow (static_cast<calibration_settings::SettingsCardRow&> (*resetOutputRow));
     outputSection = std::move (outSection);
 
+    auto fileSec = std::make_unique<calibration_settings::SettingsSection> ("Calibration File");
+    fileSec->addRow (static_cast<calibration_settings::SettingsCardRow&> (*saveCalibrationRow));
+    fileSec->addRow (static_cast<calibration_settings::SettingsCardRow&> (*loadCalibrationRow));
+    fileSection = std::move (fileSec);
+
     addAndMakeVisible (*inputSection);
     addAndMakeVisible (*outputSection);
+    addAndMakeVisible (*fileSection);
     addAndMakeVisible (statusLabel);
 
     refreshReadouts();
@@ -232,9 +245,12 @@ CalibrationSettingsPanel::~CalibrationSettingsPanel()
         section->clearRows();
     if (auto* section = dynamic_cast<calibration_settings::SettingsSection*> (outputSection.get()))
         section->clearRows();
+    if (auto* section = dynamic_cast<calibration_settings::SettingsSection*> (fileSection.get()))
+        section->clearRows();
 
     inputSection.reset();
     outputSection.reset();
+    fileSection.reset();
     rmsRow.reset();
     voltageRow.reset();
     kiRow.reset();
@@ -245,6 +261,8 @@ CalibrationSettingsPanel::~CalibrationSettingsPanel()
     koRow.reset();
     calibrateOutputRow.reset();
     resetOutputRow.reset();
+    saveCalibrationRow.reset();
+    loadCalibrationRow.reset();
     setLookAndFeel (nullptr);
 }
 
@@ -322,6 +340,79 @@ void CalibrationSettingsPanel::resetOutputCalibration()
     refreshReadouts();
 }
 
+void CalibrationSettingsPanel::syncUiFromProcessor()
+{
+    referenceSlider.setValue (processor.getCalibrationReferenceVoltage(), juce::dontSendNotification);
+    measuredOutputSlider.setValue (processor.getCalibrationMeasuredOutputVoltage(), juce::dontSendNotification);
+    refreshReadouts();
+}
+
+void CalibrationSettingsPanel::saveCalibrationFromUi()
+{
+    const auto chooserFlags = juce::FileBrowserComponent::saveMode
+                            | juce::FileBrowserComponent::canSelectFiles
+                            | juce::FileBrowserComponent::warnAboutOverwriting;
+
+    const auto defaultFile = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                                 .getChildFile ("calibration.aefcal");
+
+    auto chooser = std::make_shared<juce::FileChooser> ("Save calibration (Ki / Ko)...",
+                                                          defaultFile,
+                                                          "*.aefcal");
+
+    chooser->launchAsync (chooserFlags, [this, chooser] (const juce::FileChooser& fc)
+    {
+        const auto file = fc.getResult();
+        if (file == juce::File())
+            return;
+
+        if (processor.saveCalibrationToFile (file))
+        {
+            statusLabel.setText ("Saved Ki / Ko to " + file.getFileName(), juce::dontSendNotification);
+            statusLabel.setHintText ("Calibration coefficients and reference voltages were written to disk.");
+        }
+        else
+        {
+            statusLabel.setText ("Failed to save calibration file", juce::dontSendNotification);
+            statusLabel.setHintText ("Check that the destination folder is writable.");
+        }
+    });
+}
+
+void CalibrationSettingsPanel::loadCalibrationFromUi()
+{
+    const auto chooserFlags = juce::FileBrowserComponent::openMode
+                            | juce::FileBrowserComponent::canSelectFiles;
+
+    const auto defaultFile = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                                 .getChildFile ("calibration.aefcal");
+
+    auto chooser = std::make_shared<juce::FileChooser> ("Load calibration (Ki / Ko)...",
+                                                          defaultFile,
+                                                          "*.aefcal");
+
+    chooser->launchAsync (chooserFlags, [this, chooser] (const juce::FileChooser& fc)
+    {
+        const auto file = fc.getResult();
+        if (file == juce::File())
+            return;
+
+        if (processor.loadCalibrationFromFile (file))
+        {
+            syncUiFromProcessor();
+            const auto kiText = formatCoeff (processor.getCalibrationKi());
+            const auto koText = formatCoeff (processor.getCalibrationKo());
+            statusLabel.setText ("Loaded Ki = " + kiText + ", Ko = " + koText, juce::dontSendNotification);
+            statusLabel.setHintText ("Calibration coefficients and reference voltages were restored from disk.");
+        }
+        else
+        {
+            statusLabel.setText ("Failed to load calibration file", juce::dontSendNotification);
+            statusLabel.setHintText ("Choose a valid .aefcal file created by Save.");
+        }
+    });
+}
+
 void CalibrationSettingsPanel::refreshReadouts()
 {
     const float rawRms = processor.getInputRms();
@@ -372,6 +463,8 @@ int CalibrationSettingsPanel::getPreferredPanelHeight() const noexcept
         sectionH += section->getPreferredHeight();
     if (auto* section = dynamic_cast<const calibration_settings::SettingsSection*> (outputSection.get()))
         sectionH += section->getPreferredHeight();
+    if (auto* section = dynamic_cast<const calibration_settings::SettingsSection*> (fileSection.get()))
+        sectionH += section->getPreferredHeight();
 
     constexpr int pad = 16;
     constexpr int introH = 72;
@@ -390,10 +483,13 @@ void CalibrationSettingsPanel::resized()
 
     int inputH = 0;
     int outputH = 0;
+    int fileH = 0;
     if (auto* section = dynamic_cast<calibration_settings::SettingsSection*> (inputSection.get()))
         inputH = section->getPreferredHeight();
     if (auto* section = dynamic_cast<calibration_settings::SettingsSection*> (outputSection.get()))
         outputH = section->getPreferredHeight();
+    if (auto* section = dynamic_cast<calibration_settings::SettingsSection*> (fileSection.get()))
+        fileH = section->getPreferredHeight();
 
     auto statusArea = area.removeFromBottom (40);
     if (area.getHeight() > 8)
@@ -407,6 +503,12 @@ void CalibrationSettingsPanel::resized()
 
     if (outputSection != nullptr)
         outputSection->setBounds (area.removeFromTop (outputH));
+
+    if (area.getHeight() > 12)
+        area.removeFromTop (12);
+
+    if (fileSection != nullptr)
+        fileSection->setBounds (area.removeFromTop (fileH));
 
     statusLabel.setBounds (statusArea);
 }

@@ -418,6 +418,50 @@ void AudioEffectFrameworkProcessor::resetCalibration() noexcept
   resetOutputCalibration();
 }
 
+namespace
+{
+constexpr const char* kCalibrationFileXmlTag = "Calibration";
+
+void applyCalibrationAttributes (AudioEffectFrameworkProcessor& processor, const juce::XmlElement& xml)
+{
+  if (xml.hasAttribute ("calibrationKi"))
+    processor.setCalibrationKi ((float) xml.getDoubleAttribute ("calibrationKi", 1.0));
+  else if (xml.hasAttribute ("calibrationK"))
+    processor.setCalibrationKi ((float) xml.getDoubleAttribute ("calibrationK", 1.0));
+
+  if (xml.hasAttribute ("calibrationKo"))
+    processor.setCalibrationKo ((float) xml.getDoubleAttribute ("calibrationKo", 1.0));
+
+  if (xml.hasAttribute ("calibrationRefVoltage"))
+    processor.setCalibrationReferenceVoltage ((float) xml.getDoubleAttribute ("calibrationRefVoltage", 1.0));
+
+  if (xml.hasAttribute ("calibrationMeasuredOutputVoltage"))
+    processor.setCalibrationMeasuredOutputVoltage (
+        (float) xml.getDoubleAttribute ("calibrationMeasuredOutputVoltage", 1.0));
+}
+} // namespace
+
+bool AudioEffectFrameworkProcessor::saveCalibrationToFile (const juce::File& file) const
+{
+  juce::XmlElement xml (kCalibrationFileXmlTag);
+  xml.setAttribute ("calibrationKi", (double) calibrationKi.load());
+  xml.setAttribute ("calibrationKo", (double) calibrationKo.load());
+  xml.setAttribute ("calibrationRefVoltage", (double) calibrationRefVoltage.load());
+  xml.setAttribute ("calibrationMeasuredOutputVoltage",
+                    (double) calibrationMeasuredOutputVoltage.load());
+  return xml.writeTo (file, juce::XmlElement::TextFormat().singleLine());
+}
+
+bool AudioEffectFrameworkProcessor::loadCalibrationFromFile (const juce::File& file)
+{
+  const auto parsed = juce::parseXML (file);
+  if (parsed == nullptr || ! parsed->hasTagName (kCalibrationFileXmlTag))
+    return false;
+
+  applyCalibrationAttributes (*this, *parsed);
+  return true;
+}
+
 void AudioEffectFrameworkProcessor::applyInputCalibration (AudioSampleBuffer& buffer,
                                                            int numChannels,
                                                            int numSamples) const noexcept

@@ -1,0 +1,520 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\dry_wet.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\dry_wet_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\level_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\level_f64.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\gain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\gain_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\peak_meter_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\vu_meter_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\pitch\bitset.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\pitch\zero_crossing_collector.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\pitch\bacf_period_detector.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\pitch\pitch_detector_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\biquad\biquad_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\biquad\biquad.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\biquad\rbj_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\ap1_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\ap1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\hs1_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\lp1_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\lp1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\ls1_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\one_pole_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\one_pole.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\svf_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\svf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\rbj_filter_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\delay_line_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\delay_line.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\variable_delay_line_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\variable_delay_line.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\tape_stop_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\tape_stop.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_preamp\guvnor_preamp_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_preamp\guvnor_preamp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_postamp\guvnor_postamp_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_postamp\guvnor_postamp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_postamp\guvnor_postamp_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_opamp\guvnor_opamp_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_opamp\guvnor_opamp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_preamp\guvnor_preamp_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ac_booster_eq\ac_booster_eq_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ac_booster_eq\ac_booster_eq_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ac_booster_eq\ac_booster_eq.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ts9_tone\ts9_tone_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ts9_tone\ts9_tone_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ts9_tone\ts9_tone.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_tone\ds1_tone_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_tone\ds1_tone_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_tone\ds1_tone.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\klon_centaur_tone\klon_centaur_tone_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\klon_centaur_tone\klon_centaur_tone_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\klon_centaur_tone\klon_centaur_tone.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_opamp\ds1_opamp_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_opamp\ds1_opamp_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_opamp\ds1_opamp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds_plus_opamp\ds_plus_opamp_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds_plus_opamp\ds_plus_opamp_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds_plus_opamp\ds_plus_opamp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\rat_opamp\rat_opamp_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\rat_opamp\rat_opamp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\rat_opamp\rat_opamp_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\klon_centaur\klon_centaur_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\klon_centaur\klon_centaur_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\klon_centaur\klon_centaur.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ts9_opamp\ts9_opamp_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ts9_opamp\ts9_opamp_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ts9_opamp\ts9_opamp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ac_booster_drive\ac_booster_drive_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ac_booster_drive\ac_booster_drive_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ac_booster_drive\ac_booster_drive.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\diode_clipper\diode_clipper_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\diode_clipper\diode_clipper_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\diode_clipper\diode_clipper.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\guvnor_clipper\guvnor_clipper_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\guvnor_clipper\guvnor_clipper.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\guvnor_clipper\guvnor_clipper_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower\bjt_follower_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower\bjt_follower_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower\bjt_follower.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower_out\bjt_follower_out_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower_out\bjt_follower_out_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower_out\bjt_follower_out.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_common_emitter\bjt_common_emitter_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_common_emitter\bjt_common_emitter_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_common_emitter\bjt_common_emitter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\jfet_follower\jfet_follower_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\jfet_follower\jfet_follower_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\jfet_follower\jfet_follower.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ds1_clipper\ds1_clipper_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ds1_clipper\ds1_clipper_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ds1_clipper\ds1_clipper.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\rat_clipper\rat_clipper_design.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\rat_clipper\rat_clipper_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\rat_clipper\rat_clipper.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\down_sampler_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\up_sampler_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\table_params.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\nl_table_bake.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\pot_params.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\control_params.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\phase_gen_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\phase_gen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\alg_oscillator\alg_oscillator_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\alg_oscillator\alg_oscillator.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\osc\osc_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\osc\osc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\synth\oscillators.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\synth\processors.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\synth\modulators.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\comb_filter_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\comb_filter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\allpass_filter_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\allpass_filter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\bbd_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\bbd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\lut_oscillator\lut_oscillator.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\modulation\ring_mod_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\modulation\ring_mod.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\dynamic\env_follower_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\dynamic\env_follower.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\env_gen\ar_envelope\ar_envelope_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\env_gen\ar_envelope\ar_envelope.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\chorus\chorus_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\delay\delay_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\analog_delay\analog_delay_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\compressor\compressor.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\compressor\compressor_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\noise_gate\noise_gate_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\noise_gate\noise_gate.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\phaser\phaser_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\phaser\phase90_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\phaser\ota_phaser_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\phaser\jfet_phaser_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\reverb\reverb_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\reverb\freeverb_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\wah\wah_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\tremolo\tremolo_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\leslie\leslie_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\detune\detune_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\tuner\tuner_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\distortion+\distortion_plus_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\distortion+\distortion_plus.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ts9\ts9_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ts9\ts9.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ds1\ds1_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ds1\ds1_level_control.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ds1\ds1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ac_booster\ac_booster_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ac_booster\ac_booster.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\rat\rat_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\rat\rat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\klon\klon_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\klon\klon.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\guvnor\guvnor_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\guvnor\guvnor.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\mod_matrix\mod_matrix.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\synths\synth.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\voices\voice.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\timbres\timbre.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\timbres\timbres.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\osc\osc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\one_pole\one_pole.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\amp\gain.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\lfo\lfo.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\ar_eg\ar_eg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\generated\nl_tables\full\48000\bjt_follower_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\generated\nl_tables\full\48000\bjt_common_emitter_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\generated\nl_tables\full\48000\bjt_follower_out_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\generated\nl_tables\full\48000\ds1_clipper_f32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\myCode\NuDSP\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{20A10D5B-B990-3E23-BBB6-A7BE8DFAB057}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

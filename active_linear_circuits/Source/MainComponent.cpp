@@ -2,54 +2,55 @@
 
 namespace
 {
-juce::Colour makeBackgroundColour(atom::ThemeType themeType)
-{
-    return themeType == atom::ThemeType::Dark ? juce::Colour(0xFF101217) : juce::Colour(0xFFF4F5F8);
-}
+    juce::Colour makeBackgroundColour(atom::ThemeType themeType)
+    {
+        return themeType == atom::ThemeType::Dark ? juce::Colour(0xFF101217) : juce::Colour(0xFFF4F5F8);
+    }
 
-juce::Colour makePanelColour(atom::ThemeType themeType)
-{
-    return themeType == atom::ThemeType::Dark ? juce::Colour(0xFF1A1E27) : juce::Colour(0xFFFFFFFF);
-}
+    juce::Colour makePanelColour(atom::ThemeType themeType)
+    {
+        return themeType == atom::ThemeType::Dark ? juce::Colour(0xFF1A1E27) : juce::Colour(0xFFFFFFFF);
+    }
 
-juce::Colour makeBorderColour(atom::ThemeType themeType)
-{
-    return themeType == atom::ThemeType::Dark ? juce::Colour(0xFF2B3240) : juce::Colour(0xFFD7DCE4);
-}
+    juce::Colour makeBorderColour(atom::ThemeType themeType)
+    {
+        return themeType == atom::ThemeType::Dark ? juce::Colour(0xFF2B3240) : juce::Colour(0xFFD7DCE4);
+    }
 
-struct CircuitMenuEntry
-{
-    const char* label;
-    ds1_ac::CircuitKind kind;
-};
+    struct CircuitMenuEntry
+    {
+        const char *label;
+        ds1_ac::CircuitKind kind;
+    };
 
-constexpr CircuitMenuEntry kCircuitMenuEntries[] = {
-    {"DS-1", ds1_ac::CircuitKind::Ds1Opamp},
-    {"RAT", ds1_ac::CircuitKind::RatOpamp},
-    {"Guvnor Preamp", ds1_ac::CircuitKind::GuvnorPreamp},
-    {"Guvnor Postamp", ds1_ac::CircuitKind::GuvnorPostamp},
-    {"Guvnor OpAmp", ds1_ac::CircuitKind::GuvnorOpamp},
-    {"TS-9 Tone", ds1_ac::CircuitKind::Ts9Tone},
-    {"DS-1 Tone", ds1_ac::CircuitKind::Ds1Tone},
-    {"DS+", ds1_ac::CircuitKind::DsPlusOpamp},
-    {"Klon Centaur Tone", ds1_ac::CircuitKind::KlonCentaurTone},
-    {"AC Booster EQ", ds1_ac::CircuitKind::AcBoosterEq},
-    {"DS-1 Clipper", ds1_ac::CircuitKind::Ds1Clipper},
-    {"Diode Clipper", ds1_ac::CircuitKind::DiodeClipper},
-    {"RAT Clipper", ds1_ac::CircuitKind::RatClipper},
-    {"TS-9 OpAmp", ds1_ac::CircuitKind::Ts9Opamp},
-    {"AC Booster Drive", ds1_ac::CircuitKind::AcBoosterDrive},
-    {"Klon Centaur", ds1_ac::CircuitKind::KlonCentaur},
-    {"Guvnor Clipper", ds1_ac::CircuitKind::GuvnorClipper},
-    {"BJT Follower", ds1_ac::CircuitKind::BjtFollower},
-    {"BJT Follower Out", ds1_ac::CircuitKind::BjtFollowerOut},
-    {"BJT Common Emitter", ds1_ac::CircuitKind::BjtCommonEmitter},
-    {"JFET Follower", ds1_ac::CircuitKind::JfetFollower},
-};
+    constexpr CircuitMenuEntry kCircuitMenuEntries[] = {
+        {"DS-1", ds1_ac::CircuitKind::Ds1Opamp},
+        {"RAT", ds1_ac::CircuitKind::RatOpamp},
+        {"Guvnor Preamp", ds1_ac::CircuitKind::GuvnorPreamp},
+        {"Guvnor Postamp", ds1_ac::CircuitKind::GuvnorPostamp},
+        {"Guvnor OpAmp", ds1_ac::CircuitKind::GuvnorOpamp},
+        {"Guvnor Level", ds1_ac::CircuitKind::GuvnorLevel},
+        {"TS-9 Tone", ds1_ac::CircuitKind::Ts9Tone},
+        {"DS-1 Tone", ds1_ac::CircuitKind::Ds1Tone},
+        {"DS+", ds1_ac::CircuitKind::DsPlusOpamp},
+        {"Klon Centaur Tone", ds1_ac::CircuitKind::KlonCentaurTone},
+        {"AC Booster EQ", ds1_ac::CircuitKind::AcBoosterEq},
+        {"DS-1 Clipper", ds1_ac::CircuitKind::Ds1Clipper},
+        {"Diode Clipper", ds1_ac::CircuitKind::DiodeClipper},
+        {"RAT Clipper", ds1_ac::CircuitKind::RatClipper},
+        {"TS-9 OpAmp", ds1_ac::CircuitKind::Ts9Opamp},
+        {"AC Booster Drive", ds1_ac::CircuitKind::AcBoosterDrive},
+        {"Klon Centaur", ds1_ac::CircuitKind::KlonCentaur},
+        {"Guvnor Clipper", ds1_ac::CircuitKind::GuvnorClipper},
+        {"BJT Follower", ds1_ac::CircuitKind::BjtFollower},
+        {"BJT Follower Out", ds1_ac::CircuitKind::BjtFollowerOut},
+        {"BJT Common Emitter", ds1_ac::CircuitKind::BjtCommonEmitter},
+        {"JFET Follower", ds1_ac::CircuitKind::JfetFollower},
+    };
 
-constexpr int kKnobColumnWidth = 72;
-constexpr int kKnobSize = 56;
-}  // namespace
+    constexpr int kKnobColumnWidth = 72;
+    constexpr int kKnobSize = 56;
+} // namespace
 
 MainComponent::MainComponent()
 {
@@ -108,7 +109,8 @@ MainComponent::MainComponent()
     taperBox.addItem("3B", 8);
     taperBox.setSelectedId(ds1_ac::potTaperComboId(ds1_ac::defaultPotTaper(ds1_ac::CircuitKind::Ds1Opamp)),
                            juce::dontSendNotification);
-    taperBox.onChange = [this]() { updatePlotView(); };
+    taperBox.onChange = [this]()
+    { updatePlotView(); };
 
     sampleRateLabel.setText("Fs", juce::dontSendNotification);
     sampleRateLabel.setJustificationType(juce::Justification::centredLeft);
@@ -119,7 +121,8 @@ MainComponent::MainComponent()
     sampleRateBox.addItem("192 kHz", 3);
     sampleRateBox.addItem("384 kHz", 4);
     sampleRateBox.setSelectedId(2, juce::dontSendNotification);
-    sampleRateBox.onChange = [this]() { updatePlotView(); };
+    sampleRateBox.onChange = [this]()
+    { updatePlotView(); };
 
     gainLabel.setText("Gain", juce::dontSendNotification);
     gainLabel.setJustificationType(juce::Justification::centred);
@@ -128,7 +131,8 @@ MainComponent::MainComponent()
     configureKnob(gainKnob);
     gainKnob.setRange(0.0, 1.0, 0.01);
     gainKnob.setValue(0.5, juce::dontSendNotification);
-    gainKnob.onValueChange = [this]() { updatePlotView(); };
+    gainKnob.onValueChange = [this]()
+    { updatePlotView(); };
     addAndMakeVisible(gainKnob);
 
     secondaryLabel.setText("Treble", juce::dontSendNotification);
@@ -138,7 +142,8 @@ MainComponent::MainComponent()
     configureKnob(secondaryKnob);
     secondaryKnob.setRange(0.0, 1.0, 0.01);
     secondaryKnob.setValue(0.5, juce::dontSendNotification);
-    secondaryKnob.onValueChange = [this]() { updatePlotView(); };
+    secondaryKnob.onValueChange = [this]()
+    { updatePlotView(); };
     addAndMakeVisible(secondaryKnob);
 
     tertiaryLabel.setText("Treble", juce::dontSendNotification);
@@ -148,7 +153,8 @@ MainComponent::MainComponent()
     configureKnob(tertiaryKnob);
     tertiaryKnob.setRange(0.0, 1.0, 0.01);
     tertiaryKnob.setValue(0.5, juce::dontSendNotification);
-    tertiaryKnob.onValueChange = [this]() { updatePlotView(); };
+    tertiaryKnob.onValueChange = [this]()
+    { updatePlotView(); };
     addAndMakeVisible(tertiaryKnob);
 
     sineFreqLabel.setText("Sine Hz", juce::dontSendNotification);
@@ -160,14 +166,16 @@ MainComponent::MainComponent()
     sineFreqKnob.setValue(ds1_ac::kDefaultPreviewFreqHz, juce::dontSendNotification);
     sineFreqKnob.setSkewFactorFromMidPoint(1000.0);
     sineFreqKnob.setTextValueSuffix(" Hz");
-    sineFreqKnob.onValueChange = [this]() { updatePlotView(); };
+    sineFreqKnob.onValueChange = [this]()
+    { updatePlotView(); };
     addAndMakeVisible(sineFreqKnob);
 
     plotKindBox.addItem("Magnitude", 1);
     plotKindBox.addItem("Phase", 2);
     plotKindBox.addItem("Magnitude + Phase", 3);
     plotKindBox.setSelectedId(3, juce::dontSendNotification);
-    plotKindBox.onChange = [this]() { updatePlotView(); };
+    plotKindBox.onChange = [this]()
+    { updatePlotView(); };
 
     opampModelBox.addItem("Ideal", 1);
     opampModelBox.addItem("LM741", 2);
@@ -176,7 +184,8 @@ MainComponent::MainComponent()
     opampModelBox.addItem("LM308", 5);
     opampModelBox.addItem("TL072", 6);
     opampModelBox.setSelectedId(4, juce::dontSendNotification);
-    opampModelBox.onChange = [this]() { updatePlotView(); };
+    opampModelBox.onChange = [this]()
+    { updatePlotView(); };
 
     acPanel = std::make_unique<Ds1OpampAcPanel>();
     addAndMakeVisible(*acPanel);
@@ -199,19 +208,19 @@ MainComponent::~MainComponent()
     setLookAndFeel(nullptr);
 }
 
-void MainComponent::configureCombo(atom::ComboBox& combo)
+void MainComponent::configureCombo(atom::ComboBox &combo)
 {
     combo.setJustificationType(juce::Justification::centredLeft);
 }
 
-void MainComponent::configureKnob(atom::Slider& knob)
+void MainComponent::configureKnob(atom::Slider &knob)
 {
     knob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     knob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     knob.setValueLabelPos(atom::Slider::ValueLabelPos::Below);
 }
 
-void MainComponent::layoutKnobColumn(juce::Rectangle<int>& area, atom::Label& label, atom::Slider& knob) const
+void MainComponent::layoutKnobColumn(juce::Rectangle<int> &area, atom::Label &label, atom::Slider &knob) const
 {
     auto column = area.removeFromLeft(kKnobColumnWidth);
     label.setBounds(column.removeFromTop(18));
@@ -223,7 +232,7 @@ void MainComponent::layoutKnobColumn(juce::Rectangle<int>& area, atom::Label& la
 void MainComponent::applyTheme()
 {
     const auto themeType = atomLookAndFeel.getTheme();
-    const auto& themeColors =
+    const auto &themeColors =
         themeType == atom::ThemeType::Dark ? atom::Theme::getDarkTheme() : atom::Theme::getLightTheme();
 
     titleLabel.refreshTheme();
@@ -272,9 +281,7 @@ void MainComponent::updatePlotView()
     gainLabel.setText(ds1_ac::controlParameterName(circuit), juce::dontSendNotification);
     secondaryLabel.setText(ds1_ac::secondaryControlParameterName(circuit), juce::dontSendNotification);
     tertiaryLabel.setText(ds1_ac::tertiaryControlParameterName(circuit), juce::dontSendNotification);
-    subtitleLabel.setText("Bode plot + 1-period sine preview ("
-                              + juce::String(ds1_ac::circuitProcessFunctionName(circuit))
-                              + ")",
+    subtitleLabel.setText("Bode plot + 1-period sine preview (" + juce::String(ds1_ac::circuitProcessFunctionName(circuit)) + ")",
                           juce::dontSendNotification);
 
     opampModelBox.setVisible(usesOpamp || usesBjt || usesJfet);
@@ -368,18 +375,18 @@ nx_opamp_model_e MainComponent::getOpampModelFromSelection() const
 {
     switch (opampModelBox.getSelectedId())
     {
-        case 1:
-            return NX_OPAMP_IDEAL;
-        case 2:
-            return NX_OPAMP_LM741;
-        case 3:
-            return NX_OPAMP_JRC4558;
-        case 5:
-            return NX_OPAMP_LM308;
-        case 6:
-            return NX_OPAMP_TL072;
-        default:
-            return NX_OPAMP_BA728;
+    case 1:
+        return NX_OPAMP_IDEAL;
+    case 2:
+        return NX_OPAMP_LM741;
+    case 3:
+        return NX_OPAMP_JRC4558;
+    case 5:
+        return NX_OPAMP_LM308;
+    case 6:
+        return NX_OPAMP_TL072;
+    default:
+        return NX_OPAMP_BA728;
     }
 }
 
@@ -397,12 +404,12 @@ ds1_ac::PlotKind MainComponent::getPlotKindFromSelection() const
 {
     switch (plotKindBox.getSelectedId())
     {
-        case 1:
-            return ds1_ac::PlotKind::Magnitude;
-        case 2:
-            return ds1_ac::PlotKind::Phase;
-        default:
-            return ds1_ac::PlotKind::Both;
+    case 1:
+        return ds1_ac::PlotKind::Magnitude;
+    case 2:
+        return ds1_ac::PlotKind::Phase;
+    default:
+        return ds1_ac::PlotKind::Both;
     }
 }
 
@@ -410,18 +417,18 @@ double MainComponent::getSampleRateFromSelection() const
 {
     switch (sampleRateBox.getSelectedId())
     {
-        case 1:
-            return ds1_ac::kSampleRate48kHz;
-        case 3:
-            return ds1_ac::kSampleRate192kHz;
-        case 4:
-            return ds1_ac::kSampleRate384kHz;
-        default:
-            return ds1_ac::kSampleRate96kHz;
+    case 1:
+        return ds1_ac::kSampleRate48kHz;
+    case 3:
+        return ds1_ac::kSampleRate192kHz;
+    case 4:
+        return ds1_ac::kSampleRate384kHz;
+    default:
+        return ds1_ac::kSampleRate96kHz;
     }
 }
 
-void MainComponent::paint(juce::Graphics& g)
+void MainComponent::paint(juce::Graphics &g)
 {
     const auto themeType = atomLookAndFeel.getTheme();
     g.fillAll(makeBackgroundColour(themeType));

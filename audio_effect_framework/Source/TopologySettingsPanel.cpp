@@ -70,10 +70,19 @@ void TopologySettingsPanel::refreshFromProcessor()
     introLabel.setText (title.isNotEmpty() ? title : juce::String ("Topology"), juce::dontSendNotification);
 
     emptyLabel.setVisible (! hasModules);
-    chain.setVisible (hasModules);
 
     if (hasModules)
+    {
+        if (! chain.isShowing())
+            addAndMakeVisible (chain);
         chain.setModules (modules);
+    }
+    else
+    {
+        chain.setVisible (false);
+    }
+
+    chain.setVisible (hasModules);
 
     resized();
 }

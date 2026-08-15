@@ -45,7 +45,7 @@ endforeach()
 
 if(NOT ATOM_THEME_LOCAL STREQUAL "")
     message(STATUS "AtomTheme found at ${ATOM_THEME_LOCAL}")
-    juce_add_module("${ATOM_THEME_LOCAL}/modules/juce_atom_theme" ALIAS_NAMESPACE juce)
+    add_subdirectory("${ATOM_THEME_LOCAL}" "${CMAKE_BINARY_DIR}/atomtheme")
 else()
     FetchContent_Declare(
         AtomTheme

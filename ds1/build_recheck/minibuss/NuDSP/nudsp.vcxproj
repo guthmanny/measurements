@@ -1,0 +1,493 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{71598FAA-8164-3EFD-9D77-AFC548BAF0C6}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.28000.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>nudsp</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\myCode\measurements\ds1\build_recheck\lib\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nudsp.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nudsp</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\myCode\measurements\ds1\build_recheck\lib\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nudsp.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nudsp</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\myCode\measurements\ds1\build_recheck\lib\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">nudsp.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">nudsp</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\myCode\measurements\ds1\build_recheck\lib\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">nudsp.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">nudsp</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.lib</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;NUDSP_NL_TABLE_PROFILE_ID=1;NUDSP_NL_TABLE_BAKE_ENABLED=1;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\myCode\NuDSP;D:\myCode\NuDSP\include;D:\myCode\NuDSP\core;D:\myCode\NuDSP\core\filters;D:\myCode\NuDSP\extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\myCode\NuDSP\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/myCode/NuDSP/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/myCode/measurements/ds1 -BD:/myCode/measurements/ds1/build_recheck --check-stamp-file D:/myCode/measurements/ds1/build_recheck/minibuss/NuDSP/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-3.31\Modules\BasicConfigVersion-AnyNewerVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.31\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CPack.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CPackComponent.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTest.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTestTargets.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTestUseLaunchers.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\DartConfiguration.tcl.in;C:\Program Files\CMake\share\cmake-3.31\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.31\Templates\CPackConfig.cmake.in;D:\myCode\NuDSP\cmake\NuDSPConfig.cmake.in;D:\myCode\NuDSP\cmake\nl_table_bake.cmake;D:\myCode\measurements\ds1\build_recheck\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\myCode\measurements\ds1\build_recheck\minibuss\NuDSP\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/myCode/NuDSP/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/myCode/measurements/ds1 -BD:/myCode/measurements/ds1/build_recheck --check-stamp-file D:/myCode/measurements/ds1/build_recheck/minibuss/NuDSP/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-3.31\Modules\BasicConfigVersion-AnyNewerVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.31\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CPack.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CPackComponent.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTest.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTestTargets.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTestUseLaunchers.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\DartConfiguration.tcl.in;C:\Program Files\CMake\share\cmake-3.31\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.31\Templates\CPackConfig.cmake.in;D:\myCode\NuDSP\cmake\NuDSPConfig.cmake.in;D:\myCode\NuDSP\cmake\nl_table_bake.cmake;D:\myCode\measurements\ds1\build_recheck\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\myCode\measurements\ds1\build_recheck\minibuss\NuDSP\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/myCode/NuDSP/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/myCode/measurements/ds1 -BD:/myCode/measurements/ds1/build_recheck --check-stamp-file D:/myCode/measurements/ds1/build_recheck/minibuss/NuDSP/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-3.31\Modules\BasicConfigVersion-AnyNewerVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.31\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CPack.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CPackComponent.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTest.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTestTargets.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTestUseLaunchers.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\DartConfiguration.tcl.in;C:\Program Files\CMake\share\cmake-3.31\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.31\Templates\CPackConfig.cmake.in;D:\myCode\NuDSP\cmake\NuDSPConfig.cmake.in;D:\myCode\NuDSP\cmake\nl_table_bake.cmake;D:\myCode\measurements\ds1\build_recheck\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\myCode\measurements\ds1\build_recheck\minibuss\NuDSP\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/myCode/NuDSP/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/myCode/measurements/ds1 -BD:/myCode/measurements/ds1/build_recheck --check-stamp-file D:/myCode/measurements/ds1/build_recheck/minibuss/NuDSP/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-3.31\Modules\BasicConfigVersion-AnyNewerVersion.cmake.in;C:\Program Files\CMake\share\cmake-3.31\Modules\CMakePackageConfigHelpers.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CPack.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CPackComponent.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTest.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTestTargets.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\CTestUseLaunchers.cmake;C:\Program Files\CMake\share\cmake-3.31\Modules\DartConfiguration.tcl.in;C:\Program Files\CMake\share\cmake-3.31\Modules\WriteBasicConfigVersionFile.cmake;C:\Program Files\CMake\share\cmake-3.31\Templates\CPackConfig.cmake.in;D:\myCode\NuDSP\cmake\NuDSPConfig.cmake.in;D:\myCode\NuDSP\cmake\nl_table_bake.cmake;D:\myCode\measurements\ds1\build_recheck\CMakeFiles\cmake.verify_globs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\myCode\measurements\ds1\build_recheck\minibuss\NuDSP\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\dry_wet.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\dry_wet_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\level_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\level_f64.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\gain.c">
+      <ObjectFileName>$(IntDir)/core/amplitude/gain.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\gain_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\peak_meter_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\amplitude\vu_meter_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\pitch\bitset.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\pitch\zero_crossing_collector.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\pitch\bacf_period_detector.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\pitch\pitch_detector_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\biquad\biquad_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\biquad\biquad.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\biquad\rbj_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\ap1_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\ap1.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\hs1_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\lp1_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\lp1.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\ls1_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\one_pole_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\one_pole.c">
+      <ObjectFileName>$(IntDir)/core/filters/one_pole.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\svf_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\svf.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\filters\rbj_filter_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\delay_line_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\delay_line.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\variable_delay_line_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\variable_delay_line.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\tape_stop_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\tape_stop.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_preamp\guvnor_preamp_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_preamp\guvnor_preamp.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_postamp\guvnor_postamp_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_postamp\guvnor_postamp.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_postamp\guvnor_postamp_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_opamp\guvnor_opamp_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_opamp\guvnor_opamp.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\guvnor_preamp\guvnor_preamp_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ac_booster_eq\ac_booster_eq_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ac_booster_eq\ac_booster_eq_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ac_booster_eq\ac_booster_eq.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ts9_tone\ts9_tone_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ts9_tone\ts9_tone_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ts9_tone\ts9_tone.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_tone\ds1_tone_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_tone\ds1_tone_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_tone\ds1_tone.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\klon_centaur_tone\klon_centaur_tone_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\klon_centaur_tone\klon_centaur_tone_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\klon_centaur_tone\klon_centaur_tone.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_opamp\ds1_opamp_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_opamp\ds1_opamp_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds1_opamp\ds1_opamp.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds_plus_opamp\ds_plus_opamp_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds_plus_opamp\ds_plus_opamp_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\ds_plus_opamp\ds_plus_opamp.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\rat_opamp\rat_opamp_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\rat_opamp\rat_opamp.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\linear_circuits\rat_opamp\rat_opamp_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\klon_centaur\klon_centaur_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\klon_centaur\klon_centaur_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\klon_centaur\klon_centaur.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ts9_opamp\ts9_opamp_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ts9_opamp\ts9_opamp_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ts9_opamp\ts9_opamp.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ac_booster_drive\ac_booster_drive_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ac_booster_drive\ac_booster_drive_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ac_booster_drive\ac_booster_drive.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\diode_clipper\diode_clipper_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\diode_clipper\diode_clipper_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\diode_clipper\diode_clipper.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\guvnor_clipper\guvnor_clipper_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\guvnor_clipper\guvnor_clipper.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\guvnor_clipper\guvnor_clipper_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower\bjt_follower_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower\bjt_follower_f32.c">
+      <ObjectFileName>$(IntDir)/core/nonlinear_circuits/bjt_follower/bjt_follower_f32.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower\bjt_follower.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower_out\bjt_follower_out_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower_out\bjt_follower_out_f32.c">
+      <ObjectFileName>$(IntDir)/core/nonlinear_circuits/bjt_follower_out/bjt_follower_out_f32.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_follower_out\bjt_follower_out.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_common_emitter\bjt_common_emitter_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_common_emitter\bjt_common_emitter_f32.c">
+      <ObjectFileName>$(IntDir)/core/nonlinear_circuits/bjt_common_emitter/bjt_common_emitter_f32.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\bjt_common_emitter\bjt_common_emitter.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\jfet_follower\jfet_follower_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\jfet_follower\jfet_follower_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\jfet_follower\jfet_follower.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ds1_clipper\ds1_clipper_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ds1_clipper\ds1_clipper_f32.c">
+      <ObjectFileName>$(IntDir)/core/nonlinear_circuits/ds1_clipper/ds1_clipper_f32.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\ds1_clipper\ds1_clipper.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\rat_clipper\rat_clipper_design.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\rat_clipper\rat_clipper_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\nonlinear_circuits\rat_clipper\rat_clipper.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\down_sampler_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\up_sampler_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\table_params.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\nl_table_bake.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\pot_params.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\utilities\control_params.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\phase_gen_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\phase_gen.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\alg_oscillator\alg_oscillator_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\alg_oscillator\alg_oscillator.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\osc\osc_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\osc\osc.c">
+      <ObjectFileName>$(IntDir)/core/oscillator/osc/osc.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\core\synth\oscillators.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\synth\processors.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\synth\modulators.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\comb_filter_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\comb_filter.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\allpass_filter_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\allpass_filter.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\bbd_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\delay\bbd.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\oscillator\lut_oscillator\lut_oscillator.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\modulation\ring_mod_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\modulation\ring_mod.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\dynamic\env_follower_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\dynamic\env_follower.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\env_gen\ar_envelope\ar_envelope_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\core\env_gen\ar_envelope\ar_envelope.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\chorus\chorus_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\delay\delay_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\analog_delay\analog_delay_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\compressor\compressor.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\compressor\compressor_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\noise_gate\noise_gate_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\noise_gate\noise_gate.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\phaser\phaser_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\phaser\phase90_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\phaser\ota_phaser_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\phaser\jfet_phaser_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\reverb\reverb_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\reverb\freeverb_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\wah\wah_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\tremolo\tremolo_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\leslie\leslie_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\detune\detune_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\CAMEL\tuner\tuner_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\distortion+\distortion_plus_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\distortion+\distortion_plus.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ts9\ts9_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ts9\ts9.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ds1\ds1_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ds1\ds1_level_control.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ds1\ds1.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ac_booster\ac_booster_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\ac_booster\ac_booster.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\rat\rat_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\rat\rat.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\klon\klon_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\klon\klon.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\guvnor\guvnor_f32.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\white_box\guvnor\guvnor.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\mod_matrix\mod_matrix.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\synths\synth.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\voices\voice.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\timbres\timbre.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\timbres\timbres.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\osc\osc.c">
+      <ObjectFileName>$(IntDir)/extensions/SSMEL/units/osc/osc.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\one_pole\one_pole.c">
+      <ObjectFileName>$(IntDir)/extensions/SSMEL/units/one_pole/one_pole.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\amp\gain.c">
+      <ObjectFileName>$(IntDir)/extensions/SSMEL/units/amp/gain.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\lfo\lfo.c" />
+    <ClCompile Include="D:\myCode\NuDSP\extensions\SSMEL\units\ar_eg\ar_eg.c" />
+    <ClCompile Include="D:\myCode\NuDSP\generated\nl_tables\full\48000\bjt_follower_f32.c">
+      <ObjectFileName>$(IntDir)/generated/nl_tables/full/48000/bjt_follower_f32.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\generated\nl_tables\full\48000\bjt_common_emitter_f32.c">
+      <ObjectFileName>$(IntDir)/generated/nl_tables/full/48000/bjt_common_emitter_f32.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\generated\nl_tables\full\48000\bjt_follower_out_f32.c">
+      <ObjectFileName>$(IntDir)/generated/nl_tables/full/48000/bjt_follower_out_f32.c.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="D:\myCode\NuDSP\generated\nl_tables\full\48000\ds1_clipper_f32.c">
+      <ObjectFileName>$(IntDir)/generated/nl_tables/full/48000/ds1_clipper_f32.c.obj</ObjectFileName>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="D:\myCode\measurements\ds1\build_recheck\ZERO_CHECK.vcxproj">
+      <Project>{0E128941-1B66-3526-BA13-3228456F9E99}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
