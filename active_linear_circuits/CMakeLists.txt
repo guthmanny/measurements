@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(Ds1OpampAcTracer VERSION 0.1.0 LANGUAGES CXX)
+project(Ds1OpampAcTracer VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 
 # Parent of measurements/ (e.g. D:/myCode) holds sibling checkouts.
@@ -11,6 +11,7 @@ get_filename_component(_DEPS_ROOT "${CMAKE_SOURCE_DIR}/../.." ABSOLUTE)
 set(_juce_candidates
     "${_DEPS_ROOT}/JUCE"
     "D:/source/JUCE"
+    "${CMAKE_SOURCE_DIR}/../../../source/JUCE"
 )
 set(JUCE_PATH "" CACHE PATH "Path to JUCE source")
 foreach(_candidate IN LISTS _juce_candidates)
