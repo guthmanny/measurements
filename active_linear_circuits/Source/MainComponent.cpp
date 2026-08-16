@@ -46,6 +46,8 @@ namespace
         {"BJT Follower Out", ds1_ac::CircuitKind::BjtFollowerOut},
         {"BJT Common Emitter", ds1_ac::CircuitKind::BjtCommonEmitter},
         {"JFET Follower", ds1_ac::CircuitKind::JfetFollower},
+        {"SansAmp Classic Spk", ds1_ac::CircuitKind::SansampClassicSpk},
+        {"SansAmp Classic Micing", ds1_ac::CircuitKind::SansampClassicMicing},
     };
 
     constexpr int kKnobColumnWidth = 72;

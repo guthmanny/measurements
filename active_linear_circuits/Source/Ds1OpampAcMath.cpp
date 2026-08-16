@@ -62,6 +62,10 @@ namespace ds1_ac
             return "BJT Common Emitter";
         case CircuitKind::JfetFollower:
             return "JFET Follower";
+        case CircuitKind::SansampClassicSpk:
+            return "SansAmp Classic Spk";
+        case CircuitKind::SansampClassicMicing:
+            return "SansAmp Classic Micing";
         }
 
         return "Unknown";
@@ -178,6 +182,10 @@ namespace ds1_ac
             return "nx_bjt_common_emitter_process_f32";
         case CircuitKind::JfetFollower:
             return "nx_jfet_follower_process_f32";
+        case CircuitKind::SansampClassicSpk:
+            return "nx_sansamp_classic_spk_process_f32";
+        case CircuitKind::SansampClassicMicing:
+            return "nx_sansamp_classic_micing_process_f32";
         }
 
         return "nx_opamp_process_f32";
@@ -199,6 +207,8 @@ namespace ds1_ac
         case CircuitKind::BjtFollowerOut:
         case CircuitKind::BjtCommonEmitter:
         case CircuitKind::JfetFollower:
+        case CircuitKind::SansampClassicSpk:
+        case CircuitKind::SansampClassicMicing:
             return false;
         default:
             return true;
@@ -233,6 +243,8 @@ namespace ds1_ac
         case CircuitKind::BjtFollowerOut:
         case CircuitKind::BjtCommonEmitter:
         case CircuitKind::JfetFollower:
+        case CircuitKind::SansampClassicSpk:
+        case CircuitKind::SansampClassicMicing:
             return false;
         default:
             return true;
@@ -249,6 +261,8 @@ namespace ds1_ac
         case CircuitKind::BjtFollowerOut:
         case CircuitKind::BjtCommonEmitter:
         case CircuitKind::JfetFollower:
+        case CircuitKind::SansampClassicSpk:
+        case CircuitKind::SansampClassicMicing:
             return false;
         default:
             return true;
@@ -1015,6 +1029,26 @@ namespace ds1_ac
             nx_jfet_follower_ac_f32(follower, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
         }
 
+        void runSansampClassicSpkAcSweep(nx_sansamp_classic_spk_f32_t *spk,
+                                         double sampleRateHz,
+                                         const std::vector<double> &freqs,
+                                         std::vector<double> &magDb,
+                                         std::vector<double> &phaseDeg)
+        {
+            nx_sansamp_classic_spk_prepare_f32(spk, sampleRateHz);
+            nx_sansamp_classic_spk_ac_f32(spk, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
+        }
+
+        void runSansampClassicMicingAcSweep(nx_sansamp_classic_micing_f32_t *micing,
+                                            double sampleRateHz,
+                                            const std::vector<double> &freqs,
+                                            std::vector<double> &magDb,
+                                            std::vector<double> &phaseDeg)
+        {
+            nx_sansamp_classic_micing_prepare_f32(micing, sampleRateHz);
+            nx_sansamp_classic_micing_ac_f32(micing, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
+        }
+
         AxisRange makeFrequencyAxis(float logMin, float logMax)
         {
             AxisRange range;
@@ -1387,6 +1421,28 @@ namespace ds1_ac
 
                 nx_jfet_follower_destroy_f32(follower, nullptr);
             }
+            else if (circuit == CircuitKind::SansampClassicSpk)
+            {
+                nx_sansamp_classic_spk_f32_t *spk = nx_sansamp_classic_spk_create_f32(nullptr);
+                if (spk == nullptr)
+                    return;
+
+                runSansampClassicSpkAcSweep(spk, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+
+                nx_sansamp_classic_spk_destroy_f32(spk, nullptr);
+            }
+            else if (circuit == CircuitKind::SansampClassicMicing)
+            {
+                nx_sansamp_classic_micing_f32_t *micing = nx_sansamp_classic_micing_create_f32(nullptr);
+                if (micing == nullptr)
+                    return;
+
+                runSansampClassicMicingAcSweep(micing, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+
+                nx_sansamp_classic_micing_destroy_f32(micing, nullptr);
+            }
             else
             {
                 nx_ds1_opamp_f32_t *opamp = nx_ds1_opamp_create_f32(nullptr);
@@ -1655,6 +1711,28 @@ namespace ds1_ac
                 return true;
             }
 
+            if (circuit == CircuitKind::SansampClassicSpk)
+            {
+                nx_sansamp_classic_spk_f32_t *spk = nx_sansamp_classic_spk_create_f32(nullptr);
+                if (spk == nullptr)
+                    return false;
+
+                runSansampClassicSpkAcSweep(spk, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_spk_destroy_f32(spk, nullptr);
+                return true;
+            }
+
+            if (circuit == CircuitKind::SansampClassicMicing)
+            {
+                nx_sansamp_classic_micing_f32_t *micing = nx_sansamp_classic_micing_create_f32(nullptr);
+                if (micing == nullptr)
+                    return false;
+
+                runSansampClassicMicingAcSweep(micing, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_micing_destroy_f32(micing, nullptr);
+                return true;
+            }
+
             nx_ds1_opamp_f32_t *opamp = nx_ds1_opamp_create_f32(nullptr);
             if (opamp == nullptr)
                 return false;
@@ -1712,6 +1790,9 @@ namespace ds1_ac
             case CircuitKind::BjtCommonEmitter:
             case CircuitKind::JfetFollower:
                 return kTransistorPreviewInputScale;
+            case CircuitKind::SansampClassicSpk:
+            case CircuitKind::SansampClassicMicing:
+                return 0.5f;
             default:
                 return 1.0f;
             }
@@ -2210,6 +2291,46 @@ namespace ds1_ac
 
                 vccOut = nx_jfet_follower_get_vd_f32(follower);
                 nx_jfet_follower_destroy_f32(follower, nullptr);
+                return true;
+            }
+
+            if (circuit == CircuitKind::SansampClassicSpk)
+            {
+                nx_sansamp_classic_spk_f32_t *spk = nx_sansamp_classic_spk_create_f32(nullptr);
+                if (spk == nullptr)
+                    return false;
+
+                nx_sansamp_classic_spk_prepare_f32(spk, sampleRateHz);
+                nx_sansamp_classic_spk_reset_f32(spk);
+
+                for (int i = 0; i < 500; ++i)
+                    nx_sansamp_classic_spk_tick_f32(spk, 128);
+
+                nx_sansamp_classic_spk_process_f32(spk, input.data(), output.data(), totalSamples);
+                nx_sansamp_classic_spk_tick_f32(spk, totalSamples);
+
+                vccOut = 2.0;
+                nx_sansamp_classic_spk_destroy_f32(spk, nullptr);
+                return true;
+            }
+
+            if (circuit == CircuitKind::SansampClassicMicing)
+            {
+                nx_sansamp_classic_micing_f32_t *micing = nx_sansamp_classic_micing_create_f32(nullptr);
+                if (micing == nullptr)
+                    return false;
+
+                nx_sansamp_classic_micing_prepare_f32(micing, sampleRateHz);
+                nx_sansamp_classic_micing_reset_f32(micing);
+
+                for (int i = 0; i < 500; ++i)
+                    nx_sansamp_classic_micing_tick_f32(micing, 128);
+
+                nx_sansamp_classic_micing_process_f32(micing, input.data(), output.data(), totalSamples);
+                nx_sansamp_classic_micing_tick_f32(micing, totalSamples);
+
+                vccOut = 2.0;
+                nx_sansamp_classic_micing_destroy_f32(micing, nullptr);
                 return true;
             }
 

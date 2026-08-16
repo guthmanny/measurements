@@ -15,6 +15,8 @@
 #include "nudsp/linear_circuits/guvnor_preamp_f32.h"
 #include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
 #include "nudsp/linear_circuits/rat_opamp_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_micing_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_spk_f32.h"
 #include "nudsp/linear_circuits/ts9_tone_f32.h"
 #include "nudsp/nonlinear_circuits/ac_booster_drive_f32.h"
 #include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
@@ -54,7 +56,9 @@ namespace ds1_ac
         BjtFollower,
         BjtFollowerOut,
         BjtCommonEmitter,
-        JfetFollower
+        JfetFollower,
+        SansampClassicSpk,
+        SansampClassicMicing
     };
 
     enum class PlotKind
