@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    Chorus / Phase90 plugin — DSP via minibuss Track + Processors.
+    Chorus / Phase90 plugin — DSP via kbuss Track + Processors.
 
   ==============================================================================
 */
@@ -128,14 +128,14 @@ ChorusAudioProcessor::~ChorusAudioProcessor()
   parameters.valueTreeState.removeParameterListener(paramChorusLfoShape.paramID, this);
   spectrumEnabled.store(false);
   spectrumAnalyzer.stopAnalysis();
-  minibussEngine.release();
+  kbussEngine.release();
 }
 
 void ChorusAudioProcessor::setEffectModel(EffectModel model) noexcept
 {
   currentModel.store(model);
-  minibussEngine.setEffectModel(model == kPhase90 ? MinibussChorusEngine::EffectModel::Phase90
-                                                  : MinibussChorusEngine::EffectModel::Chorus);
+  kbussEngine.setEffectModel(model == kPhase90 ? KbussChorusEngine::EffectModel::Phase90
+                                                  : KbussChorusEngine::EffectModel::Chorus);
 }
 
 void ChorusAudioProcessor::setTunerEnabled(bool shouldEnable) noexcept
@@ -217,14 +217,14 @@ float ChorusAudioProcessor::readParameterValue(const String& paramId, float fall
 
 void ChorusAudioProcessor::syncChorusLfoShapeToEngine()
 {
-  if (! minibussEngine.isReady())
+  if (! kbussEngine.isReady())
     return;
 
   float normalized = (float) paramChorusLfoShape.defaultChoice;
   if (auto* param = parameters.valueTreeState.getParameter (paramChorusLfoShape.paramID))
     normalized = param->getValue() >= 0.5f ? 1.0f : 0.0f;
 
-  minibussEngine.setParamNormalized (minibussEngine.chorusId(), "lfo_shape", normalized);
+  kbussEngine.setParamNormalized (kbussEngine.chorusId(), "lfo_shape", normalized);
 }
 
 void ChorusAudioProcessor::parameterChanged (const String& parameterID, float /*newValue*/)
@@ -368,38 +368,38 @@ void ChorusAudioProcessor::ensureScratchBuffers(int numChannels, int numSamples)
 void ChorusAudioProcessor::updateEffectParameters()
 {
   const bool userBypass = readParameterValue(paramBypass.paramID, (float)paramBypass.defaultState) >= 0.5f;
-  minibussEngine.setBypass(userBypass);
+  kbussEngine.setBypass(userBypass);
 
-  minibussEngine.setParamDomain(minibussEngine.gainId(), "gain",
+  kbussEngine.setParamDomain(kbussEngine.gainId(), "gain",
                                 readParameterValue(paramInputGain.paramID, paramInputGain.defaultValue));
 
   float threshMinDb = readParameterValue(paramGateThreshMin.paramID, paramGateThreshMin.defaultValue);
   float threshMaxDb = readParameterValue(paramGateThreshMax.paramID, paramGateThreshMax.defaultValue);
   if (threshMinDb > threshMaxDb)
     std::swap(threshMinDb, threshMaxDb);
-  minibussEngine.setParamDomain(minibussEngine.gateId(), "thresh_min", threshMinDb);
-  minibussEngine.setParamDomain(minibussEngine.gateId(), "thresh_max", threshMaxDb);
+  kbussEngine.setParamDomain(kbussEngine.gateId(), "thresh_min", threshMinDb);
+  kbussEngine.setParamDomain(kbussEngine.gateId(), "thresh_max", threshMaxDb);
 
   const float thresholdDb =
       jlimit(threshMinDb, threshMaxDb,
              readParameterValue(paramGateThreshold.paramID, paramGateThreshold.defaultValue));
-  minibussEngine.setParamDomain(minibussEngine.gateId(), "threshold", thresholdDb);
-  minibussEngine.setParamDomain(
-      minibussEngine.gateId(), "off_at_min",
+  kbussEngine.setParamDomain(kbussEngine.gateId(), "threshold", thresholdDb);
+  kbussEngine.setParamDomain(
+      kbussEngine.gateId(), "off_at_min",
       readParameterValue(paramGateOffAtMin.paramID, (float)paramGateOffAtMin.defaultChoice) >= 0.5f ? 1.f : 0.f);
-  minibussEngine.setParamDomain(minibussEngine.gateId(), "ratio",
+  kbussEngine.setParamDomain(kbussEngine.gateId(), "ratio",
                                 readParameterValue(paramGateRatio.paramID, paramGateRatio.defaultValue));
-  minibussEngine.setParamDomain(minibussEngine.gateId(), "attack",
+  kbussEngine.setParamDomain(kbussEngine.gateId(), "attack",
                                 readParameterValue(paramGateAttack.paramID, paramGateAttack.defaultValue));
-  minibussEngine.setParamDomain(minibussEngine.gateId(), "release",
+  kbussEngine.setParamDomain(kbussEngine.gateId(), "release",
                                 readParameterValue(paramGateRelease.paramID, paramGateRelease.defaultValue));
-  minibussEngine.setParamDomain(
-      minibussEngine.gateId(), "knee_mode",
+  kbussEngine.setParamDomain(
+      kbussEngine.gateId(), "knee_mode",
       readParameterValue(paramGateKnee.paramID, (float)paramGateKnee.defaultChoice) >= 0.5f ? 1.f : 0.f);
-  minibussEngine.setParamDomain(minibussEngine.gateId(), "knee_width",
+  kbussEngine.setParamDomain(kbussEngine.gateId(), "knee_width",
                                 readParameterValue(paramGateKneeWidth.paramID, paramGateKneeWidth.defaultValue));
 
-  minibussEngine.setParamDomain(minibussEngine.levelId(), "level",
+  kbussEngine.setParamDomain(kbussEngine.levelId(), "level",
                                 readParameterValue(paramOutputGain.paramID, paramOutputGain.defaultValue));
 
   const auto chorusLimits = getChorusNuDspLimits();
@@ -413,28 +413,28 @@ void ChorusAudioProcessor::updateEffectParameters()
                                      getChorusMaxAmount(),
                                      readParameterValue (paramChorusAmount.paramID, chorusLimits.amountDefault));
 
-  minibussEngine.setParamDomain(minibussEngine.chorusId(), "rate", chorusRate);
-  minibussEngine.setParamDomain(minibussEngine.chorusId(), "delay", chorusDelay);
-  minibussEngine.setParamDomain(minibussEngine.chorusId(), "amount", chorusAmount);
-  minibussEngine.setParamDomain(minibussEngine.chorusId(), "coeff_fb",
+  kbussEngine.setParamDomain(kbussEngine.chorusId(), "rate", chorusRate);
+  kbussEngine.setParamDomain(kbussEngine.chorusId(), "delay", chorusDelay);
+  kbussEngine.setParamDomain(kbussEngine.chorusId(), "amount", chorusAmount);
+  kbussEngine.setParamDomain(kbussEngine.chorusId(), "coeff_fb",
                                 readParameterValue(paramChorusFeedback.paramID, paramChorusFeedback.defaultValue));
-  minibussEngine.setParamDomain(minibussEngine.chorusId(), "wet",
+  kbussEngine.setParamDomain(kbussEngine.chorusId(), "wet",
                                 readParameterValue(paramChorusWet.paramID, paramChorusWet.defaultValue));
   syncChorusLfoShapeToEngine();
 
-  minibussEngine.setParamDomain(minibussEngine.phase90Id(), "rate",
+  kbussEngine.setParamDomain(kbussEngine.phase90Id(), "rate",
                                 readParameterValue(paramPhase90Rate.paramID, paramPhase90Rate.defaultValue));
-  minibussEngine.setParamDomain(minibussEngine.phase90Id(), "center",
+  kbussEngine.setParamDomain(kbussEngine.phase90Id(), "center",
                                 readParameterValue(paramCenter.paramID, paramCenter.defaultValue));
-  minibussEngine.setParamDomain(minibussEngine.phase90Id(), "amount",
+  kbussEngine.setParamDomain(kbussEngine.phase90Id(), "amount",
                                 readParameterValue(paramPhase90Amount.paramID, paramPhase90Amount.defaultValue));
-  minibussEngine.setParamDomain(minibussEngine.phase90Id(), "feedback",
+  kbussEngine.setParamDomain(kbussEngine.phase90Id(), "feedback",
                                 readParameterValue(paramPhase90Feedback.paramID, paramPhase90Feedback.defaultValue));
-  minibussEngine.setParamDomain(minibussEngine.phase90Id(), "mix",
+  kbussEngine.setParamDomain(kbussEngine.phase90Id(), "mix",
                                 readParameterValue(paramMix.paramID, paramMix.defaultValue));
 
-  minibussEngine.setEffectModel(currentModel.load() == kPhase90 ? MinibussChorusEngine::EffectModel::Phase90
-                                                                : MinibussChorusEngine::EffectModel::Chorus);
+  kbussEngine.setEffectModel(currentModel.load() == kPhase90 ? KbussChorusEngine::EffectModel::Phase90
+                                                                : KbussChorusEngine::EffectModel::Chorus);
 }
 
 void ChorusAudioProcessor::mixToMonoBuffer(const AudioSampleBuffer& buffer, int numChannels, int numSamples)
@@ -668,7 +668,7 @@ void ChorusAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
   const int numChannels = jmax(1, jmax(getTotalNumInputChannels(), getTotalNumOutputChannels()));
   ensureScratchBuffers(numChannels, samplesPerBlock);
 
-  minibussEngine.prepare((float)sampleRate, (std::uint32_t)jmax(1, samplesPerBlock));
+  kbussEngine.prepare((float)sampleRate, (std::uint32_t)jmax(1, samplesPerBlock));
   updateEffectParameters();
 }
 
@@ -700,7 +700,7 @@ void ChorusAudioProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& m
 
   updateEffectParameters();
 
-  // Separate in/out buffers — do not process in-place through minibuss.
+  // Separate in/out buffers — do not process in-place through kbuss.
   constexpr int engCh = 2;
   for (int ch = 0; ch < engCh; ++ch)
   {
@@ -718,16 +718,16 @@ void ChorusAudioProcessor::processBlock(AudioSampleBuffer& buffer, MidiBuffer& m
   const float* inPtrs[2] = { processBuffer.getReadPointer(0), processBuffer.getReadPointer(1) };
   float* outPtrs[2] = { dryBuffer.getWritePointer(0), dryBuffer.getWritePointer(1) };
 
-  if (minibussEngine.isReady())
+  if (kbussEngine.isReady())
   {
     if (tunerEnabled.load())
       processTuningOutput(numSamples, numInputChannels);
     else
     {
-      minibussEngine.process(inPtrs, outPtrs, (std::uint32_t) numSamples);
+      kbussEngine.process(inPtrs, outPtrs, (std::uint32_t) numSamples);
 
       float postGainLeft = 0.0f, postGainRight = 0.0f;
-      minibussEngine.readPostGainPeaks(postGainLeft, postGainRight);
+      kbussEngine.readPostGainPeaks(postGainLeft, postGainRight);
       const float postGainMono =
           numInputChannels > 1 ? 0.5f * (postGainLeft + postGainRight) : postGainLeft;
       meterInputMono.store(postGainMono);
@@ -799,13 +799,13 @@ void ChorusAudioProcessor::applyMidiCcToParameter (PluginParameterLinSlider& tar
 }
 
 void ChorusAudioProcessor::applyMidiCcToChorusParameter (const String& paramId,
-                                                         std::string_view minibussParamId,
+                                                         std::string_view kbussParamId,
                                                          float minDomain,
                                                          float maxDomain,
                                                          float controllerNormalized)
 {
-  const float domain = minibussEngine.mapControlToDomain (minibussEngine.chorusId(),
-                                                          minibussParamId,
+  const float domain = kbussEngine.mapControlToDomain (kbussEngine.chorusId(),
+                                                          kbussParamId,
                                                           controllerNormalized,
                                                           minDomain,
                                                           maxDomain);

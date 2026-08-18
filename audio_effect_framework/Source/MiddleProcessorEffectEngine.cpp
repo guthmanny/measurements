@@ -13,5 +13,5 @@ bool MiddleProcessorEffectEngine::installMiddleProcessors (const ProcessorCreate
 {
     const auto id = create (pluginUid_, pluginName_, instanceName_);
     middleProcessorId_ = id;
-    return id != minibuss::kInvalidObjectId;
+    return id != kbuss::kInvalidObjectId;
 }

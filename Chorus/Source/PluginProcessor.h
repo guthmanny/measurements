@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    Chorus / Phase90 plugin — DSP via minibuss Track + Processors.
+    Chorus / Phase90 plugin — DSP via kbuss Track + Processors.
 
   ==============================================================================
 */
@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "MinibussChorusEngine.h"
+#include "KbussChorusEngine.h"
 #include "ChorusNuDspDefaults.h"
 #include "TunerDetector.h"
 #include "SpectrumAnalyzer.h"
@@ -206,7 +206,7 @@ class ChorusAudioProcessor : public AudioProcessor,
   void parameterChanged (const String& parameterID, float newValue) override;
   void applyMidiCcToParameter (PluginParameterLinSlider& target, float controllerNormalized);
   void applyMidiCcToChorusParameter (const String& paramId,
-                                     std::string_view minibussParamId,
+                                     std::string_view kbussParamId,
                                      float minDomain,
                                      float maxDomain,
                                      float controllerNormalized);
@@ -215,7 +215,7 @@ class ChorusAudioProcessor : public AudioProcessor,
   /** Choice index 0 = Off; 1..128 = CC 0..127. Returns -1 if Off. */
   static int midiCcChoiceToNumber (float choiceValue) noexcept;
 
-  MinibussChorusEngine minibussEngine;
+  KbussChorusEngine kbussEngine;
   AudioSampleBuffer dryBuffer;
   AudioSampleBuffer monoBuffer;
   AudioSampleBuffer processBuffer;

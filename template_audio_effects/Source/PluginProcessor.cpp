@@ -8,20 +8,21 @@ TemplateAudioProcessor::TemplateAudioProcessor()
 {
 }
 
-std::unique_ptr<MinibussEffectEngine> TemplateAudioProcessor::createEffectEngine()
+std::unique_ptr<KbussEffectEngine> TemplateAudioProcessor::createEffectEngine()
 {
     // Placeholder: swap UID/name/instance for your effect (see ds1/PluginProcessor.cpp).
+    // White-box effects use com.kbuss.nudsp.white_box.* UIDs registered in kbuss.
     return std::make_unique<MiddleProcessorEffectEngine> (
-        "com.minibuss.simple_gain", "Effect", "effect");
+        "com.kbuss.simple_gain", "Effect", "effect");
 }
 
 void TemplateAudioProcessor::updateCustomEffectParameters()
 {
-    const auto effectId = getMinibussEngine().middleProcessorId();
-    if (effectId == minibuss::kInvalidObjectId)
+    const auto effectId = getKbussEngine().middleProcessorId();
+    if (effectId == kbuss::kInvalidObjectId)
         return;
 
-    getMinibussEngine().setParamDomain (effectId, "gain",
+    getKbussEngine().setParamDomain (effectId, "gain",
         readParameterValue (paramEffectGain.paramID, paramEffectGain.defaultValue));
 }
 

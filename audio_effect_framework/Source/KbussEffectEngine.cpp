@@ -1,5 +1,5 @@
 #include "AefJuceIncludes.h"
-#include "MinibussEffectEngine.h"
+#include "KbussEffectEngine.h"
 
 #include <cmath>
 
@@ -7,30 +7,30 @@
 
 #include "plugins/builtin_plugins.hpp"
 
-MinibussEffectEngine::MinibussEffectEngine() = default;
+KbussEffectEngine::KbussEffectEngine() = default;
 
-MinibussEffectEngine::~MinibussEffectEngine()
+KbussEffectEngine::~KbussEffectEngine()
 {
     release();
 }
 
-minibuss::PluginDescription MinibussEffectEngine::makeDesc (const char* uid,
+kbuss::PluginDescription KbussEffectEngine::makeDesc (const char* uid,
                                                             const char* name,
                                                             std::uint32_t io) const
 {
-    minibuss::PluginDescription d;
+    kbuss::PluginDescription d;
     d.uid = uid;
     d.name = name;
-    d.format_name = "MinibussStatic";
+    d.format_name = kbuss::kPluginFormatNameStatic;
     d.file_or_identifier = uid;
     d.num_inputs = io;
     d.num_outputs = io;
     return d;
 }
 
-minibuss::Processor* MinibussEffectEngine::processor (minibuss::ObjectId id) const noexcept
+kbuss::Processor* KbussEffectEngine::processor (kbuss::ObjectId id) const noexcept
 {
-    if (id == minibuss::kInvalidObjectId)
+    if (id == kbuss::kInvalidObjectId)
         return nullptr;
     if (id == gainId_)
         return gainProc_;
@@ -47,20 +47,20 @@ minibuss::Processor* MinibussEffectEngine::processor (minibuss::ObjectId id) con
     return nullptr;
 }
 
-void MinibussEffectEngine::clearProcessorPointers() noexcept
+void KbussEffectEngine::clearProcessorPointers() noexcept
 {
     gainProc_ = gateProc_ = upsamplerProc_ = middleProcessorProc_ = downsamplerProc_ = levelProc_ = nullptr;
 }
 
-void MinibussEffectEngine::cacheProcessorPointers()
+void KbussEffectEngine::cacheProcessorPointers()
 {
     clearProcessorPointers();
     if (engine_ == nullptr)
         return;
 
-    auto resolve = [this] (minibuss::ObjectId id) -> minibuss::Processor*
+    auto resolve = [this] (kbuss::ObjectId id) -> kbuss::Processor*
     {
-        if (id == minibuss::kInvalidObjectId)
+        if (id == kbuss::kInvalidObjectId)
             return nullptr;
         if (auto shared = engine_->processors().processor (id))
             return shared.get();
@@ -75,7 +75,7 @@ void MinibussEffectEngine::cacheProcessorPointers()
     levelProc_ = resolve (levelId_);
 }
 
-void MinibussEffectEngine::setParamDomain (minibuss::ObjectId processorId,
+void KbussEffectEngine::setParamDomain (kbuss::ObjectId processorId,
                                            std::string_view paramId,
                                            float domainValue)
 {
@@ -89,14 +89,14 @@ void MinibussEffectEngine::setParamDomain (minibuss::ObjectId processorId,
 
     const float normalized = desc->normalize (domainValue);
     float current = 0.f;
-    if (proc->get_parameter (desc->index, current) == minibuss::Status::Ok
+    if (proc->get_parameter (desc->index, current) == kbuss::Status::Ok
         && std::abs (current - normalized) <= 1.0e-7f)
         return;
 
     (void) proc->set_parameter (desc->index, normalized);
 }
 
-void MinibussEffectEngine::setParamNormalized (minibuss::ObjectId processorId,
+void KbussEffectEngine::setParamNormalized (kbuss::ObjectId processorId,
                                                std::string_view paramId,
                                                float normalized)
 {
@@ -110,27 +110,27 @@ void MinibussEffectEngine::setParamNormalized (minibuss::ObjectId processorId,
 
     const float clamped = juce::jlimit (0.f, 1.f, normalized);
     float current = 0.f;
-    if (proc->get_parameter (desc->index, current) == minibuss::Status::Ok
+    if (proc->get_parameter (desc->index, current) == kbuss::Status::Ok
         && std::abs (current - clamped) <= 1.0e-7f)
         return;
 
     (void) proc->set_parameter (desc->index, clamped);
 }
 
-const minibuss::ParameterDescriptor* MinibussEffectEngine::paramDescriptor (
-    minibuss::ObjectId processorId, std::string_view paramId) const
+const kbuss::ParameterDescriptor* KbussEffectEngine::paramDescriptor (
+    kbuss::ObjectId processorId, std::string_view paramId) const
 {
     if (auto* proc = processor (processorId))
         return proc->parameter (paramId);
     return nullptr;
 }
 
-bool MinibussEffectEngine::installMiddleProcessors (const ProcessorCreateFn& /*create*/)
+bool KbussEffectEngine::installMiddleProcessors (const ProcessorCreateFn& /*create*/)
 {
     return true;
 }
 
-void MinibussEffectEngine::applyOversamplingToPlugins()
+void KbussEffectEngine::applyOversamplingToPlugins()
 {
     setParamDomain (upsamplerId_, "factor", (float) oversampleFactor_);
     setParamDomain (downsamplerId_, "factor", (float) oversampleFactor_);
@@ -138,14 +138,14 @@ void MinibussEffectEngine::applyOversamplingToPlugins()
     setParamDomain (downsamplerId_, "mode", (float) downsamplerMode_);
 }
 
-void MinibussEffectEngine::reprepareTrack()
+void KbussEffectEngine::reprepareTrack()
 {
     if (engine_ == nullptr || ! ready_)
         return;
     engine_->prepare (preparedSampleRate_, preparedMaxBlockSize_);
 }
 
-void MinibussEffectEngine::setOversampling (int factor, int upMode, int downMode)
+void KbussEffectEngine::setOversampling (int factor, int upMode, int downMode)
 {
     const int clampedFactor = factor >= 8 ? 8 : (factor >= 4 ? 4 : 2);
     const int clampedUp = juce::jlimit (0, 4, upMode);
@@ -167,7 +167,7 @@ void MinibussEffectEngine::setOversampling (int factor, int upMode, int downMode
         reprepareTrack();
     else if (modeChanged)
     {
-        // Mode can allocate inside NuDSP; keep it off the hot path when factor is stable
+        // Mode can allocate inside MuDSP; keep it off the hot path when factor is stable
         // by only touching the resampling plugins.
         if (upsamplerProc_ != nullptr)
             upsamplerProc_->prepare (preparedSampleRate_, preparedMaxBlockSize_);
@@ -177,12 +177,12 @@ void MinibussEffectEngine::setOversampling (int factor, int upMode, int downMode
     }
 }
 
-void MinibussEffectEngine::prepare (float sampleRate, std::uint32_t maxBlockSize)
+void KbussEffectEngine::prepare (float sampleRate, std::uint32_t maxBlockSize)
 {
     maxBlockSize = juce::jmax (std::uint32_t (1), maxBlockSize);
 
     // Device reopen for input-channel mask changes re-enters prepareToPlay with the
-    // same rate/block size. Keep the live graph so NuDSP modules are not re-inited.
+    // same rate/block size. Keep the live graph so MuDSP modules are not re-inited.
     if (ready_ && engine_ != nullptr
         && std::abs (sampleRate - preparedSampleRate_) <= 0.5f
         && maxBlockSize <= preparedMaxBlockSize_)
@@ -203,48 +203,48 @@ void MinibussEffectEngine::prepare (float sampleRate, std::uint32_t maxBlockSize
 
     release();
 
-    auto staticFormat = std::make_unique<minibuss::StaticPluginFormat>();
-    minibuss::plugins::register_builtin_plugins (*staticFormat);
+    auto staticFormat = std::make_unique<kbuss::StaticPluginFormat>();
+    kbuss::plugins::register_builtin_plugins (*staticFormat);
     formats_.add_format (std::move (staticFormat));
 
-    engine_ = std::make_unique<minibuss::AudioEngine> (2, maxBlockSize);
+    engine_ = std::make_unique<kbuss::AudioEngine> (2, maxBlockSize);
     engine_->set_format_manager (&formats_);
     engine_->prepare (sampleRate, maxBlockSize);
 
     auto [trackSt, trackId] = engine_->create_track ("main", 2);
-    if (trackSt != minibuss::Status::Ok)
+    if (trackSt != kbuss::Status::Ok)
         return;
     trackId_ = trackId;
 
     auto create = [this] (const char* uid, const char* name, const char* instance)
-        -> minibuss::ObjectId
+        -> kbuss::ObjectId
     {
         auto [st, id] = engine_->create_processor (makeDesc (uid, name), instance);
-        if (st != minibuss::Status::Ok)
-            return minibuss::kInvalidObjectId;
-        if (engine_->add_plugin_to_track (id, trackId_) != minibuss::Status::Ok)
-            return minibuss::kInvalidObjectId;
+        if (st != kbuss::Status::Ok)
+            return kbuss::kInvalidObjectId;
+        if (engine_->add_plugin_to_track (id, trackId_) != kbuss::Status::Ok)
+            return kbuss::kInvalidObjectId;
         return id;
     };
 
-    gainId_ = create ("com.minibuss.nudsp.gain", "Gain", "gain");
-    gateId_ = create ("com.minibuss.nudsp.camel.noise_gate", "Noise Gate", "gate");
-    upsamplerId_ = create ("com.minibuss.nudsp.up_sampler", "Upsampler", "upsampler");
+    gainId_ = create ("com.kbuss.nudsp.gain", "Gain", "gain");
+    gateId_ = create ("com.kbuss.nudsp.camel.noise_gate", "Noise Gate", "gate");
+    upsamplerId_ = create ("com.kbuss.nudsp.up_sampler", "Upsampler", "upsampler");
 
-    if (gainId_ == minibuss::kInvalidObjectId
-        || gateId_ == minibuss::kInvalidObjectId
-        || upsamplerId_ == minibuss::kInvalidObjectId
+    if (gainId_ == kbuss::kInvalidObjectId
+        || gateId_ == kbuss::kInvalidObjectId
+        || upsamplerId_ == kbuss::kInvalidObjectId
         || ! installMiddleProcessors (create))
     {
         release();
         return;
     }
 
-    downsamplerId_ = create ("com.minibuss.nudsp.down_sampler", "Downsampler", "downsampler");
-    levelId_ = create ("com.minibuss.nudsp.level", "Level", "level");
+    downsamplerId_ = create ("com.kbuss.nudsp.down_sampler", "Downsampler", "downsampler");
+    levelId_ = create ("com.kbuss.nudsp.level", "Level", "level");
 
-    if (downsamplerId_ == minibuss::kInvalidObjectId
-        || levelId_ == minibuss::kInvalidObjectId)
+    if (downsamplerId_ == kbuss::kInvalidObjectId
+        || levelId_ == kbuss::kInvalidObjectId)
     {
         release();
         return;
@@ -258,7 +258,7 @@ void MinibussEffectEngine::prepare (float sampleRate, std::uint32_t maxBlockSize
     cacheProcessorPointers();
     if (gainProc_ == nullptr || gateProc_ == nullptr || levelProc_ == nullptr
         || upsamplerProc_ == nullptr || downsamplerProc_ == nullptr
-        || (middleProcessorId_ != minibuss::kInvalidObjectId && middleProcessorProc_ == nullptr))
+        || (middleProcessorId_ != kbuss::kInvalidObjectId && middleProcessorProc_ == nullptr))
     {
         release();
         return;
@@ -273,39 +273,39 @@ void MinibussEffectEngine::prepare (float sampleRate, std::uint32_t maxBlockSize
     engine_->prepare (sampleRate, maxBlockSize);
 }
 
-void MinibussEffectEngine::release()
+void KbussEffectEngine::release()
 {
     ready_ = false;
     preparedSampleRate_ = 0.f;
     preparedMaxBlockSize_ = 0;
     clearProcessorPointers();
     engine_.reset();
-    formats_ = minibuss::PluginFormatManager {};
+    formats_ = kbuss::PluginFormatManager {};
     trackId_ = gainId_ = gateId_ = upsamplerId_ = downsamplerId_ = levelId_
-        = middleProcessorId_ = minibuss::kInvalidObjectId;
+        = middleProcessorId_ = kbuss::kInvalidObjectId;
 }
 
-void MinibussEffectEngine::sendProcessorBypass (minibuss::ObjectId processorId, bool bypassed)
+void KbussEffectEngine::sendProcessorBypass (kbuss::ObjectId processorId, bool bypassed)
 {
     if (auto* proc = processor (processorId))
         proc->set_bypassed (bypassed);
 }
 
-void MinibussEffectEngine::setProcessorBypassed (minibuss::ObjectId processorId, bool bypassed)
+void KbussEffectEngine::setProcessorBypassed (kbuss::ObjectId processorId, bool bypassed)
 {
     sendProcessorBypass (processorId, bypassed);
 }
 
-void MinibussEffectEngine::setBypass (bool shouldBypass)
+void KbussEffectEngine::setBypass (bool shouldBypass)
 {
     if (bypassAll_ == shouldBypass)
         return;
     bypassAll_ = shouldBypass;
-    if (middleProcessorId_ != minibuss::kInvalidObjectId)
+    if (middleProcessorId_ != kbuss::kInvalidObjectId)
         sendProcessorBypass (middleProcessorId_, shouldBypass);
 }
 
-void MinibussEffectEngine::process (std::span<const float* const> inputs,
+void KbussEffectEngine::process (std::span<const float* const> inputs,
                                     std::span<float* const> outputs,
                                     std::uint32_t numFrames)
 {
@@ -314,7 +314,7 @@ void MinibussEffectEngine::process (std::span<const float* const> inputs,
     engine_->process (inputs, outputs, numFrames);
 }
 
-void MinibussEffectEngine::readPostGainPeaks (float& leftPeak, float& rightPeak) const noexcept
+void KbussEffectEngine::readPostGainPeaks (float& leftPeak, float& rightPeak) const noexcept
 {
     leftPeak = 0.f;
     rightPeak = 0.f;

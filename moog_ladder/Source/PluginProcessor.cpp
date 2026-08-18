@@ -18,18 +18,18 @@ MoogLadderAudioProcessor::MoogLadderAudioProcessor()
   aef::setParameterDefault(parameters.valueTreeState, paramGateThreshold.paramID, -80.0f);
 }
 
-std::unique_ptr<MinibussEffectEngine> MoogLadderAudioProcessor::createEffectEngine()
+std::unique_ptr<KbussEffectEngine> MoogLadderAudioProcessor::createEffectEngine()
 {
   return std::make_unique<MiddleProcessorEffectEngine>(
-      "com.minibuss.nudsp.ssmel.moog_ladder", "Moog Ladder", "moog_ladder");
+      "com.kbuss.nudsp.ssmel.moog_ladder", "Moog Ladder", "moog_ladder");
 }
 
 void MoogLadderAudioProcessor::updateCustomEffectParameters()
 {
-  const auto moogId = getMinibussEngine().middleProcessorId();
-  if (moogId == minibuss::kInvalidObjectId) return;
+  const auto moogId = getKbussEngine().middleProcessorId();
+  if (moogId == kbuss::kInvalidObjectId) return;
 
-  auto& engine = getMinibussEngine();
+  auto& engine = getKbussEngine();
 
   engine.setParamDomain(moogId, "cutoff", readParameterValue(paramCutoff.paramID, paramCutoff.defaultValue));
   engine.setParamDomain(moogId, "resonance", readParameterValue(paramResonance.paramID, paramResonance.defaultValue));

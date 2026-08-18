@@ -5,7 +5,7 @@
 #include "AudioEffectFrameworkProcessor.h"
 #include "AudioEffectFrameworkEditor.h"
 
-/** Boss Guv'nor distortion — NuDSP white-box model via minibuss. */
+/** Boss Guv'nor distortion — MuDSP white-box model via kbuss. */
 class GuvnorAudioProcessor final : public AudioEffectFrameworkProcessor
 {
 public:
@@ -19,7 +19,7 @@ public:
     void processBlock (juce::AudioSampleBuffer& buffer, juce::MidiBuffer& midiMessages) override;
 
 protected:
-    std::unique_ptr<MinibussEffectEngine> createEffectEngine() override;
+    std::unique_ptr<KbussEffectEngine> createEffectEngine() override;
     void updateCustomEffectParameters() override;
     bool bypassNoiseGateOnStartup() const override { return true; }
 

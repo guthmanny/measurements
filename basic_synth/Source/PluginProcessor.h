@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "MinibussSynthEngine.h"
+#include "KbussSynthEngine.h"
 
 class BasicSynthAudioProcessor : public juce::AudioProcessor,
                                  private juce::AudioProcessorValueTreeState::Listener
@@ -35,7 +35,7 @@ public:
 
     juce::AudioProcessorValueTreeState parameters;
 
-    MinibussSynthEngine& engine() noexcept { return synthEngine_; }
+    KbussSynthEngine& engine() noexcept { return synthEngine_; }
 
     juce::MidiKeyboardState keyboardState;
 
@@ -44,6 +44,6 @@ private:
     void handleIncomingMidi (const juce::MidiBuffer& midiMessages);
     void updateSynthParameters();
 
-    MinibussSynthEngine synthEngine_;
+    KbussSynthEngine synthEngine_;
     juce::AudioBuffer<float> processBuffer_;
 };

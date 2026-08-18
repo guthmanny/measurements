@@ -13,23 +13,23 @@ Ds1AudioProcessor::Ds1AudioProcessor()
     aef::setParameterDefault (parameters.valueTreeState, paramGateThreshold.paramID, -80.0f);
 }
 
-std::unique_ptr<MinibussEffectEngine> Ds1AudioProcessor::createEffectEngine()
+std::unique_ptr<KbussEffectEngine> Ds1AudioProcessor::createEffectEngine()
 {
     return std::make_unique<MiddleProcessorEffectEngine> (
-        "com.minibuss.nudsp.white_box.ds1", "DS-1", "ds1");
+        "com.kbuss.nudsp.white_box.ds1", "DS-1", "ds1");
 }
 
 void Ds1AudioProcessor::updateCustomEffectParameters()
 {
-    const auto ds1Id = getMinibussEngine().middleProcessorId();
-    if (ds1Id == minibuss::kInvalidObjectId)
+    const auto ds1Id = getKbussEngine().middleProcessorId();
+    if (ds1Id == kbuss::kInvalidObjectId)
         return;
 
-    getMinibussEngine().setParamNormalized (ds1Id, "gain",
+    getKbussEngine().setParamNormalized (ds1Id, "gain",
         readParameterValue (paramDs1Gain.paramID, paramDs1Gain.defaultValue));
-    getMinibussEngine().setParamNormalized (ds1Id, "tone",
+    getKbussEngine().setParamNormalized (ds1Id, "tone",
         readParameterValue (paramDs1Tone.paramID, paramDs1Tone.defaultValue));
-    getMinibussEngine().setParamNormalized (ds1Id, "level",
+    getKbussEngine().setParamNormalized (ds1Id, "level",
         readParameterValue (paramDs1Level.paramID, paramDs1Level.defaultValue));
 }
 

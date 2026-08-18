@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
-project(TemplateAudioEffects VERSION 1.0 LANGUAGES CXX)
+project(Rangemaster VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 
-# MuDSP and kbuss are resolved inside aef_setup_dependencies().
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../audio_effect_framework/cmake")
 include(AudioEffectFramework)
 
@@ -12,22 +11,22 @@ set(AEF_BUILD_STANDALONE ON CACHE BOOL "" FORCE)
 add_subdirectory("${CMAKE_SOURCE_DIR}/../audio_effect_framework"
                  "${CMAKE_BINARY_DIR}/audio_effect_framework")
 
-juce_add_plugin(TemplateAudioEffects
+juce_add_plugin(Rangemaster
     PLUGIN_MANUFACTURER_CODE Juce
-    PLUGIN_CODE AETm
+    PLUGIN_CODE RngM
     FORMATS Standalone
-    PRODUCT_NAME "Audio Effect Template"
+    PRODUCT_NAME "Rangemaster"
     NEEDS_MIDI_INPUT TRUE
 )
 
-juce_generate_juce_header(TemplateAudioEffects)
+juce_generate_juce_header(Rangemaster)
 
-target_sources(TemplateAudioEffects PRIVATE
+target_sources(Rangemaster PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
 )
 
-target_include_directories(TemplateAudioEffects PRIVATE
+target_include_directories(Rangemaster PRIVATE
     "${CMAKE_SOURCE_DIR}/../audio_effect_framework/Source")
 
-aef_apply_plugin_target(TemplateAudioEffects)
+aef_apply_plugin_target(Rangemaster)

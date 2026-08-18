@@ -1,12 +1,43 @@
-# Resolves and adds JUCE, AtomTheme, and minibuss. Sets:
-#   ATOM_COLLECTIONS_APP_DIR, MINIBUSS_DIR, AEF_ASIO_SDK_INCLUDE (Windows)
+# Resolves and adds JUCE, AtomTheme, and kbuss. Sets:
+#   ATOM_COLLECTIONS_APP_DIR, KBUSS_DIR, AEF_ASIO_SDK_INCLUDE (Windows)
 
 get_filename_component(AEF_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 set(AEF_SOURCE_DIR "${AEF_ROOT_DIR}" CACHE INTERNAL "")
 set(AEF_EDITOR_CPP "${AEF_ROOT_DIR}/Source/AudioEffectFrameworkEditor.cpp" CACHE INTERNAL "")
 
+# MuDSP — forwarded to kbuss before add_subdirectory.
+set(MUDSP_ROOT "" CACHE PATH "Path to local MuDSP checkout (skips fetch when valid)")
+set(KBUSS_ROOT "" CACHE PATH "Path to local kbuss checkout (skips auto-detect when valid)")
+
+macro(aef_alias_mudsp)
+    if(TARGET nudsp AND NOT TARGET MuDSP::mudsp)
+        add_library(MuDSP::mudsp ALIAS nudsp)
+    elseif(TARGET NuDSP::nudsp AND NOT TARGET MuDSP::mudsp)
+        add_library(MuDSP::mudsp ALIAS NuDSP::nudsp)
+    endif()
+endmacro()
+
+function(aef_resolve_mudsp_root)
+    if(NOT MUDSP_ROOT STREQUAL "" AND EXISTS "${MUDSP_ROOT}/CMakeLists.txt")
+        return()
+    endif()
+
+    get_filename_component(_aef_mudsp_root "${CMAKE_SOURCE_DIR}" ABSOLUTE)
+    foreach(_candidate
+        "${_aef_mudsp_root}/../../MuDSP"
+        "D:/myCode/MuDSP"
+        "$ENV{HOME}/MuDSP"
+        "$ENV{USERPROFILE}/MuDSP")
+        if(EXISTS "${_candidate}/CMakeLists.txt")
+            set(MUDSP_ROOT "${_candidate}" CACHE PATH "Path to local MuDSP checkout" FORCE)
+            break()
+        endif()
+    endforeach()
+endfunction()
 function(aef_setup_dependencies)
     get_filename_component(_aef_deps_root "${CMAKE_SOURCE_DIR}" ABSOLUTE)
+
+    aef_resolve_mudsp_root()
 
     if(WIN32)
         set(ASIO_SDK_PATH "" CACHE PATH "Path to Steinberg ASIO SDK root")
@@ -95,37 +126,39 @@ function(aef_setup_dependencies)
     endif()
     set(ATOM_COLLECTIONS_APP_DIR "${_atom_dir}" PARENT_SCOPE)
 
-    get_filename_component(MINIBUSS_LOCAL "${_aef_deps_root}/../../minibuss" ABSOLUTE)
-    if(NOT EXISTS "${MINIBUSS_LOCAL}/CMakeLists.txt")
-        set(MINIBUSS_LOCAL "$ENV{HOME}/myCode/minibuss")
-        get_filename_component(MINIBUSS_LOCAL "${MINIBUSS_LOCAL}" ABSOLUTE)
+    get_filename_component(KBUSS_LOCAL "${_aef_deps_root}/../../kbuss" ABSOLUTE)
+    if(NOT KBUSS_ROOT STREQUAL "" AND EXISTS "${KBUSS_ROOT}/CMakeLists.txt")
+        set(KBUSS_LOCAL "${KBUSS_ROOT}")
+    elseif(NOT EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
+        set(KBUSS_LOCAL "${_aef_deps_root}/../../kBuss")
+        get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
     endif()
-    if(NOT EXISTS "${MINIBUSS_LOCAL}/CMakeLists.txt")
-        set(MINIBUSS_LOCAL "$ENV{HOME}/source/minibuss")
-        get_filename_component(MINIBUSS_LOCAL "${MINIBUSS_LOCAL}" ABSOLUTE)
+    if(NOT EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
+        set(KBUSS_LOCAL "$ENV{HOME}/myCode/kbuss")
+        get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
     endif()
-    if(EXISTS "${MINIBUSS_LOCAL}/CMakeLists.txt")
-        message(STATUS "minibuss found at ${MINIBUSS_LOCAL} — using local checkout")
+    if(NOT EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
+        set(KBUSS_LOCAL "$ENV{HOME}/source/kbuss")
+        get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
+    endif()
+    if(NOT EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
+        set(KBUSS_LOCAL "D:/myCode/kbuss")
+        get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
+    endif()
+    if(EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
+        message(STATUS "kbuss found at ${KBUSS_LOCAL} — using local checkout")
         set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
         set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
-        add_subdirectory("${MINIBUSS_LOCAL}"
-                         "${CMAKE_BINARY_DIR}/minibuss"
+        add_subdirectory("${KBUSS_LOCAL}"
+                         "${CMAKE_BINARY_DIR}/kbuss"
                          EXCLUDE_FROM_ALL)
-        set(_minibuss_dir "${MINIBUSS_LOCAL}")
+        set(_kbuss_dir "${KBUSS_LOCAL}")
     else()
-        message(STATUS "minibuss not found locally — fetching from GitHub")
-        set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-        set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
-        FetchContent_Declare(
-            minibuss
-            GIT_REPOSITORY  https://github.com/guthmanny/minibuss.git
-            GIT_TAG         main
-            GIT_SHALLOW     TRUE
-        )
-        FetchContent_MakeAvailable(minibuss)
-        set(_minibuss_dir "${minibuss_SOURCE_DIR}")
+        message(FATAL_ERROR
+            "kbuss not found. Expected a sibling checkout at ../../kbuss (or set -DKBUSS_ROOT=<path>).")
     endif()
-    set(MINIBUSS_DIR "${_minibuss_dir}" PARENT_SCOPE)
+    aef_alias_mudsp()
+    set(KBUSS_DIR "${_kbuss_dir}" PARENT_SCOPE)
 endfunction()
 
 # Apply common compile/link settings to a juce_add_plugin target.
@@ -172,8 +205,8 @@ function(aef_apply_plugin_target target)
         juce::juce_dsp
         juce::juce_atom_theme
         audio_effect_framework
-        minibuss_plugin
-        NuDSP::nudsp
+        kbuss_plugin
+        MuDSP::mudsp
         PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

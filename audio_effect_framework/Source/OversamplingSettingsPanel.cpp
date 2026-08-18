@@ -109,7 +109,7 @@ OversamplingSettingsPanel::OversamplingSettingsPanel (AudioEffectFrameworkProces
     introLabel.setHintText ("QUALITY in the footer sets the oversampling factor (2× / 4× / 8×). "
                             "Modes control how intermediate samples are generated and anti-aliased. "
                             "Nonlinear lookup tables for white-box DS-1 are selected at build time "
-                            "(NUDSP_NL_TABLE_PROFILE=none|full|balanced|tiny).");
+                            "(MUDSP_NL_TABLE_PROFILE=none|full|balanced|tiny).");
     introLabel.setFont (AtomLookAndFeel::getUIFont (kIntroFontHeight, juce::Font::bold));
     addAndMakeVisible (introLabel);
 

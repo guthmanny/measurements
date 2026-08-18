@@ -2,7 +2,7 @@
 
 #include "nudsp/dynamic/knee.hpp"
 
-/** Compatibility alias — knee math now lives in NuDSP. */
+/** Compatibility alias — knee math now lives in MuDSP. */
 namespace CompressorKnee
 {
 constexpr float defaultWidthDb = nudsp::dynamic::kDefaultKneeWidthDb;

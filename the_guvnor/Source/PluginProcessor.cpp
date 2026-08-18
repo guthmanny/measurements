@@ -15,27 +15,27 @@ GuvnorAudioProcessor::GuvnorAudioProcessor()
     aef::setParameterDefault(parameters.valueTreeState, paramGateThreshold.paramID, -80.0f);
 }
 
-std::unique_ptr<MinibussEffectEngine> GuvnorAudioProcessor::createEffectEngine()
+std::unique_ptr<KbussEffectEngine> GuvnorAudioProcessor::createEffectEngine()
 {
     return std::make_unique<MiddleProcessorEffectEngine>(
-        "com.minibuss.nudsp.white_box.guvnor", "Guv'nor", "guvnor");
+        "com.kbuss.nudsp.white_box.guvnor", "Guv'nor", "guvnor");
 }
 
 void GuvnorAudioProcessor::updateCustomEffectParameters()
 {
-    const auto guvnorId = getMinibussEngine().middleProcessorId();
-    if (guvnorId == minibuss::kInvalidObjectId)
+    const auto guvnorId = getKbussEngine().middleProcessorId();
+    if (guvnorId == kbuss::kInvalidObjectId)
         return;
 
-    getMinibussEngine().setParamNormalized(guvnorId, "gain",
+    getKbussEngine().setParamNormalized(guvnorId, "gain",
                                            readParameterValue(paramGuvnorGain.paramID, paramGuvnorGain.defaultValue));
-    getMinibussEngine().setParamNormalized(guvnorId, "bass",
+    getKbussEngine().setParamNormalized(guvnorId, "bass",
                                            readParameterValue(paramGuvnorBass.paramID, paramGuvnorBass.defaultValue));
-    getMinibussEngine().setParamNormalized(guvnorId, "mid",
+    getKbussEngine().setParamNormalized(guvnorId, "mid",
                                            readParameterValue(paramGuvnorMid.paramID, paramGuvnorMid.defaultValue));
-    getMinibussEngine().setParamNormalized(guvnorId, "treble",
+    getKbussEngine().setParamNormalized(guvnorId, "treble",
                                            readParameterValue(paramGuvnorTreble.paramID, paramGuvnorTreble.defaultValue));
-    getMinibussEngine().setParamNormalized(guvnorId, "level",
+    getKbussEngine().setParamNormalized(guvnorId, "level",
                                            readParameterValue(paramGuvnorLevel.paramID, paramGuvnorLevel.defaultValue));
 }
 

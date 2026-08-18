@@ -1,4 +1,4 @@
-# audio_effect_framework — shared infrastructure for AtomTheme + minibuss audio effects.
+# audio_effect_framework — shared infrastructure for AtomTheme + kbuss audio effects.
 #
 # Usage from a plugin project:
 #   list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../audio_effect_framework/cmake")
@@ -19,8 +19,8 @@ add_library(audio_effect_framework STATIC
     Source/AudioEffectFrameworkProcessor.cpp
     Source/AudioEffectFrameworkProcessor.h
     Source/AudioEffectFrameworkEditor.h
-    Source/MinibussEffectEngine.cpp
-    Source/MinibussEffectEngine.h
+    Source/KbussEffectEngine.cpp
+    Source/KbussEffectEngine.h
     Source/MiddleProcessorEffectEngine.cpp
     Source/MiddleProcessorEffectEngine.h
     Source/AefAudioUtils.h
@@ -67,8 +67,8 @@ target_include_directories(audio_effect_framework
         "${AEF_SOURCE_DIR}/Source"
     PRIVATE
         "${ATOM_COLLECTIONS_APP_DIR}"
-        "${MINIBUSS_DIR}/include"
-        "${MINIBUSS_DIR}/src"
+        "${KBUSS_DIR}/include"
+        "${KBUSS_DIR}/src"
 )
 
 target_compile_features(audio_effect_framework PUBLIC cxx_std_20)
@@ -82,8 +82,8 @@ target_link_libraries(audio_effect_framework
         juce::juce_gui_basics
         juce::juce_atom_theme
         atom_theme_core_impl
-        minibuss_plugin
-        NuDSP::nudsp
+        kbuss_plugin
+        MuDSP::mudsp
 )
 
 if(WIN32)

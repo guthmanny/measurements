@@ -4,7 +4,7 @@
 
 #include "AudioEffectFrameworkProcessor.h"
 
-/** Moog Ladder filter — NuDSP SSMEL model via minibuss.
+/** Moog Ladder filter — MuDSP SSMEL model via kbuss.
  *
  *  Parameters:
  *    Cutoff       [20, 20000] Hz
@@ -28,7 +28,7 @@ class MoogLadderAudioProcessor final : public AudioEffectFrameworkProcessor
   void processBlock(juce::AudioSampleBuffer& buffer, juce::MidiBuffer& midiMessages) override;
 
  protected:
-  std::unique_ptr<MinibussEffectEngine> createEffectEngine() override;
+  std::unique_ptr<KbussEffectEngine> createEffectEngine() override;
   void updateCustomEffectParameters() override;
   bool bypassNoiseGateOnStartup() const override { return true; }
 

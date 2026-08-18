@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    Audio effect template — DSP via minibuss Track + Processors.
+    Audio effect template — DSP via kbuss Track + Processors.
 
   ==============================================================================
 */
@@ -158,20 +158,24 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   juce::String getEffectTopologyTitle() const;
   bool setEffectTopologyModuleBypassed (const juce::String& moduleId, bool bypassed);
 
-  /** Override in plugin subclass to push effect-specific minibuss parameters. */
+  /** Override in plugin subclass to push effect-specific kbuss parameters. */
   virtual void updateCustomEffectParameters() {}
 
  protected:
   /** When true, bypass noise gate after prepare (typical for guitar pedals). */
   virtual bool bypassNoiseGateOnStartup() const { return false; }
 
-  /** Override to supply a plugin-specific minibuss engine (e.g. with a middle processor). */
-  virtual std::unique_ptr<MinibussEffectEngine> createEffectEngine();
+  /** Override to supply a plugin-specific kbuss engine (e.g. with a middle processor). */
+  virtual std::unique_ptr<KbussEffectEngine> createEffectEngine();
 
   void ensureEffectEngine();
 
-  MinibussEffectEngine& getMinibussEngine() noexcept { return *effectEngine_; }
-  [[nodiscard]] const MinibussEffectEngine& getMinibussEngine() const noexcept { return *effectEngine_; }
+  KbussEffectEngine& getKbussEngine() noexcept { return *effectEngine_; }
+  [[nodiscard]] const KbussEffectEngine& getKbussEngine() const noexcept { return *effectEngine_; }
+
+  /** Legacy alias — prefer getKbussEngine(). */
+  KbussEffectEngine& getMinibussEngine() noexcept { return getKbussEngine(); }
+  [[nodiscard]] const KbussEffectEngine& getMinibussEngine() const noexcept { return getKbussEngine(); }
 
   float readParameterValue(const String& paramId, float fallback) const;
 
@@ -191,7 +195,7 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   void applyEffectTopologyBypassOverrides();
   void captureEffectTopologyBypassForState (juce::XmlElement& xml) const;
 
-  std::unique_ptr<MinibussEffectEngine> effectEngine_;
+  std::unique_ptr<KbussEffectEngine> effectEngine_;
   AudioSampleBuffer dryBuffer;
   AudioSampleBuffer monoBuffer;
   AudioSampleBuffer processBuffer;

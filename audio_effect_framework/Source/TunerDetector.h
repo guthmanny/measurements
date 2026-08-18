@@ -6,7 +6,7 @@
 #include <cmath>
 #include <vector>
 
-/** Streaming tuner via NuDSP CAMEL nx_tuner_f32 (same BACF path as minibuss Tuner). */
+/** Streaming tuner via MuDSP CAMEL nx_tuner_f32 (same BACF path as kbuss Tuner). */
 class TunerDetector
 {
 public:

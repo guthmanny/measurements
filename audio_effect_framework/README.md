@@ -1,6 +1,6 @@
 # Audio Effect Framework
 
-Shared infrastructure for JUCE + AtomTheme + minibuss audio effect plugins.
+Shared infrastructure for JUCE + AtomTheme + kbuss audio effect plugins.
 
 ## Layout
 
@@ -19,9 +19,9 @@ measurements/
 1. Copy `template_audio_effects/` to `MyEffect/`
 2. Edit `CMakeLists.txt`: change `project()`, `juce_add_plugin()`, `PLUGIN_CODE`, `PRODUCT_NAME`
 3. Subclass `AudioEffectFrameworkProcessor`:
-   - Override `createEffectEngine()` to return `MiddleProcessorEffectEngine(uid, name, instance)` (or a custom `MinibussEffectEngine` subclass if needed)
+   - Override `createEffectEngine()` to return `MiddleProcessorEffectEngine(uid, name, instance)` (or a custom `KbussEffectEngine` subclass if needed)
    - Add effect parameters in the constructor
-   - Override `updateCustomEffectParameters()` to push values to the middle processor via `getMinibussEngine().middleProcessorId()`
+   - Override `updateCustomEffectParameters()` to push values to the middle processor via `getKbussEngine().middleProcessorId()`
    - Override `createEditor()` (use `AudioEffectFrameworkEditor` or subclass it)
    - Override `getName()`, `acceptsMidi()`, etc. using `JucePlugin_*` macros
    - For mono guitar pedals: override `processBlock()` with `aef::mixBufferToMonoDual` / `aef::duplicateMonoToStereoOutput`, and override `bypassNoiseGateOnStartup()` to return `true`
@@ -39,12 +39,14 @@ target_sources(MyEffect PRIVATE Source/PluginProcessor.cpp)
 aef_apply_plugin_target(MyEffect)
 ```
 
+`aef_setup_dependencies()` resolves MuDSP and adds kbuss from a sibling checkout (`../../kbuss`). Override with `-DMUDSP_ROOT=` / `-DKBUSS_ROOT=` when needed.
+
 `aef_apply_plugin_target()` links the shared editor, standalone entry (`AefStandaloneMain.cpp`), and common compile settings — no per-plugin `StandaloneMain.cpp` needed.
 
 ## What lives in the framework
 
 - `AudioEffectFrameworkProcessor` / `AudioEffectFrameworkEditor`
-- Gain → NoiseGate → Upsampler → [middle] → Downsampler → Level minibuss chain (`MinibussEffectEngine`)
+- Gain → NoiseGate → Upsampler → [middle] → Downsampler → Level kbuss chain (`KbussEffectEngine`)
 - `MiddleProcessorEffectEngine` — configurable middle plugin UID/name/instance
 - `AefAudioUtils` — parameter defaults, mono mix / stereo duplicate helpers
 - `AefStandaloneMain.cpp` — shared Standalone app (native title bar, JACK capture routing)
@@ -53,6 +55,10 @@ aef_apply_plugin_target(MyEffect)
 
 ## What stays in each plugin
 
-- `PluginProcessor` subclass (effect parameters + minibuss UID wiring)
+- `PluginProcessor` subclass (effect parameters + kbuss UID wiring; UIDs use `com.kbuss.*`)
 - Plugin-specific editor (optional; default is `AudioEffectFrameworkEditor`)
 - Plugin identity in `CMakeLists.txt`
+
+## Legacy aliases
+
+`MinibussEffectEngine`, `getMinibussEngine()`, and `MinibussEffectEngine.h` remain as aliases for older plugin code. New code should use `KbussEffectEngine` / `getKbussEngine()`.

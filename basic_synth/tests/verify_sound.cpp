@@ -1,4 +1,4 @@
-#include "MinibussSynthEngine.h"
+#include "KbussSynthEngine.h"
 
 #include <algorithm>
 #include <cmath>
@@ -8,12 +8,12 @@
 
 int main()
 {
-    MinibussSynthEngine engine;
+    KbussSynthEngine engine;
     engine.prepare (48000.f, 128);
 
     if (! engine.isReady())
     {
-        std::fprintf (stderr, "FAIL: MinibussSynthEngine not ready\n");
+        std::fprintf (stderr, "FAIL: KbussSynthEngine not ready\n");
         return 1;
     }
 

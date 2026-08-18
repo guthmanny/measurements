@@ -97,35 +97,41 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------
-# minibuss (https://github.com/guthmanny/minibuss) — audio plugin host engine
-#
-# Resolution order:
-#   1. $ENV{HOME}/source/minibuss   — local development checkout
-#   2. FetchContent from GitHub     — automatic download for third-party builds
+# kbuss — audio plugin host engine (bundles MuDSP)
 # ---------------------------------------------------------------------------
-include(FetchContent)
+set(MUDSP_ROOT "" CACHE PATH "Path to local MuDSP checkout")
+set(KBUSS_ROOT "" CACHE PATH "Path to local kbuss checkout")
 
-set(MINIBUSS_LOCAL "$ENV{HOME}/source/minibuss")
-if(EXISTS "${MINIBUSS_LOCAL}/CMakeLists.txt")
-    message(STATUS "minibuss found at ${MINIBUSS_LOCAL} — using local checkout")
+get_filename_component(_chorus_deps_root "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
+set(KBUSS_LOCAL "${_chorus_deps_root}/../kbuss")
+get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
+if(NOT KBUSS_ROOT STREQUAL "" AND EXISTS "${KBUSS_ROOT}/CMakeLists.txt")
+    set(KBUSS_LOCAL "${KBUSS_ROOT}")
+elseif(NOT EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
+    set(KBUSS_LOCAL "D:/myCode/kbuss")
+    get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
+endif()
+if(NOT EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
+    set(KBUSS_LOCAL "$ENV{HOME}/source/kbuss")
+    get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
+endif()
+if(EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
+    message(STATUS "kbuss found at ${KBUSS_LOCAL} — using local checkout")
+    if(NOT MUDSP_ROOT STREQUAL "" AND EXISTS "${MUDSP_ROOT}/CMakeLists.txt")
+        set(MUDSP_DIR "${MUDSP_ROOT}" CACHE PATH "" FORCE)
+    endif()
     set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
-    add_subdirectory("${MINIBUSS_LOCAL}"
-                     "${CMAKE_BINARY_DIR}/minibuss"
+    add_subdirectory("${KBUSS_LOCAL}"
+                     "${CMAKE_BINARY_DIR}/kbuss"
                      EXCLUDE_FROM_ALL)
+    set(KBUSS_DIR "${KBUSS_LOCAL}")
 else()
-    message(STATUS "minibuss not found locally — fetching from GitHub")
-    set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
-    FetchContent_Declare(
-        minibuss
-        GIT_REPOSITORY  https://github.com/guthmanny/minibuss.git
-        GIT_TAG         main
-        GIT_SHALLOW     TRUE
-    )
-    set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(minibuss)
+    message(FATAL_ERROR
+        "kbuss not found. Expected a sibling checkout at ../kbuss (or set -DKBUSS_ROOT=<path>).")
+endif()
+if(TARGET nudsp AND NOT TARGET MuDSP::mudsp)
+    add_library(MuDSP::mudsp ALIAS nudsp)
 endif()
 
 juce_add_plugin(Chorus
@@ -138,14 +144,6 @@ juce_add_plugin(Chorus
 
 juce_generate_juce_header(Chorus)
 
-# MINIBUSS_DIR resolves to the source tree root of minibuss.
-# When using a local checkout (MINIBUSS_LOCAL), point there directly.
-# When fetched via FetchContent, use minibuss_SOURCE_DIR.
-if(EXISTS "${MINIBUSS_LOCAL}/CMakeLists.txt")
-    set(MINIBUSS_DIR "${MINIBUSS_LOCAL}")
-else()
-    set(MINIBUSS_DIR "${minibuss_SOURCE_DIR}")
-endif()
 
 target_sources(Chorus PRIVATE
     Source/PluginProcessor.cpp
@@ -164,7 +162,8 @@ target_sources(Chorus PRIVATE
     Source/SpectrumCurveComponent.h
     Source/SpectrumAnalyzer.h
     Source/TunerDetector.h
-    Source/MinibussChorusEngine.cpp
+    Source/KbussChorusEngine.cpp
+    Source/KbussChorusEngine.h
     Source/MinibussChorusEngine.h
     Source/AppSettingsPanel.cpp
     Source/AppSettingsPanel.h
@@ -196,17 +195,15 @@ target_sources(Chorus PRIVATE
 
 target_include_directories(Chorus PRIVATE
     "${ATOM_COLLECTIONS_APP_DIR}"
-    "${MINIBUSS_DIR}/include"
-    "${MINIBUSS_DIR}/src"
+    "${KBUSS_DIR}/include"
+    "${KBUSS_DIR}/src"
 )
 
-set(NUDSP_LOCAL "$ENV{HOME}/NuDSP")
-if(NOT EXISTS "${NUDSP_LOCAL}/CMakeLists.txt")
-    set(NUDSP_LOCAL "${CMAKE_CURRENT_SOURCE_DIR}/../../Collections/External/NuDSP")
-endif()
-if(EXISTS "${NUDSP_LOCAL}/include/extensions/CAMEL/chorus_f32.h")
-    message(STATUS "Chorus NuDSP headers: ${NUDSP_LOCAL}/include")
-    target_include_directories(Chorus PRIVATE "${NUDSP_LOCAL}/include")
+if(TARGET MuDSP::mudsp)
+    get_target_property(_mudsp_inc MuDSP::mudsp INTERFACE_INCLUDE_DIRECTORIES)
+    if(_mudsp_inc)
+        target_include_directories(Chorus PRIVATE ${_mudsp_inc})
+    endif()
 endif()
 
 target_compile_features(Chorus PRIVATE cxx_std_20)
@@ -246,8 +243,8 @@ target_link_libraries(Chorus PRIVATE
     juce::juce_audio_devices
     juce::juce_dsp
     juce::juce_atom_theme
-    minibuss_plugin
-    NuDSP::nudsp
+    kbuss_plugin
+    MuDSP::mudsp
     PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags

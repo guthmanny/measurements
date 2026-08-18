@@ -2,14 +2,14 @@
 /*
   ==============================================================================
 
-    Audio effect template — DSP via minibuss Track + Processors.
+    Audio effect template — DSP via kbuss Track + Processors.
 
   ==============================================================================
 */
 
 #include "AudioEffectFrameworkProcessor.h"
 
-#include "minibuss/processor.hpp"
+#include "kbuss/processor.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -19,9 +19,9 @@
 
 //==============================================================================
 
-std::unique_ptr<MinibussEffectEngine> AudioEffectFrameworkProcessor::createEffectEngine()
+std::unique_ptr<KbussEffectEngine> AudioEffectFrameworkProcessor::createEffectEngine()
 {
-  return std::make_unique<MinibussEffectEngine>();
+  return std::make_unique<KbussEffectEngine>();
 }
 
 AudioEffectFrameworkProcessor::AudioEffectFrameworkProcessor()
@@ -592,7 +592,7 @@ void AudioEffectFrameworkProcessor::prepareToPlay(double sampleRate, int samples
   if (bypassNoiseGateOnStartup())
   {
     auto& engine = getMinibussEngine();
-    if (engine.gateId() != minibuss::kInvalidObjectId)
+    if (engine.gateId() != kbuss::kInvalidObjectId)
       engine.setProcessorBypassed (engine.gateId(), true);
   }
 
@@ -735,7 +735,7 @@ bool AudioEffectFrameworkProcessor::setEffectTopologyModuleBypassed (const juce:
 
   if (auto* proc = effectEngine_->getMiddleProcessor())
   {
-    if (proc->set_module_bypass (moduleId.toStdString(), bypassed) == minibuss::Status::Ok)
+    if (proc->set_module_bypass (moduleId.toStdString(), bypassed) == kbuss::Status::Ok)
     {
       effectTopologyBypassOverrides_.set (moduleId, bypassed);
       return true;

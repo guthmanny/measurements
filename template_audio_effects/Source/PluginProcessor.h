@@ -17,7 +17,7 @@ public:
     bool acceptsMidi() const override;
 
 protected:
-    std::unique_ptr<MinibussEffectEngine> createEffectEngine() override;
+    std::unique_ptr<KbussEffectEngine> createEffectEngine() override;
     void updateCustomEffectParameters() override;
 
 private:
