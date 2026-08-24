@@ -147,7 +147,8 @@ void KbussEffectEngine::reprepareTrack()
 
 void KbussEffectEngine::setOversampling (int factor, int upMode, int downMode)
 {
-    const int clampedFactor = factor >= 8 ? 8 : (factor >= 4 ? 4 : 2);
+    // 1× is allowed for heavy white-box amps (e.g. Vibro Champ Newton).
+    const int clampedFactor = factor >= 8 ? 8 : (factor >= 4 ? 4 : (factor >= 2 ? 2 : 1));
     const int clampedUp = juce::jlimit (0, 4, upMode);
     const int clampedDown = juce::jlimit (0, 3, downMode);
 

@@ -165,6 +165,9 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   /** When true, bypass noise gate after prepare (typical for guitar pedals). */
   virtual bool bypassNoiseGateOnStartup() const { return false; }
 
+  /** Map footer QUALITY (0/1/2) to oversampling factor. Default: 2 / 4 / 8. */
+  virtual int oversampleFactorForQuality (int qualityChoice) const;
+
   /** Override to supply a plugin-specific kbuss engine (e.g. with a middle processor). */
   virtual std::unique_ptr<KbussEffectEngine> createEffectEngine();
 

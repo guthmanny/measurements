@@ -101,12 +101,21 @@ public:
         sectionLabel.setBounds (area.removeFromTop (kSectionTitleHeight));
         area.removeFromTop (6);
 
-        const int colCount = (int) columns.size();
+        std::vector<KnobColumn*> visibleCols;
+        for (auto& column : columns)
+        {
+            if (column->isSliderVisible())
+                visibleCols.push_back (column.get());
+            else
+                column->setBounds ({});
+        }
+
+        const int colCount = (int) visibleCols.size();
         if (colCount <= 0)
             return;
 
         const int colW = area.getWidth() / colCount;
-        for (auto& column : columns)
+        for (auto* column : visibleCols)
             column->setBounds (area.removeFromLeft (colW).reduced (2, 0));
     }
 
@@ -135,12 +144,20 @@ private:
 
         void resized() override
         {
+            if (! sliderRef.isVisible())
+            {
+                setBounds ({});
+                return;
+            }
+
             auto area = getLocalBounds();
             groupLabel.setBounds (area.removeFromTop (16));
             paramLabel.setBounds (area.removeFromTop (kParamLabelHeight));
             area.removeFromTop (2);
             sliderRef.setBounds (area);
         }
+
+        bool isSliderVisible() const { return sliderRef.isVisible(); }
 
     private:
         atom::Label groupLabel;
@@ -170,7 +187,20 @@ BasicSynthAudioProcessorEditor::BasicSynthAudioProcessorEditor (BasicSynthAudioP
       processor (p),
       oscSection (std::make_unique<SectionPanel> ("OSC", "Wave", waveSlider)),
       filterSection (std::make_unique<SectionPanel> ("Filter", "Cutoff", cutoffSlider)),
-      ampSection (std::make_unique<SectionPanel> ("Amp", "Gain", gainSlider)),
+      ksFluteSection (std::make_unique<ModulatorsPanel> (std::array<ModulatorsPanel::KnobBinding, 2> {{
+          { "Flute", "Feedback", feedbackSlider },
+          { "Flute", "Color", baseNoteSlider },
+      }})),
+      ksFluteToneSection (std::make_unique<ModulatorsPanel> (std::array<ModulatorsPanel::KnobBinding, 4> {{
+          { "Tone", "Breath", noiseSlider },
+          { "Tone", "Exciter", exciterSlider },
+          { "Tone", "Loop", loopCutSlider },
+          { "Tone", "Reverb", reverbSlider },
+      }})),
+      ampSection (std::make_unique<ModulatorsPanel> (std::array<ModulatorsPanel::KnobBinding, 2> {{
+          { "Level", "Gain", gainSlider },
+          { "Level", "Boost", outputBoostSlider },
+      }})),
       modulatorsSection (std::make_unique<ModulatorsPanel> (std::array<ModulatorsPanel::KnobBinding, 8> {{
           { "LFO1", "Rate", lfo1RateSlider },
           { "LFO2", "Rate", lfo2RateSlider },
@@ -189,11 +219,21 @@ BasicSynthAudioProcessorEditor::BasicSynthAudioProcessorEditor (BasicSynthAudioP
     btnSettings.setTooltip ("Settings");
     addAndMakeVisible (btnSettings);
 
+    instrumentCombo.addItem ("Basic Synth", 1);
+    instrumentCombo.addItem ("KS Flute", 2);
+    instrumentCombo.setTooltip ("Instrument engine");
+    addAndMakeVisible (instrumentCombo);
+    instrumentAttachment = std::make_unique<ComboAttachment> (
+        processor.parameters, "instrument", instrumentCombo);
+    instrumentCombo.onChange = [this] { refreshInstrumentControls(); };
+
 #if JucePlugin_Build_Standalone
     btnSettings.onClick = [this] { showAppSettingsDialog(); };
 #endif
 
-    for (auto* slider : { &waveSlider, &cutoffSlider, &gainSlider,
+    for (auto* slider : { &waveSlider, &cutoffSlider, &feedbackSlider, &baseNoteSlider,
+                          &noiseSlider, &exciterSlider, &loopCutSlider, &reverbSlider,
+                          &gainSlider, &outputBoostSlider,
                           &eg1AttackSlider, &eg1ReleaseSlider,
                           &eg2AttackSlider, &eg2ReleaseSlider,
                           &eg3AttackSlider, &eg3ReleaseSlider,
@@ -204,8 +244,22 @@ BasicSynthAudioProcessorEditor::BasicSynthAudioProcessorEditor (BasicSynthAudioP
         processor.parameters, "wave", waveSlider);
     cutoffAttachment = std::make_unique<SliderAttachment> (
         processor.parameters, "cutoff", cutoffSlider);
+    feedbackAttachment = std::make_unique<SliderAttachment> (
+        processor.parameters, "feedback", feedbackSlider);
+    baseNoteAttachment = std::make_unique<SliderAttachment> (
+        processor.parameters, "base_note", baseNoteSlider);
+    noiseAttachment = std::make_unique<SliderAttachment> (
+        processor.parameters, "noise", noiseSlider);
+    exciterAttachment = std::make_unique<SliderAttachment> (
+        processor.parameters, "exciter_cutoff", exciterSlider);
+    loopCutAttachment = std::make_unique<SliderAttachment> (
+        processor.parameters, "loop_cutoff", loopCutSlider);
+    reverbAttachment = std::make_unique<SliderAttachment> (
+        processor.parameters, "reverb_mix", reverbSlider);
     gainAttachment = std::make_unique<SliderAttachment> (
         processor.parameters, "gain", gainSlider);
+    outputBoostAttachment = std::make_unique<SliderAttachment> (
+        processor.parameters, "output_boost", outputBoostSlider);
     eg1AttackAttachment = std::make_unique<SliderAttachment> (
         processor.parameters, "eg1_attack", eg1AttackSlider);
     eg1ReleaseAttachment = std::make_unique<SliderAttachment> (
@@ -225,10 +279,13 @@ BasicSynthAudioProcessorEditor::BasicSynthAudioProcessorEditor (BasicSynthAudioP
 
     addAndMakeVisible (*oscSection);
     addAndMakeVisible (*filterSection);
+    addAndMakeVisible (*ksFluteSection);
+    addAndMakeVisible (*ksFluteToneSection);
     addAndMakeVisible (*ampSection);
     addAndMakeVisible (*modulatorsSection);
     addAndMakeVisible (keyboard);
-    setSize (720, 580);
+    refreshInstrumentControls();
+    setSize (720, 680);
 
 #if JucePlugin_Build_Standalone
     juce::Desktop::getInstance().addDarkModeSettingListener (this);
@@ -243,6 +300,24 @@ BasicSynthAudioProcessorEditor::~BasicSynthAudioProcessorEditor()
     setLookAndFeel (nullptr);
 }
 
+void BasicSynthAudioProcessorEditor::refreshInstrumentControls()
+{
+    const bool ksFlute = processor.currentInstrument() == SynthInstrument::KsFlute;
+
+    oscSection->setVisible (! ksFlute);
+    filterSection->setVisible (! ksFlute);
+    ksFluteSection->setVisible (ksFlute);
+    ksFluteToneSection->setVisible (ksFlute);
+    outputBoostSlider.setVisible (ksFlute);
+
+    eg2AttackSlider.setVisible (! ksFlute);
+    eg2ReleaseSlider.setVisible (! ksFlute);
+    eg3AttackSlider.setVisible (! ksFlute);
+    eg3ReleaseSlider.setVisible (! ksFlute);
+
+    resized();
+}
+
 void BasicSynthAudioProcessorEditor::paint (juce::Graphics& g)
 {
     g.fillAll (findColour (juce::ResizableWindow::backgroundColourId));
@@ -254,12 +329,24 @@ void BasicSynthAudioProcessorEditor::resized()
 
     auto header = area.removeFromTop (28);
     btnSettings.setBounds (header.removeFromRight (28));
+    instrumentCombo.setBounds (header.removeFromLeft (180));
 
     auto controls = area.removeFromTop (190);
-    const int sectionW = controls.getWidth() / 3;
-    oscSection->setBounds (controls.removeFromLeft (sectionW).reduced (4, 0));
-    filterSection->setBounds (controls.removeFromLeft (sectionW).reduced (4, 0));
-    ampSection->setBounds (controls.reduced (4, 0));
+    const bool ksFlute = processor.currentInstrument() == SynthInstrument::KsFlute;
+    if (ksFlute)
+    {
+        const int sectionW = controls.getWidth() / 4;
+        ksFluteSection->setBounds (controls.removeFromLeft (sectionW).reduced (4, 0));
+        ksFluteToneSection->setBounds (controls.removeFromLeft (sectionW * 2).reduced (4, 0));
+        ampSection->setBounds (controls.reduced (4, 0));
+    }
+    else
+    {
+        const int sectionW = controls.getWidth() / 3;
+        oscSection->setBounds (controls.removeFromLeft (sectionW).reduced (4, 0));
+        filterSection->setBounds (controls.removeFromLeft (sectionW).reduced (4, 0));
+        ampSection->setBounds (controls.reduced (4, 0));
+    }
 
     modulatorsSection->setBounds (area.removeFromTop (170).reduced (4, 0));
 

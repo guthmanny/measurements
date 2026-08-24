@@ -24,6 +24,11 @@ std::unique_ptr<KbussEffectEngine> AudioEffectFrameworkProcessor::createEffectEn
   return std::make_unique<KbussEffectEngine>();
 }
 
+int AudioEffectFrameworkProcessor::oversampleFactorForQuality (int qualityChoice) const
+{
+  return qualityChoice >= 2 ? 8 : (qualityChoice >= 1 ? 4 : 2);
+}
+
 AudioEffectFrameworkProcessor::AudioEffectFrameworkProcessor()
     :
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -243,7 +248,7 @@ void AudioEffectFrameworkProcessor::updateEffectParameters()
 
   const int qualityChoice = juce::roundToInt(
       readParameterValue(paramOversampleQuality.paramID, (float)paramOversampleQuality.defaultChoice));
-  const int osFactor = qualityChoice >= 2 ? 8 : (qualityChoice >= 1 ? 4 : 2);
+  const int osFactor = oversampleFactorForQuality(qualityChoice);
   const int upMode = juce::roundToInt(
       readParameterValue(paramUpsamplerMode.paramID, (float)paramUpsamplerMode.defaultChoice));
   const int downMode = juce::roundToInt(

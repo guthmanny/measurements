@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "KbussSynthEngine.h"
 
@@ -39,11 +41,18 @@ public:
 
     juce::MidiKeyboardState keyboardState;
 
+    SynthInstrument currentInstrument() const;
+
 private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
     void handleIncomingMidi (const juce::MidiBuffer& midiMessages);
     void updateSynthParameters();
+    void syncEngineToInstrument();
 
     KbussSynthEngine synthEngine_;
     juce::AudioBuffer<float> processBuffer_;
+    double lastSampleRate_ = 0.0;
+    int lastBlockSize_ = 0;
+    std::atomic<bool> instrumentPreparePending_ { false };
+    SynthInstrument pendingInstrument_ = SynthInstrument::BasicSynth;
 };

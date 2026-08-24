@@ -32,14 +32,23 @@ private:
 #endif
 
     void configureRotarySlider (atom::Slider& slider);
+    void refreshInstrumentControls();
 
     BasicSynthAudioProcessor& processor;
     AtomLookAndFeel atomLookAndFeel { atom::ThemeType::Dark };
 
     atom::ShapeButton btnSettings { "btnSettings", AtomIconLibrary::Icon::CogWheel };
+    juce::ComboBox instrumentCombo;
     atom::Slider waveSlider;
     atom::Slider cutoffSlider;
+    atom::Slider feedbackSlider;
+    atom::Slider baseNoteSlider;
+    atom::Slider noiseSlider;
+    atom::Slider exciterSlider;
+    atom::Slider loopCutSlider;
+    atom::Slider reverbSlider;
     atom::Slider gainSlider;
+    atom::Slider outputBoostSlider;
     atom::Slider eg1AttackSlider;
     atom::Slider eg1ReleaseSlider;
     atom::Slider eg2AttackSlider;
@@ -50,14 +59,25 @@ private:
     atom::Slider lfo2RateSlider;
     std::unique_ptr<juce::Component> oscSection;
     std::unique_ptr<juce::Component> filterSection;
+    std::unique_ptr<juce::Component> ksFluteSection;
+    std::unique_ptr<juce::Component> ksFluteToneSection;
     std::unique_ptr<juce::Component> ampSection;
     std::unique_ptr<juce::Component> modulatorsSection;
     juce::MidiKeyboardComponent keyboard;
 
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
+    using ComboAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
+    std::unique_ptr<ComboAttachment> instrumentAttachment;
     std::unique_ptr<SliderAttachment> waveAttachment;
     std::unique_ptr<SliderAttachment> cutoffAttachment;
+    std::unique_ptr<SliderAttachment> feedbackAttachment;
+    std::unique_ptr<SliderAttachment> baseNoteAttachment;
+    std::unique_ptr<SliderAttachment> noiseAttachment;
+    std::unique_ptr<SliderAttachment> exciterAttachment;
+    std::unique_ptr<SliderAttachment> loopCutAttachment;
+    std::unique_ptr<SliderAttachment> reverbAttachment;
     std::unique_ptr<SliderAttachment> gainAttachment;
+    std::unique_ptr<SliderAttachment> outputBoostAttachment;
     std::unique_ptr<SliderAttachment> eg1AttackAttachment;
     std::unique_ptr<SliderAttachment> eg1ReleaseAttachment;
     std::unique_ptr<SliderAttachment> eg2AttackAttachment;

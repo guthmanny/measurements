@@ -1,5 +1,6 @@
 #include "KbussSynthEngine.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "plugins/builtin_plugins.hpp"
@@ -34,9 +35,15 @@ kbuss::Processor* KbussSynthEngine::processor (kbuss::ObjectId id) const
     return nullptr;
 }
 
-void KbussSynthEngine::prepare (float sampleRate, std::uint32_t maxBlockSize)
+void KbussSynthEngine::prepare (float sampleRate, std::uint32_t maxBlockSize,
+                                SynthInstrument instrument)
 {
     release();
+
+    instrument_ = instrument;
+    maxBlockSize_ = maxBlockSize;
+    const char* uid = synthInstrumentUid (instrument);
+    const char* name = synthInstrumentName (instrument);
 
     auto staticFormat = std::make_unique<kbuss::StaticPluginFormat>();
     kbuss::plugins::register_builtin_plugins (*staticFormat);
@@ -51,8 +58,7 @@ void KbussSynthEngine::prepare (float sampleRate, std::uint32_t maxBlockSize)
         return;
     trackId_ = trackId;
 
-    auto [plugSt, plugId] = engine_->create_processor (
-        makeDesc ("com.kbuss.nudsp.ssmel.basic_synth", "Basic Synth"), "synth");
+    auto [plugSt, plugId] = engine_->create_processor (makeDesc (uid, name), "synth");
     if (plugSt != kbuss::Status::Ok)
         return;
     synthId_ = plugId;
@@ -112,10 +118,16 @@ void KbussSynthEngine::sendNoteOff (int note, float velocity)
 
 void KbussSynthEngine::process (std::span<float* const> outputs, std::uint32_t numFrames)
 {
-    if (!ready_ || engine_ == nullptr || outputs.size() < 2)
+    if (!ready_ || engine_ == nullptr || outputs.size() < 2 || maxBlockSize_ == 0)
         return;
 
     const float* inputs[2] = { nullptr, nullptr };
-    float* outs[2] = { outputs[0], outputs[1] };
-    engine_->process (inputs, outs, numFrames);
+    std::uint32_t offset = 0;
+    while (offset < numFrames)
+    {
+        const std::uint32_t chunk = std::min (numFrames - offset, maxBlockSize_);
+        float* outs[2] = { outputs[0] + offset, outputs[1] + offset };
+        engine_->process (inputs, outs, chunk);
+        offset += chunk;
+    }
 }

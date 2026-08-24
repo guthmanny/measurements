@@ -26,7 +26,13 @@ endif()
 
 include(FetchContent)
 
-set(ATOM_THEME_LOCAL "$ENV{HOME}/source/AtomTheme")
+get_filename_component(_synth_deps_root "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
+set(ATOM_THEME_LOCAL "${CMAKE_CURRENT_SOURCE_DIR}/../../AtomTheme")
+get_filename_component(ATOM_THEME_LOCAL "${ATOM_THEME_LOCAL}" ABSOLUTE)
+if(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt")
+    set(ATOM_THEME_LOCAL "$ENV{HOME}/source/AtomTheme")
+    get_filename_component(ATOM_THEME_LOCAL "${ATOM_THEME_LOCAL}" ABSOLUTE)
+endif()
 if(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt" AND EXISTS "D:/myCode/AtomTheme/CMakeLists.txt")
     set(ATOM_THEME_LOCAL "D:/myCode/AtomTheme")
 endif()
@@ -51,7 +57,6 @@ endif()
 set(MUDSP_ROOT "" CACHE PATH "Path to local MuDSP checkout")
 set(KBUSS_ROOT "" CACHE PATH "Path to local kbuss checkout")
 
-get_filename_component(_synth_deps_root "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
 set(KBUSS_LOCAL "${_synth_deps_root}/../kbuss")
 get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
 if(NOT KBUSS_ROOT STREQUAL "" AND EXISTS "${KBUSS_ROOT}/CMakeLists.txt")
@@ -158,3 +163,19 @@ if(WIN32)
     target_compile_definitions(basic_synth_verify_sound PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
 add_test(NAME basic_synth_verify_sound COMMAND basic_synth_verify_sound)
+
+add_executable(basic_synth_verify_ks_flute_sound tests/verify_ks_flute_sound.cpp
+    Source/KbussSynthEngine.cpp
+    Source/KbussSynthEngine.h
+    Source/MinibussSynthEngine.h
+)
+target_include_directories(basic_synth_verify_ks_flute_sound PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/Source"
+    "${KBUSS_DIR}/include"
+    "${KBUSS_DIR}/src"
+)
+target_link_libraries(basic_synth_verify_ks_flute_sound PRIVATE kbuss_plugin MuDSP::mudsp)
+if(WIN32)
+    target_compile_definitions(basic_synth_verify_ks_flute_sound PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+endif()
+add_test(NAME basic_synth_verify_ks_flute_sound COMMAND basic_synth_verify_ks_flute_sound)
