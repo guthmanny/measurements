@@ -164,6 +164,18 @@ void AudioEffectFrameworkProcessor::ensureEffectEngine()
     effectEngine_ = createEffectEngine();
 }
 
+KbussEffectEngine& AudioEffectFrameworkProcessor::getKbussEngine() noexcept
+{
+  ensureEffectEngine();
+  return *effectEngine_;
+}
+
+const KbussEffectEngine& AudioEffectFrameworkProcessor::getKbussEngine() const noexcept
+{
+  jassert(effectEngine_ != nullptr);
+  return *effectEngine_;
+}
+
 void AudioEffectFrameworkProcessor::syncParametersFromValueTree()
 {
   paramInputGain.setCurrentAndTargetValue(readParameterValue(paramInputGain.paramID, paramInputGain.defaultValue));
@@ -256,6 +268,7 @@ void AudioEffectFrameworkProcessor::updateEffectParameters()
   getMinibussEngine().setOversampling(osFactor, upMode, downMode);
 
   updateCustomEffectParameters();
+  pushMiddleProcessorParamDomains();
 }
 
 void AudioEffectFrameworkProcessor::mixToMonoBuffer(const AudioSampleBuffer& buffer, int numChannels, int numSamples)
@@ -592,6 +605,8 @@ void AudioEffectFrameworkProcessor::prepareToPlay(double sampleRate, int samples
 
   ensureEffectEngine();
   getMinibussEngine().prepare((float)sampleRate, (std::uint32_t)jmax(1, samplesPerBlock));
+  resetMiddleProcessorParamDefaults();
+  bumpMiddleProcessorGeneration();
   updateEffectParameters();
 
   if (bypassNoiseGateOnStartup())
@@ -850,6 +865,46 @@ bool AudioEffectFrameworkProcessor::isBusesLayoutSupported(const BusesLayout& la
   return true;
 }
 #endif
+
+//==============================================================================
+
+void AudioEffectFrameworkProcessor::setMiddleParamDomain(const juce::String& paramId, float domainValue)
+{
+  middleParamDomains_.set(paramId, domainValue);
+}
+
+float AudioEffectFrameworkProcessor::getMiddleParamDomain(const juce::String& paramId, float fallback) const
+{
+  if (middleParamDomains_.contains(paramId))
+    return middleParamDomains_[paramId];
+  return fallback;
+}
+
+void AudioEffectFrameworkProcessor::resetMiddleProcessorParamDefaults()
+{
+  middleParamDomains_.clear();
+
+  if (effectEngine_ == nullptr || ! effectEngine_->isReady())
+    return;
+
+  if (auto* proc = effectEngine_->getMiddleProcessor())
+  {
+    for (const auto& desc : proc->parameters())
+      middleParamDomains_.set(juce::String(desc.id), desc.default_domain);
+  }
+}
+
+void AudioEffectFrameworkProcessor::pushMiddleProcessorParamDomains()
+{
+  ensureEffectEngine();
+
+  const auto middleId = getMinibussEngine().middleProcessorId();
+  if (middleId == kbuss::kInvalidObjectId)
+    return;
+
+  for (auto it = middleParamDomains_.begin(); it != middleParamDomains_.end(); ++it)
+    getMinibussEngine().setParamDomain(middleId, it.getKey().toStdString(), it.getValue());
+}
 
 //==============================================================================
 

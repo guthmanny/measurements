@@ -51,6 +51,12 @@ add_library(audio_effect_framework STATIC
     Source/TopologySettingsPanel.h
     Source/OversamplingSettingsPanel.cpp
     Source/OversamplingSettingsPanel.h
+    Source/EffectUserParamsPanel.cpp
+    Source/EffectUserParamsPanel.h
+    Source/ParamsSettingsPanel.cpp
+    Source/ParamsSettingsPanel.h
+    Source/KbussParamUiUtils.h
+    Source/KbussParamSliderUtils.h
     Source/MeterDisplayUtils.h
     Source/CompressorCurveComponent.cpp
     Source/CompressorCurveComponent.h

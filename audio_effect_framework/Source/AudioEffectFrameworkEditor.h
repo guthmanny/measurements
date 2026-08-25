@@ -6,6 +6,7 @@
 #include "EffectFooterComponent.h"
 #include "EffectHeaderComponent.h"
 #include "AudioEffectFrameworkProcessor.h"
+#include "EffectUserParamsPanel.h"
 #include "SpectrumOverlayComponent.h"
 #include "TunerOverlayComponent.h"
 
@@ -48,11 +49,17 @@ public:
     void setSpectrumVisible (bool shouldShow);
 
 protected:
-    /** Finish APVTS body rows + zoom/timer. Call once from a derived ctor when
-        constructed with deferBodyBuild=true. */
-    void completeBodyConstruction();
+  /** Finish APVTS body rows + zoom/timer. Call once from a derived ctor when
+      constructed with deferBodyBuild=true. */
+  void completeBodyConstruction();
 
-    /** Unzoomed height for a body row (override for custom components). */
+  /** Recompute bodyContentHeight from bodyComponents (after dynamic rows change). */
+  void recalculateBodyContentHeight();
+
+  /** Cap visible body viewport height; 0 = expand window to fit all rows. */
+  virtual int getMaxBodyViewportHeight() const noexcept { return 0; }
+
+  /** Unzoomed height for a body row (override for custom components). */
     virtual int getBodyComponentBaseHeight (const juce::Component* component) const noexcept;
 
     /** Extra per-tick UI work after meters/overlays update. */
@@ -85,19 +92,25 @@ protected:
     juce::OwnedArray<ButtonAttachment> buttonAttachments;
     juce::OwnedArray<ComboBoxAttachment> comboBoxAttachments;
 
+    void applyZoom (float newZoom);
+
 private:
     void timerCallback() override;
 #if JucePlugin_Build_Standalone
     void darkModeSettingChanged() override;
     void applyAppSettingsDialogTitleBarTheme();
 #endif
-    void applyZoom (float newZoom);
     int getEditorWidth();
     int getNaturalHeight() const noexcept;
+    int getBodyViewportHeight() const noexcept;
     int getHeaderHeight() const noexcept;
     int getFooterHeight() const noexcept;
     int getBodyContentHeight() const noexcept;
     void buildParameterBodyRows();
+    void syncEffectUserParamsPanelIfNeeded();
+
+    std::unique_ptr<EffectUserParamsPanel> effectUserParamsPanel_;
+    int lastMiddleProcessorGeneration_ = -1;
 
     TunerOverlay tunerOverlay;
     SpectrumOverlay spectrumOverlay;

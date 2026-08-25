@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "EffectUserParamsPanel.h"
 #include "MeterDisplayUtils.h"
 
 #if JucePlugin_Build_Standalone
@@ -180,16 +181,60 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
 void AudioEffectFrameworkEditor::completeBodyConstruction()
 {
   buildParameterBodyRows();
-  bodyContentHeight += bodyMargin;
+
+  effectUserParamsPanel_ = std::make_unique<EffectUserParamsPanel>(processor, atomLookAndFeel);
+  bodyContent.addAndMakeVisible(*effectUserParamsPanel_);
+  bodyComponents.add(effectUserParamsPanel_.get());
+
+  recalculateBodyContentHeight();
   applyZoom(1.0f);
   startTimerHz (meter_display::kRefreshHz);
+  syncEffectUserParamsPanelIfNeeded();
+}
+
+void AudioEffectFrameworkEditor::recalculateBodyContentHeight()
+{
+  bodyContentHeight = bodyMargin;
+
+  for (auto* component : bodyComponents)
+  {
+    if (component == nullptr || ! component->isVisible())
+      continue;
+
+    const int rowHeight = getBodyComponentBaseHeight(component);
+    if (rowHeight <= 0)
+      continue;
+
+    bodyContentHeight += rowHeight + bodyPadding;
+  }
+
+  bodyContentHeight += bodyMargin;
 }
 
 int AudioEffectFrameworkEditor::getBodyComponentBaseHeight (const juce::Component* component) const noexcept
 {
+  if (effectUserParamsPanel_ != nullptr && component == effectUserParamsPanel_.get())
+    return effectUserParamsPanel_->preferredHeight();
+
   if (dynamic_cast<const atom::Slider*> (component) != nullptr)
     return sliderRowHeight;
   return cardRowHeight;
+}
+
+void AudioEffectFrameworkEditor::syncEffectUserParamsPanelIfNeeded()
+{
+  if (effectUserParamsPanel_ == nullptr)
+    return;
+
+  const int generation = processor.middleProcessorGeneration();
+  if (generation == lastMiddleProcessorGeneration_)
+    return;
+
+  lastMiddleProcessorGeneration_ = generation;
+  effectUserParamsPanel_->rebuildFromMiddleProcessor();
+  effectUserParamsPanel_->setVisible(effectUserParamsPanel_->preferredHeight() > 0);
+  recalculateBodyContentHeight();
+  applyZoom(zoomFactor);
 }
 
 void AudioEffectFrameworkEditor::buildParameterBodyRows()
@@ -209,6 +254,9 @@ void AudioEffectFrameworkEditor::buildParameterBodyRows()
 
   for (int i = 0; i < parameters.size(); ++i)
   {
+    if (i >= processor.parameters.parameterTypes.size())
+      continue;
+
     if (const auto* parameter = dynamic_cast<const juce::AudioProcessorParameterWithID*>(parameters[i]))
     {
       if (headerParamIds.contains(parameter->paramID) || settingsOnlyParamIds.contains(parameter->paramID))
@@ -233,6 +281,9 @@ void AudioEffectFrameworkEditor::buildParameterBodyRows()
 
   for (int i = 0; i < parameters.size(); ++i)
   {
+    if (i >= processor.parameters.parameterTypes.size())
+      continue;
+
     if (const auto* parameter = dynamic_cast<const juce::AudioProcessorParameterWithID*>(parameters[i]))
     {
       if (headerParamIds.contains(parameter->paramID) || settingsOnlyParamIds.contains(parameter->paramID))
@@ -324,6 +375,14 @@ int AudioEffectFrameworkEditor::getBodyContentHeight() const noexcept
   return juce::roundToInt((float)bodyContentHeight * zoomFactor);
 }
 
+int AudioEffectFrameworkEditor::getBodyViewportHeight() const noexcept
+{
+  const int full = getBodyContentHeight();
+  if (const int cap = getMaxBodyViewportHeight(); cap > 0)
+    return juce::jmin(full, cap);
+  return full;
+}
+
 int AudioEffectFrameworkEditor::getEditorWidth()
 {
   const int headerW = headerBar.getMinimumContentWidth(getHeaderHeight());
@@ -333,7 +392,7 @@ int AudioEffectFrameworkEditor::getEditorWidth()
 
 int AudioEffectFrameworkEditor::getNaturalHeight() const noexcept
 {
-  return getHeaderHeight() + getBodyContentHeight() + getFooterHeight();
+  return getHeaderHeight() + getBodyViewportHeight() + getFooterHeight();
 }
 
 void AudioEffectFrameworkEditor::applyZoom(float newZoom)
@@ -452,6 +511,7 @@ void AudioEffectFrameworkEditor::timerCallback()
                                                         processor.getSpectrumFftSize());
   }
 
+  syncEffectUserParamsPanelIfNeeded();
   onEditorTimerTick();
 }
 

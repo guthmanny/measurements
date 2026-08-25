@@ -14,6 +14,7 @@ class AudioEffectFrameworkProcessor;
 class NoiseGateSettingsPanel;
 class OversamplingSettingsPanel;
 class PeakDisplaySettingsPanel;
+class ParamsSettingsPanel;
 
 /** App-wide settings shell: left category list, right page content. */
 class AppSettingsPanel final : public juce::Component
@@ -26,7 +27,8 @@ public:
         PeakDisplay,
         Calibration,
         Topology,
-        Modeling
+        Modeling,
+        Params
     };
 
     AppSettingsPanel (juce::AudioDeviceManager& deviceManager,
@@ -66,6 +68,7 @@ private:
     std::unique_ptr<CalibrationSettingsPanel> calibrationPage;
     std::unique_ptr<TopologySettingsPanel> topologyPage;
     std::unique_ptr<OversamplingSettingsPanel> oversamplingPage;
+    std::unique_ptr<ParamsSettingsPanel> paramsPage;
     std::vector<std::unique_ptr<NavItem>> navItems;
 
     Page selectedPage = Page::AudioSettings;

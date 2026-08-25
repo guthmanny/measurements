@@ -161,6 +161,15 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   /** Override in plugin subclass to push effect-specific kbuss parameters. */
   virtual void updateCustomEffectParameters() {}
 
+  /** Middle-processor kbuss parameter domains (UI + preset). */
+  void setMiddleParamDomain(const juce::String& paramId, float domainValue);
+  [[nodiscard]] float getMiddleParamDomain(const juce::String& paramId, float fallback) const;
+  /** Bumps when middle processor or its parameter layout changes (UI refresh). */
+  [[nodiscard]] int middleProcessorGeneration() const noexcept { return middleProcessorGeneration_.load(); }
+
+  KbussEffectEngine& getKbussEngine() noexcept;
+  [[nodiscard]] const KbussEffectEngine& getKbussEngine() const noexcept;
+
  protected:
   /** When true, bypass noise gate after prepare (typical for guitar pedals). */
   virtual bool bypassNoiseGateOnStartup() const { return false; }
@@ -173,20 +182,28 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
 
   void ensureEffectEngine();
 
-  KbussEffectEngine& getKbussEngine() noexcept { return *effectEngine_; }
-  [[nodiscard]] const KbussEffectEngine& getKbussEngine() const noexcept { return *effectEngine_; }
-
   /** Legacy alias — prefer getKbussEngine(). */
   KbussEffectEngine& getMinibussEngine() noexcept { return getKbussEngine(); }
   [[nodiscard]] const KbussEffectEngine& getMinibussEngine() const noexcept { return getKbussEngine(); }
 
   float readParameterValue(const String& paramId, float fallback) const;
 
+  /** Push APVTS + custom params to kbuss (subclasses may call after re-preparing the engine). */
+  void updateEffectParameters();
+
+  /** Apply persisted effect-topology bypass overrides after prepare. */
+  void applyEffectTopologyBypassOverrides();
+
+  /** Reload middle-processor param defaults into middleParamDomains_. */
+  void resetMiddleProcessorParamDefaults();
+
+  /** Notify UI that middle processor layout changed. */
+  void bumpMiddleProcessorGeneration() noexcept { middleProcessorGeneration_.fetch_add(1); }
+
  private:
   //==============================================================================
 
   void syncParametersFromValueTree();
-  void updateEffectParameters();
   void ensureScratchBuffers(int numChannels, int numSamples);
   void mixToMonoBuffer(const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void pushTunerMono(const AudioSampleBuffer& buffer, int numChannels, int numSamples);
@@ -195,8 +212,8 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   /** Header input meter: raw ADC x Input Gain, before Ki. */
   void updateInputMeter (const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void ensureTunerSampleRate();
-  void applyEffectTopologyBypassOverrides();
   void captureEffectTopologyBypassForState (juce::XmlElement& xml) const;
+  void pushMiddleProcessorParamDomains();
 
   std::unique_ptr<KbussEffectEngine> effectEngine_;
   AudioSampleBuffer dryBuffer;
@@ -238,6 +255,9 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
 
   /** Loaded from preset; applied after effect engine prepare. */
   juce::HashMap<juce::String, bool> effectTopologyBypassOverrides_;
+
+  juce::HashMap<juce::String, float> middleParamDomains_;
+  std::atomic<int> middleProcessorGeneration_{0};
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioEffectFrameworkProcessor)
 };
