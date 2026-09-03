@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<drumset Version="1.01" EditorVersion="3.04" Path="C:\Work\SndDev\DreamSoundbanks\TutorialBank" Type="" Style="" Size="N/A" Comment="drum set prog 25, Note 27 to 87" PublicComment="Drumset with some TR808 instruments">
+  <InstrumentList>
+    <Instrument Name="bd8081" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="36" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="rs808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="37" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="sd808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="38" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="Std39d" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="39" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="Std40x" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="40" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="llt808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="41" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="ch8082" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="42" Group="Group0" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="lt808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="43" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="ch808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="44" Group="Group0" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="lmt808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="45" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="oh808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="46" Group="Group0" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="hmt808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="47" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="lht808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="48" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="cy808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="49" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="hht808" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="50" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+  </InstrumentList>
+  <Group>
+    <Order>
+      <Group0/>
+    </Order>
+    <MuteSameGroup>
+      <Group0/>
+    </MuteSameGroup>
+  </Group>
+</drumset>

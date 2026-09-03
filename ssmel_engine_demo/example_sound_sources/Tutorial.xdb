@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<soundbank Version="1.01" CompilerVersion="3.04" Path="C:\Work\SndDev\DreamSoundbanks\TutorialBank" TargetFormat="SND5000" TargetSampleRate="48000" Relocatable="0" Encryption="0" EncryptionKey="" StartAddress="80000" EndAddressFlag="0" EndAddress="" SeparateBinaries="0" CompileSamples="0" SampleStartAddress="20000" CompileParameters="0" MapFile="" Vendor="Dream" Product="" Comment="Tutorial soundbank" Copyright="" Build="UpToDate" TargetMemory="Standard">
+  <InstrumentList>
+    <Instrument Name="Piano2ry" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="0" Variation="0" Active="1" Volume="0" Type="" Style="" Size="429099" Comment="" PublicComment=""/>
+    <Instrument Name="Ep2" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="1" Variation="0" Active="1" Volume="0" Type="" Style="" Size="35369" Comment="" PublicComment=""/>
+    <Instrument Name="Detep2" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="1" Variation="4" Active="1" Volume="0" Type="" Style="" Size="35384" Comment="pgm 1 variation 4" PublicComment=""/>
+    <Instrument Name="Jpstrg" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="2" Variation="0" Active="1" Volume="0" Type="" Style="" Size="30988" Comment="" PublicComment=""/>
+    <Instrument Name="Warmry" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="3" Variation="0" Active="1" Volume="0" Type="" Style="" Size="41157" Comment="" PublicComment=""/>
+    <Instrument Name="SYNBS1" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="4" Variation="0" Active="1" Volume="0" Type="" Style="" Size="3758" Comment="" PublicComment=""/>
+    <Instrument Name="Synbs2" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="5" Variation="0" Active="1" Volume="0" Type="" Style="" Size="40542" Comment="" PublicComment=""/>
+    <Instrument Name="SINwave" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="6" Variation="0" Active="1" Volume="0" Type="" Style="" Size="8722" Comment="" PublicComment=""/>
+    <Instrument Name="SQUAREJ" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="7" Variation="0" Active="1" Volume="0" Type="" Style="" Size="3038" Comment="" PublicComment=""/>
+    <Instrument Name="SAWJ" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="8" Variation="0" Active="1" Volume="0" Type="" Style="" Size="6482" Comment="" PublicComment=""/>
+    <Instrument Name="SYNBS3" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="4" Variation="8" Active="1" Volume="0" Type="" Style="" Size="3758" Comment="pgm 4 variation 8" PublicComment=""/>
+    <Instrument Name="SYNBS4" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Program="5" Variation="8" Active="1" Volume="0" Type="" Style="" Size="18660" Comment="pgm 5 variation 8" PublicComment=""/>
+  </InstrumentList>
+  <DrumsetList>
+    <Instrument Name="STDdrum" Path="c:\work\snddev\dreamSoundbanks\TutorialBank" Program="0" Variation="0" Active="1" Volume="0" Type="" Style="" Size="429099" Comment="drum set prog 0, Note 36 to 48" PublicComment="Standard drumset"/>
+    <Instrument Name="TR808drum" Path="c:\work\snddev\dreamSoundbanks\TutorialBank" Program="25" Variation="0" Active="1" Volume="0" Type="" Style="" Size="18946" Comment="drum set prog 25, Note 27 to 87" PublicComment="Drumset with some TR808 instruments"/>
+  </DrumsetList>
+</soundbank>

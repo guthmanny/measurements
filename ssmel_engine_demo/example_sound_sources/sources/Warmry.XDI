@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<instrument Version="1.43" EditorVersion="3.53" Path="C:\Work\SndDev\DreamSoundbanks\TutorialBank\sources" TargetFormat="SND5000" TargetSampleRate="48000" NoLegato="0" CurrentLayer="0" CurrentSplit="0" Size="82314" Comment="" Type="" Style="" KillSameNote="1" PublicComment="" KeyOffEnvModulation="1" LegacyVelocity="0">
+  <Layer Trigger="Note on" Listen="1" KeyOffVolModulation="1" KeyOffSplitSelection="Note off velocity" AutoSampleVarGroup="Off" KeyOffIgnored="0">
+    <Split Algorithm="Sample" StartNote="1" EndNote="47" MinVel="1" MaxVel="127" Selected="1" RealTimeGroup="0">
+      <Wave SampleName="jpswb.wav" SamplePath="c:\work\snddev\dreamsoundbanks\TutorialBank\sources" SampleRate="44100" UnityNote="64" Channel="Mono" Bits="16" SampleStart="0" LoopType="Forward" LoopStart="90" LoopEnd="27479" CoarseTune="0" FineTune="37" KbdType="Standard" Env3Amount="0" LFO1Amount="0" Delay="0" LoopTuning="0"/>
+      <OscAmp Amplitude="-5.4258961628229372" KbdTable="Off" VelOffset="128" VelSlope="0" VelModAutoX="0" MinVelModX="0" MaxVelModX="127" MinVelModY="0" MaxVelModY="0" VelCurve="Straight"/>
+      <Filter FilterType="Low pass" FilterSlope="24 dB" SoftClipping="0" Frequency="0.04" Resonance="0.291338583" KbdTable="1" Env2Amount="0" LFO2Amount="0" FreqOffset="0" FreqVelOffset="64" FreqVelSlope="0.5" ResoVelOffset="128" ResoVelSlope="0" FreqVelModAutoX="0" FreqMinVelModX="0" FreqMaxVelModX="126" FreqMinVelModY="0.25" FreqMaxVelModY="0.98443603515625" FreqVelCurve="Straight" ResoVelModAutoX="0" ResoMinVelModX="0" ResoMaxVelModX="127" ResoMinVelModY="1" ResoMaxVelModY="1" ResoVelCurve="Straight"/>
+      <Amplifier Volume="-2.0972696484563924" KbdTable="Off" LFO2Amount="0" VelOffset="0" VelSlope="1" VelModAutoX="0" MinVelModX="0" MaxVelModX="127" MinVelModY="-96" MaxVelModY="-0.13624994767646009" VelCurve="Straight"/>
+      <Mixer Volume="-9" Pan="0" AutoFx="0" FxSend="-9"/>
+      <Envelope1 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0"/>
+        <Segment Rate="0.68" Level="1"/>
+        <Segment Rate="0.7" Level="0.873015873"/>
+        <Segment Rate="0.65" Level="0"/>
+      </Envelope1>
+      <Envelope2 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0.496062992"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.9" Level="0"/>
+      </Envelope2>
+      <Envelope3 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0.496062992"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.9" Level="0"/>
+      </Envelope3>
+      <LFO1 Waveform="Sine" Frequency="5.925" Delay="0" Attack="0"/>
+      <LFO2 Waveform="Sine" Frequency="0" Delay="0" Attack="0"/>
+      <KbdTable1 CurrentSegment="0">
+        <Segment Key="0" Value="-0.94488189"/>
+        <Segment Key="14" Value="-0.94488189"/>
+        <Segment Key="27" Value="-0.834645669"/>
+        <Segment Key="38" Value="-0.519685039"/>
+        <Segment Key="47" Value="-0.00787401575"/>
+        <Segment Key="127" Value="-0.00787401575"/>
+      </KbdTable1>
+      <KbdTable2 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable2>
+      <KbdTable3 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable3>
+      <KbdTable4 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable4>
+    </Split>
+    <Split Algorithm="Sample" StartNote="48" EndNote="59" MinVel="1" MaxVel="127" Selected="0" RealTimeGroup="0">
+      <Wave SampleName="jpswb.wav" SamplePath="c:\work\snddev\dreamsoundbanks\TutorialBank\sources" SampleRate="44100" UnityNote="64" Channel="Mono" Bits="16" SampleStart="0" LoopType="Forward" LoopStart="90" LoopEnd="27479" CoarseTune="0" FineTune="37" KbdType="Standard" Env3Amount="0" LFO1Amount="0" Delay="0" LoopTuning="0"/>
+      <OscAmp Amplitude="-5.4258961628229372" KbdTable="Off" VelOffset="128" VelSlope="0" VelModAutoX="0" MinVelModX="0" MaxVelModX="127" MinVelModY="0" MaxVelModY="0" VelCurve="Straight"/>
+      <Filter FilterType="Low pass" FilterSlope="24 dB" SoftClipping="0" Frequency="0.0935640138" Resonance="0" KbdTable="1" Env2Amount="0" LFO2Amount="0" FreqOffset="0" FreqVelOffset="64" FreqVelSlope="0.5" ResoVelOffset="128" ResoVelSlope="0" FreqVelModAutoX="0" FreqMinVelModX="0" FreqMaxVelModX="126" FreqMinVelModY="0.25" FreqMaxVelModY="0.98443603515625" FreqVelCurve="Straight" ResoVelModAutoX="0" ResoMinVelModX="0" ResoMaxVelModX="127" ResoMinVelModY="1" ResoMaxVelModY="1" ResoVelCurve="Straight"/>
+      <Amplifier Volume="0" KbdTable="Off" LFO2Amount="0" VelOffset="0" VelSlope="1" VelModAutoX="0" MinVelModX="0" MaxVelModX="127" MinVelModY="-96" MaxVelModY="-0.13624994767646009" VelCurve="Straight"/>
+      <Mixer Volume="-4.5" Pan="0" AutoFx="0" FxSend="-4.5"/>
+      <Envelope1 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0"/>
+        <Segment Rate="0.66" Level="1"/>
+        <Segment Rate="0.7" Level="0.873015873"/>
+        <Segment Rate="0.65" Level="0"/>
+      </Envelope1>
+      <Envelope2 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0.496062992"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.9" Level="0"/>
+      </Envelope2>
+      <Envelope3 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0.496062992"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.9" Level="0"/>
+      </Envelope3>
+      <LFO1 Waveform="Sine" Frequency="5.925" Delay="0" Attack="0"/>
+      <LFO2 Waveform="Sine" Frequency="0" Delay="0" Attack="0"/>
+      <KbdTable1 CurrentSegment="0">
+        <Segment Key="0" Value="-0.511811024"/>
+        <Segment Key="47" Value="-0.511811024"/>
+        <Segment Key="55" Value="-0.291338583"/>
+        <Segment Key="59" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable1>
+      <KbdTable2 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable2>
+      <KbdTable3 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable3>
+      <KbdTable4 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable4>
+    </Split>
+    <Split Algorithm="Sample" StartNote="60" EndNote="96" MinVel="1" MaxVel="127" Selected="0" RealTimeGroup="0">
+      <Wave SampleName="jpswb.wav" SamplePath="c:\work\snddev\dreamsoundbanks\TutorialBank\sources" SampleRate="44100" UnityNote="64" Channel="Mono" Bits="16" SampleStart="0" LoopType="Forward" LoopStart="90" LoopEnd="27479" CoarseTune="0" FineTune="37" KbdType="Standard" Env3Amount="0" LFO1Amount="0" Delay="0" LoopTuning="0"/>
+      <OscAmp Amplitude="-5.4258961628229372" KbdTable="Off" VelOffset="128" VelSlope="0" VelModAutoX="0" MinVelModX="0" MaxVelModX="127" MinVelModY="0" MaxVelModY="0" VelCurve="Straight"/>
+      <Filter FilterType="Low pass" FilterSlope="24 dB" SoftClipping="0" Frequency="0.549342561" Resonance="0" KbdTable="1" Env2Amount="0" LFO2Amount="0" FreqOffset="0" FreqVelOffset="64" FreqVelSlope="0.5" ResoVelOffset="128" ResoVelSlope="0" FreqVelModAutoX="0" FreqMinVelModX="0" FreqMaxVelModX="126" FreqMinVelModY="0.25" FreqMaxVelModY="0.98443603515625" FreqVelCurve="Straight" ResoVelModAutoX="0" ResoMinVelModX="0" ResoMaxVelModX="127" ResoMinVelModY="1" ResoMaxVelModY="1" ResoVelCurve="Straight"/>
+      <Amplifier Volume="0" KbdTable="Off" LFO2Amount="0" VelOffset="0" VelSlope="1" VelModAutoX="0" MinVelModX="0" MaxVelModX="127" MinVelModY="-96" MaxVelModY="-0.13624994767646009" VelCurve="Straight"/>
+      <Mixer Volume="-3" Pan="0" AutoFx="0" FxSend="-3"/>
+      <Envelope1 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0"/>
+        <Segment Rate="0.66" Level="1"/>
+        <Segment Rate="0.7" Level="0.873015873"/>
+        <Segment Rate="0.65" Level="0"/>
+      </Envelope1>
+      <Envelope2 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0.496062992"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.9" Level="0"/>
+      </Envelope2>
+      <Envelope3 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0.496062992"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.9" Level="0"/>
+      </Envelope3>
+      <LFO1 Waveform="Sine" Frequency="5.925" Delay="0" Attack="0"/>
+      <LFO2 Waveform="Sine" Frequency="0" Delay="0" Attack="0"/>
+      <KbdTable1 CurrentSegment="0">
+        <Segment Key="0" Value="-0.826771654"/>
+        <Segment Key="60" Value="-0.826771654"/>
+        <Segment Key="71" Value="-0.763779528"/>
+        <Segment Key="86" Value="-0.503937008"/>
+        <Segment Key="94" Value="-0.11023622"/>
+        <Segment Key="127" Value="-0.11023622"/>
+      </KbdTable1>
+      <KbdTable2 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable2>
+      <KbdTable3 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable3>
+      <KbdTable4 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable4>
+    </Split>
+    <Split Algorithm="Sample" StartNote="97" EndNote="127" MinVel="1" MaxVel="127" Selected="0" RealTimeGroup="0">
+      <Wave SampleName="jpswbde.wav" SamplePath="c:\work\snddev\dreamsoundbanks\TutorialBank\sources" SampleRate="44100" UnityNote="76" Channel="Mono" Bits="16" SampleStart="0" LoopType="Forward" LoopStart="51" LoopEnd="13676" CoarseTune="0" FineTune="37" KbdType="Standard" Env3Amount="0" LFO1Amount="0" Delay="0" LoopTuning="0"/>
+      <OscAmp Amplitude="-5.1741136245418708" KbdTable="Off" VelOffset="128" VelSlope="0" VelModAutoX="0" MinVelModX="0" MaxVelModX="127" MinVelModY="0" MaxVelModY="0" VelCurve="Straight"/>
+      <Filter FilterType="Low pass" FilterSlope="24 dB" SoftClipping="0" Frequency="0.549342561" Resonance="0" KbdTable="1" Env2Amount="0" LFO2Amount="0" FreqOffset="0" FreqVelOffset="64" FreqVelSlope="0.5" ResoVelOffset="128" ResoVelSlope="0" FreqVelModAutoX="0" FreqMinVelModX="0" FreqMaxVelModX="126" FreqMinVelModY="0.25" FreqMaxVelModY="0.98443603515625" FreqVelCurve="Straight" ResoVelModAutoX="0" ResoMinVelModX="0" ResoMaxVelModX="127" ResoMinVelModY="1" ResoMaxVelModY="1" ResoVelCurve="Straight"/>
+      <Amplifier Volume="0" KbdTable="Off" LFO2Amount="0" VelOffset="0" VelSlope="1" VelModAutoX="0" MinVelModX="0" MaxVelModX="127" MinVelModY="-96" MaxVelModY="-0.13624994767646009" VelCurve="Straight"/>
+      <Mixer Volume="-3" Pan="0" AutoFx="0" FxSend="-3"/>
+      <Envelope1 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0"/>
+        <Segment Rate="0.66" Level="1"/>
+        <Segment Rate="0.7" Level="0.873015873"/>
+        <Segment Rate="0.65" Level="0"/>
+      </Envelope1>
+      <Envelope2 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0.496062992"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.9" Level="0"/>
+      </Envelope2>
+      <Envelope3 SustainPoint="2" LoopStart="-1" VelScaling="0" KbdTable="Off" CurrentSegment="0">
+        <Segment Rate="1" Level="0.496062992"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.99" Level="1"/>
+        <Segment Rate="0.9" Level="0"/>
+      </Envelope3>
+      <LFO1 Waveform="Sine" Frequency="5.925" Delay="0" Attack="0"/>
+      <LFO2 Waveform="Sine" Frequency="0" Delay="0" Attack="0"/>
+      <KbdTable1 CurrentSegment="0">
+        <Segment Key="0" Value="-0.11023622"/>
+        <Segment Key="97" Value="-0.11023622"/>
+        <Segment Key="127" Value="-0.196850394"/>
+      </KbdTable1>
+      <KbdTable2 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable2>
+      <KbdTable3 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable3>
+      <KbdTable4 CurrentSegment="0">
+        <Segment Key="0" Value="0"/>
+        <Segment Key="127" Value="0"/>
+      </KbdTable4>
+    </Split>
+  </Layer>
+  <TuningTable CurrentSegment="0">
+    <Segment Key="0" Value="0"/>
+    <Segment Key="127" Value="0"/>
+  </TuningTable>
+  <AutoSampleVariation>
+    <AutoSampleVarGroup1 Mode="Random"/>
+    <AutoSampleVarGroup2 Mode="Random"/>
+    <AutoSampleVarGroup3 Mode="Random"/>
+  </AutoSampleVariation>
+</instrument>

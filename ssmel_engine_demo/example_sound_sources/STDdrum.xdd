@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<drumset Version="1.01" EditorVersion="3.04" Path="C:\Work\SndDev\DreamSoundbanks\TutorialBank" Type="" Style="" Size="N/A" Comment="drum set prog 0, Note 36 to 48" PublicComment="Standard drumset">
+  <InstrumentList>
+    <Instrument Name="Std36std" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="36" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="6122" Comment="NEW" PublicComment=""/>
+    <Instrument Name="Std37d" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="37" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="Std38x" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="38" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="Std39d" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="39" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="Std40x" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="40" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="NEW" PublicComment=""/>
+    <Instrument Name="Std41new" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="41" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="43204" Comment="V2.1" PublicComment=""/>
+    <Instrument Name="Std42NEW" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="42" Group="Group0" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="V2.0" PublicComment=""/>
+    <Instrument Name="Std43new" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="43" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="43204" Comment="V2.1" PublicComment=""/>
+    <Instrument Name="Std44jl" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="44" Group="Group0" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="V2.0" PublicComment=""/>
+    <Instrument Name="Std45new" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="45" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="43204" Comment="V2.1" PublicComment=""/>
+    <Instrument Name="Std46jl" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="46" Group="Group0" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="N/A" Comment="V2.0" PublicComment=""/>
+    <Instrument Name="Std47new" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="47" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="43204" Comment="V2.1" PublicComment=""/>
+    <Instrument Name="Std48new" Path="c:\work\snddev\dreamSoundbanks\TutorialBank\Sources" Active="1" Key="48" Group="" Type="" Style="" CoarseTune="0" FineTune="0" Volume="0" Pan="0" Decay="0" FX="0" Size="43204" Comment="V2.1" PublicComment=""/>
+  </InstrumentList>
+  <Group>
+    <Order>
+      <Group0/>
+    </Order>
+    <MuteSameGroup>
+      <Group0/>
+    </MuteSameGroup>
+  </Group>
+</drumset>
