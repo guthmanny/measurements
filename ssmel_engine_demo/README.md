@@ -1,6 +1,6 @@
 # SSMEL Engine Demo
 
-Standalone JUCE client that shows **Dream Editor XDI → `nx_pcm_sample_map_f32_t` → MuDSP `ssmel_engine`**.
+Standalone JUCE client that shows **Dream Editor XDI → `ssmel_map_t` → `libssmel`**.
 
 The demo exists to prove the file is heard as written. Amplifier, Envelope, Filter, and loop points come from the XDI — not from engine playability presets.
 
@@ -8,11 +8,11 @@ App structure matches [bleach](../../bleach) / [basic_synth](../basic_synth):
 
 - AtomTheme UI (`AtomLookAndFeel`, settings dialog, on-screen keyboard)
 - Custom `StandaloneMain` (no audio-effect JACK restart path)
-- Client-owned `nx_pcm_sample_map_f32_t` — engine does not parse XDI/WAV
+- Client-owned `ssmel_map_t` — engine does not parse XDI/WAV
 
 ## What it shows
 
-1. `SsmelDemoMap` parses `Piano2ry.XDI` / `Ep2.XDI` and their WAVs into `nx_pcm_sample_map_f32_t`.
+1. `SsmelDemoMap` parses `Piano2ry.XDI` / `Ep2.XDI` and their WAVs into `ssmel_map_t` via `ssmel_buffer_create` / `ssmel_map_add_zone` / `ssmel_map_add_layer`.
 2. Dropdown **Piano** / **EP** swaps the client-owned map. Resonance / harmonic resonance stay off.
 3. Engine lifecycle: `create` → `prepare` → `set_sample_map` → MIDI `note_on/off` → `render_stereo`.
 4. Phase 3 controls: output gain and SVF cutoff.
@@ -32,11 +32,29 @@ Parser: `Source/SsmelDemoMap.cpp` (`parseEnvelope`, `xdiRateToMs`, `parseAmpVel`
 
 ## Build
 
+Customers receive a hand-delivered **zip**. Usage and upgrades are in the zip (`README.md`, `CHANGELOG.md`, `INTEGRATION.md`). Do not FetchContent or `add_subdirectory` MuDSP.
+
 ```bash
+# Internal: make the zip
+cd ~/myCode/MuDSP
+./scripts/package_ssmel_sdk.sh
+
+# Point the demo at the unpacked package
 cd ~/myCode/measurements/ssmel_engine_demo
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+  -DSSMEL_DIR=$HOME/myCode/MuDSP/dist/ssmel-sdk/lib/cmake/SSMEL
 cmake --build build --target SsmelEngineDemo_Standalone
 ./build/SsmelEngineDemo_artefacts/Release/Standalone/SsmelEngineDemo
 ```
 
-Requires sibling checkouts: `MuDSP` (with `BUILD_SSMEL_ENGINE=ON`), `kbuss`, `AtomTheme`, and JUCE 8+. Local MuDSP is pulled via kbuss (`../MuDSP`).
+Daily iteration against a local MuDSP tree (dev only; still links `SSMEL::ssmel`, not `nudsp`):
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMUDSP_ROOT=$HOME/myCode/MuDSP
+```
+
+Dependencies:
+
+- JUCE 8+ (local `~/source/JUCE` or installed package)
+- AtomTheme (local checkout, otherwise fetched from GitHub)
+- SSMEL SDK (`SSMEL_DIR`) or a local MuDSP tree (`MUDSP_ROOT`)

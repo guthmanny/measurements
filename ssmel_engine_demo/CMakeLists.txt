@@ -26,7 +26,6 @@ endif()
 
 include(FetchContent)
 
-get_filename_component(_demo_deps_root "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
 set(ATOM_THEME_LOCAL "${CMAKE_CURRENT_SOURCE_DIR}/../../AtomTheme")
 get_filename_component(ATOM_THEME_LOCAL "${ATOM_THEME_LOCAL}" ABSOLUTE)
 if(NOT EXISTS "${ATOM_THEME_LOCAL}/CMakeLists.txt")
@@ -54,41 +53,26 @@ else()
     set(ATOM_COLLECTIONS_APP_DIR "${AtomTheme_SOURCE_DIR}/demos/collections_app")
 endif()
 
-set(MUDSP_ROOT "" CACHE PATH "Path to local MuDSP checkout")
-set(KBUSS_ROOT "" CACHE PATH "Path to local kbuss checkout")
+# Closed SSMEL SDK only. Do not FetchContent / add_subdirectory MuDSP for customers.
+set(SSMEL_DIR "" CACHE PATH "Directory containing SSMELConfig.cmake (…/lib/cmake/SSMEL)")
+set(MUDSP_ROOT "" CACHE PATH "Dev-only in-tree MuDSP (do not ship this path)")
 
-set(KBUSS_LOCAL "${_demo_deps_root}/../kbuss")
-get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
-if(NOT KBUSS_ROOT STREQUAL "" AND EXISTS "${KBUSS_ROOT}/CMakeLists.txt")
-    set(KBUSS_LOCAL "${KBUSS_ROOT}")
-elseif(NOT EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
-    set(KBUSS_LOCAL "D:/myCode/kbuss")
-    get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
-endif()
-if(NOT EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
-    set(KBUSS_LOCAL "$ENV{HOME}/source/kbuss")
-    get_filename_component(KBUSS_LOCAL "${KBUSS_LOCAL}" ABSOLUTE)
-endif()
-if(EXISTS "${KBUSS_LOCAL}/CMakeLists.txt")
-    message(STATUS "kbuss found at ${KBUSS_LOCAL} — using local checkout")
-    if(NOT MUDSP_ROOT STREQUAL "" AND EXISTS "${MUDSP_ROOT}/CMakeLists.txt")
-        set(MUDSP_DIR "${MUDSP_ROOT}" CACHE PATH "" FORCE)
-    endif()
+find_package(SSMEL CONFIG QUIET)
+
+if(NOT SSMEL_FOUND AND NOT MUDSP_ROOT STREQUAL "" AND EXISTS "${MUDSP_ROOT}/CMakeLists.txt")
+    message(STATUS "SSMEL package not found — using in-tree MuDSP at ${MUDSP_ROOT} (dev only)")
     set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
     set(BUILD_SSMEL_ENGINE ON CACHE BOOL "" FORCE)
-    add_subdirectory("${KBUSS_LOCAL}" "${CMAKE_BINARY_DIR}/kbuss" EXCLUDE_FROM_ALL)
-    set(KBUSS_DIR "${KBUSS_LOCAL}")
-else()
-    message(FATAL_ERROR
-        "kbuss not found. Expected a sibling checkout at ../kbuss (or set -DKBUSS_ROOT=<path>).")
+    set(NUDSP_BUILD_DUMP_NL_TABLES OFF CACHE BOOL "" FORCE)
+    add_subdirectory("${MUDSP_ROOT}" "${CMAKE_BINARY_DIR}/MuDSP" EXCLUDE_FROM_ALL)
 endif()
-if(TARGET nudsp AND NOT TARGET MuDSP::mudsp)
-    add_library(MuDSP::mudsp ALIAS nudsp)
-endif()
-if(NOT TARGET ssmel_engine)
+
+if(NOT TARGET SSMEL::ssmel)
     message(FATAL_ERROR
-        "ssmel_engine target not found. Build MuDSP with BUILD_SSMEL_ENGINE=ON.")
+        "SSMEL SDK not found.\n"
+        "  Release: cmake -DSSMEL_DIR=/path/to/ssmel-sdk/lib/cmake/SSMEL\n"
+        "  Dev:     cmake -DMUDSP_ROOT=/path/to/MuDSP")
 endif()
 
 juce_add_plugin(SsmelEngineDemo
@@ -118,8 +102,6 @@ target_sources(SsmelEngineDemo PRIVATE
 
 target_include_directories(SsmelEngineDemo PRIVATE
     "${ATOM_COLLECTIONS_APP_DIR}"
-    "${KBUSS_DIR}/include"
-    "${KBUSS_DIR}/src"
     "${CMAKE_SOURCE_DIR}/Source"
 )
 
@@ -131,6 +113,7 @@ target_compile_definitions(SsmelEngineDemo
         $<$<NOT:$<PLATFORM_ID:Windows>>:JUCE_JACK=1>
     PRIVATE
         JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1
+        SSMEL_USE_SHARED
         SSMEL_ENGINE_USE_SHARED
         SSMEL_DEMO_SOUND_DIR="${CMAKE_SOURCE_DIR}/example_sound_sources/sources"
 )
@@ -147,9 +130,7 @@ target_link_libraries(SsmelEngineDemo PRIVATE
     juce::juce_audio_devices
     juce::juce_dsp
     juce::juce_atom_theme
-    kbuss_plugin
-    MuDSP::mudsp
-    ssmel_engine
+    SSMEL::ssmel
     PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags

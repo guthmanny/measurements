@@ -44,7 +44,7 @@ juce::File findFileCI (const juce::File& dir, const juce::String& name)
     return {};
 }
 
-nx_sample_buffer_f32_t* loadWavBuffer (const juce::File& wavFile, float taggedSampleRate)
+ssmel_buffer_t* loadWavBuffer (const juce::File& wavFile, float taggedSampleRate)
 {
     juce::AudioFormatManager formats;
     formats.registerBasicFormats();
@@ -70,14 +70,14 @@ nx_sample_buffer_f32_t* loadWavBuffer (const juce::File& wavFile, float taggedSa
 
     const float sr = taggedSampleRate > 0.0f ? taggedSampleRate : (float) reader->sampleRate;
     const float* channels[1] = { interleaved.getReadPointer (0) };
-    return nx_sample_buffer_create_copy_f32 (channels, 1, (uint32_t) frames, sr, nullptr);
+    return ssmel_buffer_create (channels, 1, (uint32_t) frames, sr);
 }
 
-nx_pcm_osc_loop_mode_t loopModeFromXdi (const juce::String& type)
+ssmel_loop_mode_t loopModeFromXdi (const juce::String& type)
 {
     if (type.equalsIgnoreCase ("Forward") || type.equalsIgnoreCase ("Forwards"))
-        return NX_PCM_OSC_LOOP_FORWARD;
-    return NX_PCM_OSC_LOOP_OFF;
+        return SSMEL_LOOP_FORWARD;
+    return SSMEL_LOOP_OFF;
 }
 
 float dbToLin (float db)
@@ -112,7 +112,7 @@ double xdiRateToMs (double rate)
     return t_slow + (t_fast - t_slow) * (rate / r_fast);
 }
 
-void fillLayerEg (nx_pcm_layer_eg_f32_t& dst, const SsmelXdiVoicing& src, bool isEg2)
+void fillLayerEg (ssmel_layer_eg_t& dst, const SsmelXdiVoicing& src, bool isEg2)
 {
     dst.enabled = true;
     if (isEg2)
@@ -152,7 +152,7 @@ float xdiFilterCutoffOct (const juce::XmlElement& splitEl)
     return (float) std::log2 (freq);
 }
 
-void parseFilterVel (nx_pcm_layer_vel_f32_t& dst, const juce::XmlElement& splitEl)
+void parseFilterVel (ssmel_layer_vel_t& dst, const juce::XmlElement& splitEl)
 {
     dst = {};
     auto* filter = splitEl.getChildByName ("Filter");
@@ -166,7 +166,7 @@ void parseFilterVel (nx_pcm_layer_vel_f32_t& dst, const juce::XmlElement& splitE
     dst.hi_y = (float) filter->getDoubleAttribute ("FreqMaxVelModY", 1.0);
 }
 
-void parseAmpVel (nx_pcm_layer_vel_f32_t& dst, const juce::XmlElement& splitEl)
+void parseAmpVel (ssmel_layer_vel_t& dst, const juce::XmlElement& splitEl)
 {
     dst = {};
     auto* amp = splitEl.getChildByName ("Amplifier");
@@ -191,7 +191,7 @@ float xdiFilterEnvAmount (const juce::XmlElement& splitEl)
     return (float) amount;
 }
 
-void parseKbdTable (nx_pcm_layer_kbd_f32_t& dst, const juce::XmlElement& splitEl)
+void parseKbdTable (ssmel_layer_kbd_t& dst, const juce::XmlElement& splitEl)
 {
     dst = {};
     auto* filter = splitEl.getChildByName ("Filter");
@@ -219,7 +219,7 @@ void parseKbdTable (nx_pcm_layer_kbd_f32_t& dst, const juce::XmlElement& splitEl
 
     for (auto* segEl : tableEl->getChildIterator())
     {
-        if (! segEl->hasTagName ("Segment") || dst.num_points >= NX_PCM_LAYER_KBD_MAX)
+        if (! segEl->hasTagName ("Segment") || dst.num_points >= SSMEL_LAYER_KBD_MAX)
             continue;
         dst.keys[dst.num_points] = juce::jlimit (0, 127, segEl->getIntAttribute ("Key", 0));
         const double raw = segEl->getDoubleAttribute ("Value", 0.0);
@@ -368,7 +368,7 @@ float maxSplitDb (const juce::XmlElement& instrument)
     return any ? maxDb : 0.0f;
 }
 
-bool addXdiSplits (nx_pcm_sample_map_f32_t* map, const juce::File& xdiFile, const juce::File& wavDir,
+bool addXdiSplits (ssmel_map_t* map, const juce::File& xdiFile, const juce::File& wavDir,
                    SsmelXdiVoicing* voicing)
 {
     auto xml = juce::XmlDocument::parse (xdiFile);
@@ -415,17 +415,16 @@ bool addXdiSplits (nx_pcm_sample_map_f32_t* map, const juce::File& xdiFile, cons
 
             const int loKey = juce::jlimit (0, 127, splitEl->getIntAttribute ("StartNote", 0));
             const int hiKey = juce::jlimit (0, 127, splitEl->getIntAttribute ("EndNote", 127));
-            const uint32_t zone = nx_pcm_sample_map_add_zone_f32 (map, loKey, hiKey);
+            const uint32_t zone = ssmel_map_add_zone (map, loKey, hiKey);
             if (zone == UINT32_MAX)
             {
-                nx_sample_buffer_destroy_f32 (buffer, nullptr);
+                ssmel_buffer_destroy (buffer);
                 return false;
             }
 
             const float relDb = splitStaticDb (*splitEl) - peakDb;
 
-            nx_pcm_sample_layer_def_f32_t def {};
-            def.buffer = buffer;
+            ssmel_layer_desc_t def {};
             def.lo_velocity = splitEl->getIntAttribute ("MinVel", 0);
             def.hi_velocity = splitEl->getIntAttribute ("MaxVel", 127);
             def.root_note = juce::jlimit (0, 127, unity);
@@ -433,7 +432,7 @@ bool addXdiSplits (nx_pcm_sample_map_f32_t* map, const juce::File& xdiFile, cons
             def.loop_start = (uint32_t) juce::jmax (0, waveEl->getIntAttribute ("LoopStart", 0));
             def.loop_end = (uint32_t) juce::jmax (0, waveEl->getIntAttribute ("LoopEnd", 0));
             def.loop_mode = loopModeFromXdi (waveEl->getStringAttribute ("LoopType"));
-            def.trigger = isRelease ? NX_PCM_TRIGGER_RELEASE : NX_PCM_TRIGGER_ATTACK;
+            def.trigger = isRelease ? SSMEL_TRIGGER_RELEASE : SSMEL_TRIGGER_ATTACK;
             def.gain = dbToLin (relDb);
 
             SsmelXdiVoicing splitVoice;
@@ -447,9 +446,9 @@ bool addXdiSplits (nx_pcm_sample_map_f32_t* map, const juce::File& xdiFile, cons
             def.filter_cutoff_oct = xdiFilterCutoffOct (*splitEl);
             def.filter_env_amount = xdiFilterEnvAmount (*splitEl);
 
-            if (nx_pcm_sample_map_zone_add_layer_f32 (map, zone, &def) == UINT32_MAX)
+            if (ssmel_map_add_layer (map, zone, buffer, &def) == UINT32_MAX)
             {
-                nx_sample_buffer_destroy_f32 (buffer, nullptr);
+                ssmel_buffer_destroy (buffer);
                 return false;
             }
             ++added;
@@ -484,20 +483,20 @@ bool addXdiSplits (nx_pcm_sample_map_f32_t* map, const juce::File& xdiFile, cons
     return added > 0;
 }
 
-nx_pcm_sample_map_f32_t* loadXdiMap (const juce::File& wavDir, const juce::String& xdiName,
+ssmel_map_t* loadXdiMap (const juce::File& wavDir, const juce::String& xdiName,
                                      SsmelXdiVoicing* voicing)
 {
     const auto xdiFile = findFileCI (wavDir, xdiName);
     if (! xdiFile.existsAsFile())
         return nullptr;
 
-    auto* map = nx_pcm_sample_map_create_f32 (nullptr);
+    auto* map = ssmel_map_create();
     if (map == nullptr)
         return nullptr;
 
     if (! addXdiSplits (map, xdiFile, wavDir, voicing))
     {
-        nx_pcm_sample_map_destroy_f32 (map, nullptr);
+        ssmel_map_destroy (map);
         return nullptr;
     }
     return map;
@@ -513,12 +512,12 @@ void SsmelDemoMap::reset()
 {
     if (pianoMap_ != nullptr)
     {
-        nx_pcm_sample_map_destroy_f32 (pianoMap_, nullptr);
+        ssmel_map_destroy (pianoMap_);
         pianoMap_ = nullptr;
     }
     if (epMap_ != nullptr)
     {
-        nx_pcm_sample_map_destroy_f32 (epMap_, nullptr);
+        ssmel_map_destroy (epMap_);
         epMap_ = nullptr;
     }
     pianoVoicing_ = {};
@@ -543,12 +542,12 @@ bool SsmelDemoMap::load()
     return true;
 }
 
-nx_pcm_sample_map_f32_t* SsmelDemoMap::map (int presetIndex) noexcept
+ssmel_map_t* SsmelDemoMap::map (int presetIndex) noexcept
 {
     return presetIndex == 1 ? epMap_ : pianoMap_;
 }
 
-const nx_pcm_sample_map_f32_t* SsmelDemoMap::map (int presetIndex) const noexcept
+const ssmel_map_t* SsmelDemoMap::map (int presetIndex) const noexcept
 {
     return presetIndex == 1 ? epMap_ : pianoMap_;
 }

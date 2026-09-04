@@ -1,6 +1,6 @@
 #pragma once
 
-#include "nusynth/pcm_sample_map_f32.h"
+#include "ssmel/ssmel_map.h"
 
 /** EG times from XDI Envelope1/2 (User Guide §5.4). Rate→ms is a placeholder. */
 struct SsmelXdiVoicing
@@ -37,13 +37,13 @@ public:
     void reset();
 
     /** 0 = Piano (Piano2ry), 1 = EP (Ep2). */
-    nx_pcm_sample_map_f32_t* map(int presetIndex) noexcept;
-    const nx_pcm_sample_map_f32_t* map(int presetIndex) const noexcept;
+    ssmel_map_t* map(int presetIndex) noexcept;
+    const ssmel_map_t* map(int presetIndex) const noexcept;
     const SsmelXdiVoicing& voicing(int presetIndex) const noexcept;
 
 private:
-    nx_pcm_sample_map_f32_t* pianoMap_ = nullptr;
-    nx_pcm_sample_map_f32_t* epMap_ = nullptr;
+    ssmel_map_t* pianoMap_ = nullptr;
+    ssmel_map_t* epMap_ = nullptr;
     SsmelXdiVoicing pianoVoicing_{};
     SsmelXdiVoicing epVoicing_{};
 };
