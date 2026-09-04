@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "KbussParamUiUtils.h"
 #include "MeterDisplayUtils.h"
 #include "PluginParameter.h"
 
@@ -258,17 +259,21 @@ void AudioEffectFrameworkProcessor::updateEffectParameters()
   getMinibussEngine().setParamDomain(getMinibussEngine().levelId(), "level",
                                 readParameterValue(paramOutputGain.paramID, paramOutputGain.defaultValue));
 
+  applyOversamplingFromParameters();
+
+  updateCustomEffectParameters();
+  pushMiddleProcessorParamDomains();
+}
+
+void AudioEffectFrameworkProcessor::applyOversamplingFromParameters()
+{
   const int qualityChoice = juce::roundToInt(
       readParameterValue(paramOversampleQuality.paramID, (float)paramOversampleQuality.defaultChoice));
-  const int osFactor = oversampleFactorForQuality(qualityChoice);
   const int upMode = juce::roundToInt(
       readParameterValue(paramUpsamplerMode.paramID, (float)paramUpsamplerMode.defaultChoice));
   const int downMode = juce::roundToInt(
       readParameterValue(paramDownsamplerMode.paramID, (float)paramDownsamplerMode.defaultChoice));
-  getMinibussEngine().setOversampling(osFactor, upMode, downMode);
-
-  updateCustomEffectParameters();
-  pushMiddleProcessorParamDomains();
+  getMinibussEngine().setOversampling(oversampleFactorForQuality(qualityChoice), upMode, downMode);
 }
 
 void AudioEffectFrameworkProcessor::mixToMonoBuffer(const AudioSampleBuffer& buffer, int numChannels, int numSamples)
@@ -604,6 +609,10 @@ void AudioEffectFrameworkProcessor::prepareToPlay(double sampleRate, int samples
   ensureScratchBuffers(numChannels, samplesPerBlock);
 
   ensureEffectEngine();
+  // Must land before prepare: engine default factor is 2, and subclasses (e.g. Vibro Champ)
+  // may force 1× via oversampleFactorForQuality. Without this, prepare builds the middle at
+  // 2× host rate, then updateEffectParameters drops to 1× and reprepareTrack bakes again.
+  applyOversamplingFromParameters();
   getMinibussEngine().prepare((float)sampleRate, (std::uint32_t)jmax(1, samplesPerBlock));
   resetMiddleProcessorParamDefaults();
   bumpMiddleProcessorGeneration();
@@ -855,14 +864,15 @@ bool AudioEffectFrameworkProcessor::hasEditor() const { return true; }
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool AudioEffectFrameworkProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-  if (layouts.getMainOutputChannelSet() != AudioChannelSet::mono() &&
-      layouts.getMainOutputChannelSet() != AudioChannelSet::stereo())
+  const auto out = layouts.getMainOutputChannelSet();
+  if (out != AudioChannelSet::mono() && out != AudioChannelSet::stereo())
     return false;
 
-  if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-    return false;
+  const auto in = layouts.getMainInputChannelSet();
+  if (in.isDisabled())
+    return true;
 
-  return true;
+  return in == out;
 }
 #endif
 
@@ -871,6 +881,24 @@ bool AudioEffectFrameworkProcessor::isBusesLayoutSupported(const BusesLayout& la
 void AudioEffectFrameworkProcessor::setMiddleParamDomain(const juce::String& paramId, float domainValue)
 {
   middleParamDomains_.set(paramId, domainValue);
+
+  ensureEffectEngine();
+  const auto middleId = getMinibussEngine().middleProcessorId();
+  if (middleId == kbuss::kInvalidObjectId)
+    return;
+
+  auto* proc = getMinibussEngine().getMiddleProcessor();
+  if (proc == nullptr)
+    return;
+
+  const auto key = paramId.toStdString();
+  const auto* desc = proc->parameter(key);
+  const auto topLevelIds = aef::kbuss_param_ui::collectTopLevelParamIds(proc->parameters());
+  if (desc != nullptr && aef::kbuss_param_ui::isUserFacingParam(*desc, topLevelIds))
+    return;
+
+  // Settings / internal params are not re-pushed every audio block. Apply now.
+  getMinibussEngine().setParamDomain(middleId, key, domainValue);
 }
 
 float AudioEffectFrameworkProcessor::getMiddleParamDomain(const juce::String& paramId, float fallback) const
@@ -889,8 +917,15 @@ void AudioEffectFrameworkProcessor::resetMiddleProcessorParamDefaults()
 
   if (auto* proc = effectEngine_->getMiddleProcessor())
   {
-    for (const auto& desc : proc->parameters())
-      middleParamDomains_.set(juce::String(desc.id), desc.default_domain);
+    const auto& params = proc->parameters();
+    const auto topLevelIds = aef::kbuss_param_ui::collectTopLevelParamIds(params);
+    for (const auto& desc : params)
+    {
+      // Nested aliases (preamp.bass.control vs bass) share one pot. Pushing both
+      // every block fights and zipper-clicks the white-box solve.
+      if (aef::kbuss_param_ui::isUserFacingParam(desc, topLevelIds))
+        middleParamDomains_.set(juce::String(desc.id), desc.default_domain);
+    }
   }
 }
 
@@ -902,8 +937,22 @@ void AudioEffectFrameworkProcessor::pushMiddleProcessorParamDomains()
   if (middleId == kbuss::kInvalidObjectId)
     return;
 
+  auto* proc = getMinibussEngine().getMiddleProcessor();
+  if (proc == nullptr)
+    return;
+
+  const auto& params = proc->parameters();
+  const auto topLevelIds = aef::kbuss_param_ui::collectTopLevelParamIds(params);
+
   for (auto it = middleParamDomains_.begin(); it != middleParamDomains_.end(); ++it)
-    getMinibussEngine().setParamDomain(middleId, it.getKey().toStdString(), it.getValue());
+  {
+    const auto key = it.getKey().toStdString();
+    const auto* desc = proc->parameter(key);
+    if (desc != nullptr && ! aef::kbuss_param_ui::isUserFacingParam(*desc, topLevelIds))
+      continue;
+
+    getMinibussEngine().setParamDomain(middleId, key, it.getValue());
+  }
 }
 
 //==============================================================================

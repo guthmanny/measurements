@@ -5,12 +5,12 @@
 #include "AudioEffectFrameworkProcessor.h"
 #include "AudioEffectFrameworkEditor.h"
 
-/** Boss CS-1 Dyna Comp — MuDSP white-box model via kbuss.
+/** Tech 21 SansAmp Classic — MuDSP white-box model via kbuss.
  *  Pedal knobs come from the middle processor (EffectUserParamsPanel). */
-class DynaCompAudioProcessor final : public AudioEffectFrameworkProcessor
+class SansampClassicAudioProcessor final : public AudioEffectFrameworkProcessor
 {
 public:
-    DynaCompAudioProcessor();
+    SansampClassicAudioProcessor();
 
     AudioProcessorEditor* createEditor() override;
 
@@ -24,5 +24,5 @@ protected:
     bool bypassNoiseGateOnStartup() const override { return true; }
 
 private:
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DynaCompAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SansampClassicAudioProcessor)
 };

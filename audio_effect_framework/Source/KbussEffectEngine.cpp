@@ -125,6 +125,18 @@ const kbuss::ParameterDescriptor* KbussEffectEngine::paramDescriptor (
     return nullptr;
 }
 
+void KbussEffectEngine::registerPluginFormats()
+{
+    auto staticFormat = std::make_unique<kbuss::StaticPluginFormat>();
+    kbuss::plugins::register_builtin_plugins (*staticFormat);
+    formats_.add_format (std::move (staticFormat));
+}
+
+void KbussEffectEngine::addPluginFormat (std::unique_ptr<kbuss::PluginFormat> format)
+{
+    formats_.add_format (std::move (format));
+}
+
 bool KbussEffectEngine::installMiddleProcessors (const ProcessorCreateFn& /*create*/)
 {
     return true;
@@ -204,9 +216,7 @@ void KbussEffectEngine::prepare (float sampleRate, std::uint32_t maxBlockSize)
 
     release();
 
-    auto staticFormat = std::make_unique<kbuss::StaticPluginFormat>();
-    kbuss::plugins::register_builtin_plugins (*staticFormat);
-    formats_.add_format (std::move (staticFormat));
+    registerPluginFormats();
 
     engine_ = std::make_unique<kbuss::AudioEngine> (2, maxBlockSize);
     engine_->set_format_manager (&formats_);

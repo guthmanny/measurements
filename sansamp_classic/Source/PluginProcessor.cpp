@@ -4,36 +4,36 @@
 #include "AefAudioUtils.h"
 #include "MiddleProcessorEffectEngine.h"
 
-BluesDriverAudioProcessor::BluesDriverAudioProcessor()
+SansampClassicAudioProcessor::SansampClassicAudioProcessor()
 {
     aef::setParameterDefault (parameters.valueTreeState, paramInputGain.paramID, -12.0f);
     aef::setParameterDefault (parameters.valueTreeState, paramGateThreshold.paramID, -80.0f);
 }
 
-std::unique_ptr<KbussEffectEngine> BluesDriverAudioProcessor::createEffectEngine()
+std::unique_ptr<KbussEffectEngine> SansampClassicAudioProcessor::createEffectEngine()
 {
     return std::make_unique<MiddleProcessorEffectEngine> (
-        "com.kbuss.nudsp.white_box.blues_driver", "Blues Driver", "blues_driver");
+        "com.kbuss.nudsp.white_box.sansamp_classic", "SansAmp Classic", "sansamp_classic");
 }
 
-void BluesDriverAudioProcessor::processBlock (juce::AudioSampleBuffer& buffer, juce::MidiBuffer& midiMessages)
+void SansampClassicAudioProcessor::processBlock (juce::AudioSampleBuffer& buffer, juce::MidiBuffer& midiMessages)
 {
     aef::mixBufferToMonoDual (buffer, getTotalNumInputChannels(), buffer.getNumSamples());
     AudioEffectFrameworkProcessor::processBlock (buffer, midiMessages);
     aef::duplicateMonoToStereoOutput (buffer, getTotalNumOutputChannels(), buffer.getNumSamples());
 }
 
-AudioProcessorEditor* BluesDriverAudioProcessor::createEditor()
+AudioProcessorEditor* SansampClassicAudioProcessor::createEditor()
 {
     return new AudioEffectFrameworkEditor (*this);
 }
 
-const juce::String BluesDriverAudioProcessor::getName() const
+const juce::String SansampClassicAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool BluesDriverAudioProcessor::acceptsMidi() const
+bool SansampClassicAudioProcessor::acceptsMidi() const
 {
 #if JucePlugin_WantsMidiInput
     return true;
@@ -44,5 +44,5 @@ bool BluesDriverAudioProcessor::acceptsMidi() const
 
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new BluesDriverAudioProcessor();
+    return new SansampClassicAudioProcessor();
 }

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "KbussParamUiUtils.h"
+#include "kbuss/processor.hpp"
 
 class AudioEffectFrameworkProcessor;
 class AtomLookAndFeel;
@@ -23,6 +24,8 @@ public:
 private:
     void clearRows();
     void addParamRow(const kbuss::ParameterDescriptor& desc);
+    void addIndexedParamRow(std::uint32_t index, float initialValue);
+    void rebuildIndexedParams(kbuss::Processor& middle);
 
     AudioEffectFrameworkProcessor& processor_;
     AtomLookAndFeel& atomLookAndFeel_;

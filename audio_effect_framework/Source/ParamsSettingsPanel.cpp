@@ -183,10 +183,13 @@ void ParamsSettingsPanel::rebuildFromMiddleProcessor()
         return;
     }
 
+    const auto& params = middle->parameters();
+    const auto topLevelIds = aef::kbuss_param_ui::collectTopLevelParamIds(params);
+
     std::map<juce::String, std::vector<const kbuss::ParameterDescriptor*>> grouped;
-    for (const auto& desc : middle->parameters())
+    for (const auto& desc : params)
     {
-        if (! aef::kbuss_param_ui::isInternalParam(desc))
+        if (! aef::kbuss_param_ui::isInternalParam(desc, topLevelIds))
             continue;
 
         grouped[groupTitleForParam(desc)].push_back(&desc);

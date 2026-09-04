@@ -204,6 +204,9 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   //==============================================================================
 
   void syncParametersFromValueTree();
+  /** Push QUALITY / upsampler / downsampler APVTS into the engine. Safe before prepare:
+      setOversampling only stores when !ready_, so the chain is built at the right rate. */
+  void applyOversamplingFromParameters();
   void ensureScratchBuffers(int numChannels, int numSamples);
   void mixToMonoBuffer(const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void pushTunerMono(const AudioSampleBuffer& buffer, int numChannels, int numSamples);

@@ -5,7 +5,8 @@
 #include "AudioEffectFrameworkProcessor.h"
 #include "AudioEffectFrameworkEditor.h"
 
-/** Fender Vibro Champ amp — MuDSP white-box model via kbuss. */
+/** Fender Vibro Champ amp — MuDSP white-box model via kbuss.
+ *  Pedal knobs come from the middle processor (EffectUserParamsPanel). */
 class VibroChampAudioProcessor final : public AudioEffectFrameworkProcessor
 {
 public:
@@ -20,17 +21,11 @@ public:
 
 protected:
     std::unique_ptr<KbussEffectEngine> createEffectEngine() override;
-    void updateCustomEffectParameters() override;
     bool bypassNoiseGateOnStartup() const override { return true; }
 
     /** Amp Newton is too heavy for default 2× OS — stay at 1× regardless of QUALITY. */
     int oversampleFactorForQuality (int /*qualityChoice*/) const override { return 1; }
 
 private:
-    PluginParameterLinSlider paramBass;
-    PluginParameterLinSlider paramMid;
-    PluginParameterLinSlider paramTreble;
-    PluginParameterLinSlider paramVolume;
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VibroChampAudioProcessor)
 };

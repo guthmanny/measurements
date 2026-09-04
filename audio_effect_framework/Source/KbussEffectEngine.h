@@ -74,6 +74,14 @@ protected:
                                                                   const char* name,
                                                                   const char* instance)>;
 
+    /** Override to register extra plugin formats (e.g. dynamic .kbplug) before graph build. */
+    virtual void registerPluginFormats();
+
+    [[nodiscard]] kbuss::AudioEngine* engine() noexcept { return engine_.get(); }
+    [[nodiscard]] kbuss::ObjectId trackId() const noexcept { return trackId_; }
+
+    void addPluginFormat (std::unique_ptr<kbuss::PluginFormat> format);
+
     /** Override in plugin-specific engines to insert processors between upsampler and downsampler. */
     virtual bool installMiddleProcessors (const ProcessorCreateFn& create);
 

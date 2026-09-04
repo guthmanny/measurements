@@ -227,7 +227,9 @@ void AudioEffectFrameworkEditor::syncEffectUserParamsPanelIfNeeded()
     return;
 
   const int generation = processor.middleProcessorGeneration();
-  if (generation == lastMiddleProcessorGeneration_)
+  const bool engineReady = processor.getKbussEngine().isReady();
+  const bool panelStillEmpty = effectUserParamsPanel_->preferredHeight() == 0;
+  if (generation == lastMiddleProcessorGeneration_ && ! (engineReady && panelStillEmpty))
     return;
 
   lastMiddleProcessorGeneration_ = generation;
@@ -242,7 +244,7 @@ void AudioEffectFrameworkEditor::buildParameterBodyRows()
   const juce::Array<juce::AudioProcessorParameter*>& parameters = processor.getParameters();
 
   const juce::StringArray headerParamIds{"inputgain", "gatethreshold", "outputgain"};
-  const juce::StringArray settingsOnlyParamIds{"gatethreshmin", "gatethreshmax", "gateoffatmin", "gateratio",
+  const juce::StringArray settingsOnlyParamIds{"dynamicplugin", "dynamic_plugin", "gatethreshmin", "gatethreshmax", "gateoffatmin", "gateratio",
                                                "gateattack", "gaterelease", "gateknee", "gatekneewidth",
                                                "meterattack", "meterrelease", "meterdisplayrange",
                                                "oversamplequality", "upsamplermode", "downsamplermode"};

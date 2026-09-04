@@ -23,6 +23,10 @@ add_library(audio_effect_framework STATIC
     Source/KbussEffectEngine.h
     Source/MiddleProcessorEffectEngine.cpp
     Source/MiddleProcessorEffectEngine.h
+    Source/DynamicMiddleProcessorEffectEngine.cpp
+    Source/DynamicMiddleProcessorEffectEngine.h
+    Source/DynamicPluginCatalog.cpp
+    Source/DynamicPluginCatalog.h
     Source/AefAudioUtils.h
     Source/EffectHeaderComponent.cpp
     Source/EffectHeaderComponent.h

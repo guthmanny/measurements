@@ -37,6 +37,9 @@ endfunction()
 function(aef_setup_dependencies)
     get_filename_component(_aef_deps_root "${CMAKE_SOURCE_DIR}" ABSOLUTE)
 
+    # JUCE 8 compiles Sheenbidi as C; plugin projects that only enable CXX need this.
+    enable_language(C)
+
     aef_resolve_mudsp_root()
 
     if(WIN32)
@@ -60,42 +63,36 @@ function(aef_setup_dependencies)
         endif()
     endif()
 
-    if(WIN32)
-        set(JUCE_PATH "${CMAKE_SOURCE_DIR}/../JUCE" CACHE PATH "Path to JUCE source")
+    # AtomTheme needs JUCE 8+ APIs (e.g. FontOptions). Prefer a local source tree
+    # over an older /usr/local install (often still JUCE 7).
+    if(NOT JUCE_PATH OR NOT EXISTS "${JUCE_PATH}/CMakeLists.txt")
+        foreach(_juce_candidate
+            "${_aef_deps_root}/../../source/JUCE"
+            "$ENV{HOME}/source/JUCE"
+            "${CMAKE_SOURCE_DIR}/../JUCE"
+            "${_aef_deps_root}/../../JUCE"
+            "D:/source/JUCE")
+            get_filename_component(_juce_candidate "${_juce_candidate}" ABSOLUTE)
+            if(EXISTS "${_juce_candidate}/CMakeLists.txt")
+                set(JUCE_PATH "${_juce_candidate}" CACHE PATH "Path to JUCE source" FORCE)
+                break()
+            endif()
+        endforeach()
+    endif()
+
+    if(JUCE_PATH AND EXISTS "${JUCE_PATH}/CMakeLists.txt")
         get_filename_component(JUCE_PATH "${JUCE_PATH}" ABSOLUTE)
-        if(NOT EXISTS "${JUCE_PATH}/CMakeLists.txt")
-            set(JUCE_PATH "${_aef_deps_root}/../../JUCE")
-            get_filename_component(JUCE_PATH "${JUCE_PATH}" ABSOLUTE)
-        endif()
-        if(NOT EXISTS "${JUCE_PATH}/CMakeLists.txt")
-            set(JUCE_PATH "$ENV{HOME}/source/JUCE")
-            get_filename_component(JUCE_PATH "${JUCE_PATH}" ABSOLUTE)
-        endif()
-        if(NOT EXISTS "${JUCE_PATH}/CMakeLists.txt")
-            message(FATAL_ERROR
-                "JUCE not found. Set JUCE_PATH to a JUCE 7+ source tree with CMake support.")
-        endif()
+        message(STATUS "Using JUCE source tree: ${JUCE_PATH}")
         add_subdirectory("${JUCE_PATH}" "${CMAKE_BINARY_DIR}/JUCE")
     else()
-        if(JUCE_PATH AND EXISTS "${JUCE_PATH}/CMakeLists.txt")
-            get_filename_component(JUCE_PATH "${JUCE_PATH}" ABSOLUTE)
-            message(STATUS "Using JUCE source tree: ${JUCE_PATH}")
-            add_subdirectory("${JUCE_PATH}" "${CMAKE_BINARY_DIR}/JUCE")
-        else()
         list(PREPEND CMAKE_PREFIX_PATH "/usr/local")
         find_package(JUCE CONFIG QUIET)
-
         if(JUCE_FOUND)
             message(STATUS "Using installed JUCE: ${JUCE_DIR}")
         else()
-            set(JUCE_PATH "${CMAKE_SOURCE_DIR}/../JUCE" CACHE PATH "Path to JUCE source")
-            if(NOT EXISTS "${JUCE_PATH}/CMakeLists.txt")
-                message(FATAL_ERROR
-                    "JUCE not found under /usr/local and no source tree at ${JUCE_PATH}.")
-            endif()
-            message(STATUS "Using JUCE source tree: ${JUCE_PATH}")
-            add_subdirectory("${JUCE_PATH}" "${CMAKE_BINARY_DIR}/JUCE")
-        endif()
+            message(FATAL_ERROR
+                "JUCE not found. Set -DJUCE_PATH=... to a JUCE 8+ source tree "
+                "(expected ../../source/JUCE or ~/source/JUCE).")
         endif()
     endif()
 

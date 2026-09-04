@@ -152,15 +152,19 @@ void ensureJackUsesCaptureInput(juce::AudioDeviceManager& deviceManager, const j
 {
   if (deviceManager.getCurrentAudioDeviceType() != "JACK") return;
 
+  juce::AudioDeviceManager::AudioDeviceSetup setup;
+  deviceManager.getAudioDeviceSetup(setup);
+
+  // Instruments start with no input. Don't reopen JACK just to attach capture.
+  if (setup.inputDeviceName.isEmpty() && setup.inputChannels.isZero())
+    return;
+
   auto* type = deviceManager.getCurrentDeviceTypeObject();
   if (type == nullptr) return;
 
   type->scanForDevices();
   const auto inputNames = type->getDeviceNames(true);
   const auto outputNames = type->getDeviceNames(false);
-
-  juce::AudioDeviceManager::AudioDeviceSetup setup;
-  deviceManager.getAudioDeviceSetup(setup);
 
   bool needsUpdate = false;
 

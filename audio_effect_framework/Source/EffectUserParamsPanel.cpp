@@ -99,10 +99,19 @@ void EffectUserParamsPanel::rebuildFromMiddleProcessor()
     if (middle == nullptr)
         return;
 
-    for (const auto& desc : middle->parameters())
+    const auto& params = middle->parameters();
+    if (params.empty())
     {
-        if (aef::kbuss_param_ui::isUserFacingParam(desc))
-            addParamRow(desc);
+        rebuildIndexedParams(*middle);
+    }
+    else
+    {
+        const auto topLevelIds = aef::kbuss_param_ui::collectTopLevelParamIds(params);
+        for (const auto& desc : params)
+        {
+            if (aef::kbuss_param_ui::isUserFacingParam(desc, topLevelIds))
+                addParamRow(desc);
+        }
     }
 
     if (rowComponents_.isEmpty())
@@ -113,6 +122,41 @@ void EffectUserParamsPanel::rebuildFromMiddleProcessor()
 
     preferredHeight_ = juce::jmax(kMinHeight, rowComponents_.size() * kRowHeight + kPanelPadding * 2);
     resized();
+}
+
+void EffectUserParamsPanel::addIndexedParamRow(std::uint32_t index, float initialValue)
+{
+    const juce::String labelText = "Parameter " + juce::String((int) index + 1);
+
+    auto slider = std::make_unique<atom::Slider>();
+    aef::kbuss_param_ui::configureKbussParamSlider(
+        *slider,
+        atomLookAndFeel_,
+        0.0f,
+        1.0f,
+        0.0f,
+        juce::String());
+    slider->setValue(juce::jlimit(0.0, 1.0, (double) initialValue), juce::dontSendNotification);
+    slider->onValueChange = [this, index, raw = slider.get()]() {
+        if (auto* middle = processor_.getKbussEngine().getMiddleProcessor())
+            (void) middle->set_parameter(index, static_cast<float>(raw->getValue()));
+    };
+
+    auto row = std::make_unique<ParamRow>(labelText, std::move(slider));
+    addAndMakeVisible(row.get());
+    rowComponents_.add(row.release());
+}
+
+void EffectUserParamsPanel::rebuildIndexedParams(kbuss::Processor& middle)
+{
+    const auto count = middle.parameter_count();
+    for (std::uint32_t i = 0; i < count; ++i)
+    {
+        float value = 0.5f;
+        if (middle.get_parameter(i, value) != kbuss::Status::Ok)
+            value = 0.5f;
+        addIndexedParamRow(i, value);
+    }
 }
 
 void EffectUserParamsPanel::resized()

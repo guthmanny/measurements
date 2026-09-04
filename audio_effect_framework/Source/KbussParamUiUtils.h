@@ -1,24 +1,87 @@
 #pragma once
 
 #include <string_view>
+#include <unordered_set>
 
 #include "AefJuceIncludes.h"
 #include "kbuss/parameter.hpp"
 
 namespace aef::kbuss_param_ui {
 
-/** User knob: top-level id, or the `.control` entry from bind_smooth_control_all. */
-[[nodiscard]] inline bool isUserFacingParam(const kbuss::ParameterDescriptor& desc) noexcept
+[[nodiscard]] inline bool isTopLevelParamId(std::string_view id) noexcept
 {
-    const std::string_view id = desc.id;
-    if (id.find('.') == std::string_view::npos)
-        return true;
-    return id.ends_with(".control");
+    return id.find('.') == std::string_view::npos;
 }
 
-[[nodiscard]] inline bool isInternalParam(const kbuss::ParameterDescriptor& desc) noexcept
+/** Leaf name for `prefix.knob.control` → `knob`; empty if not a `.control` id. */
+[[nodiscard]] inline std::string_view controlLeafName(std::string_view id) noexcept
 {
-    return ! isUserFacingParam(desc);
+    constexpr std::string_view kSuffix = ".control";
+    if (id.size() <= kSuffix.size() || ! id.ends_with(kSuffix))
+        return {};
+
+    id.remove_suffix(kSuffix.size());
+    const auto dot = id.rfind('.');
+    return dot == std::string_view::npos ? id : id.substr(dot + 1);
+}
+
+template <typename ParamRange>
+[[nodiscard]] inline std::unordered_set<std::string> collectTopLevelParamIds(const ParamRange& params)
+{
+    std::unordered_set<std::string> topLevel;
+    for (const auto& desc : params)
+    {
+        if (isTopLevelParamId(desc.id))
+            topLevel.insert(desc.id);
+    }
+    return topLevel;
+}
+
+/** True when a top-level alias covers `*.leaf.control` (`bass` or `tremolo_intensity`). */
+[[nodiscard]] inline bool topLevelAliasesControlLeaf(
+    std::string_view leaf,
+    const std::unordered_set<std::string>& topLevelIds) noexcept
+{
+    const std::string leafStr(leaf);
+    if (topLevelIds.contains(leafStr))
+        return true;
+
+    for (const auto& topId : topLevelIds)
+    {
+        if (topId.size() <= leaf.size())
+            continue;
+
+        if (topId.ends_with(leafStr) && topId[topId.size() - leaf.size() - 1] == '_')
+            return true;
+    }
+
+    return false;
+}
+
+/**
+ * Main-panel knobs:
+ * - top-level short aliases (`bass`, `drive`, …)
+ * - nested `*.control` only when no short alias exists for that leaf
+ *   (legacy plugins without bind_pot_control aliases)
+ */
+[[nodiscard]] inline bool isUserFacingParam(const kbuss::ParameterDescriptor& desc,
+                                            const std::unordered_set<std::string>& topLevelIds) noexcept
+{
+    const std::string_view id = desc.id;
+    if (isTopLevelParamId(id))
+        return true;
+
+    const auto leaf = controlLeafName(id);
+    if (leaf.empty())
+        return false;
+
+    return ! topLevelAliasesControlLeaf(leaf, topLevelIds);
+}
+
+[[nodiscard]] inline bool isInternalParam(const kbuss::ParameterDescriptor& desc,
+                                          const std::unordered_set<std::string>& topLevelIds) noexcept
+{
+    return ! isUserFacingParam(desc, topLevelIds);
 }
 
 [[nodiscard]] inline juce::String paramDisplayLabel(const kbuss::ParameterDescriptor& desc)

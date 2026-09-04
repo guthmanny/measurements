@@ -5,7 +5,8 @@
 #include "AudioEffectFrameworkProcessor.h"
 #include "AudioEffectFrameworkEditor.h"
 
-/** Boss BD-2 Blues Driver — MuDSP white-box model via kbuss. */
+/** Boss BD-2 Blues Driver — MuDSP white-box model via kbuss.
+ *  Pedal knobs come from the middle processor (EffectUserParamsPanel). */
 class BluesDriverAudioProcessor final : public AudioEffectFrameworkProcessor
 {
 public:
@@ -20,13 +21,8 @@ public:
 
 protected:
     std::unique_ptr<KbussEffectEngine> createEffectEngine() override;
-    void updateCustomEffectParameters() override;
     bool bypassNoiseGateOnStartup() const override { return true; }
 
 private:
-    PluginParameterLinSlider paramDrive;
-    PluginParameterLinSlider paramTone;
-    PluginParameterLinSlider paramLevel;
-
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BluesDriverAudioProcessor)
 };
