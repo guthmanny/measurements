@@ -108,6 +108,8 @@ private:
     int getBodyContentHeight() const noexcept;
     void buildParameterBodyRows();
     void syncEffectUserParamsPanelIfNeeded();
+    void setModelTelemetryOverlayText(const juce::String& text);
+    void layoutModelTelemetryOverlay(const juce::Rectangle<int>& bodyArea);
 
     std::unique_ptr<EffectUserParamsPanel> effectUserParamsPanel_;
     int lastMiddleProcessorGeneration_ = -1;
@@ -116,6 +118,9 @@ private:
     SpectrumOverlay spectrumOverlay;
     std::vector<float> spectrumScratch;
     uint32_t lastSpectrumFrameId = 0;
+    juce::String lastModelTelemetryText;
+
+    atom::Label modelTelemetryLabel{"modelTelemetryLabel", {}};
 
     juce::OwnedArray<atom::Slider> sliders;
     juce::OwnedArray<atom::ToggleButton> toggles;

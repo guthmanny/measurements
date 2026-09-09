@@ -1,6 +1,7 @@
 #include "EffectUserParamsPanel.h"
 
 #include "AudioEffectFrameworkProcessor.h"
+#include "DynamicPluginParamMetadata.h"
 #include "KbussParamSliderUtils.h"
 
 namespace
@@ -88,6 +89,41 @@ void EffectUserParamsPanel::addParamRow(const kbuss::ParameterDescriptor& desc)
     rowComponents_.add(row.release());
 }
 
+void EffectUserParamsPanel::addMetaParamRow(const aef::dynamic_plugin_params::Meta& meta,
+                                            kbuss::Processor& middle)
+{
+    const juce::String paramId = meta.id;
+    const juce::String labelText = meta.displayLabel();
+    float initial = processor_.getMiddleParamDomain(paramId, meta.defaultDomain);
+
+    float normalized = meta.domainToNormalized(initial);
+    if (middle.get_parameter(meta.index, normalized) == kbuss::Status::Ok)
+        initial = meta.minDomain + normalized * (meta.maxDomain - meta.minDomain);
+
+    auto slider = std::make_unique<atom::Slider>();
+    kbuss::ParameterDescriptor desc;
+    desc.id = meta.id.toStdString();
+    desc.label = meta.label.toStdString();
+    desc.min_domain = meta.minDomain;
+    desc.max_domain = meta.maxDomain;
+    desc.default_domain = meta.defaultDomain;
+    aef::kbuss_param_ui::configureKbussParamSlider(
+        *slider,
+        atomLookAndFeel_,
+        meta.minDomain,
+        meta.maxDomain,
+        aef::kbuss_param_ui::paramSliderInterval(desc),
+        aef::kbuss_param_ui::paramUnitSuffix(desc));
+    slider->setValue(initial, juce::dontSendNotification);
+    slider->onValueChange = [this, paramId, raw = slider.get()]() {
+        processor_.setMiddleParamDomain(paramId, static_cast<float>(raw->getValue()));
+    };
+
+    auto row = std::make_unique<ParamRow>(labelText, std::move(slider));
+    addAndMakeVisible(row.get());
+    rowComponents_.add(row.release());
+}
+
 void EffectUserParamsPanel::rebuildFromMiddleProcessor()
 {
     clearRows();
@@ -100,17 +136,32 @@ void EffectUserParamsPanel::rebuildFromMiddleProcessor()
         return;
 
     const auto& params = middle->parameters();
-    if (params.empty())
-    {
-        rebuildIndexedParams(*middle);
-    }
-    else
+    if (! params.empty())
     {
         const auto topLevelIds = aef::kbuss_param_ui::collectTopLevelParamIds(params);
         for (const auto& desc : params)
         {
+            if (aef::kbuss_param_ui::isFooterQualityParam(desc.id))
+                continue;
             if (aef::kbuss_param_ui::isUserFacingParam(desc, topLevelIds))
                 addParamRow(desc);
+        }
+    }
+    else
+    {
+        const auto dynamicParams = processor_.getDynamicMiddleParamMetadata();
+        if (! dynamicParams.empty())
+        {
+            for (const auto& meta : dynamicParams)
+            {
+                if (aef::kbuss_param_ui::isFooterQualityParam(meta.id.toStdString()))
+                    continue;
+                addMetaParamRow(meta, *middle);
+            }
+        }
+        else
+        {
+            rebuildIndexedParams(*middle);
         }
     }
 

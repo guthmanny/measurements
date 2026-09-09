@@ -59,6 +59,7 @@ message(STATUS "MuDSP root: ${MUDSP_ROOT}")
 message(STATUS "kBuss found at ${KBUSS_ROOT}")
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
+set(BUILD_SSMEL_ENGINE OFF CACHE BOOL "" FORCE)
 set(NUDSP_BUILD_DUMP_NL_TABLES OFF CACHE BOOL "" FORCE)
 add_subdirectory("${KBUSS_ROOT}" "${CMAKE_BINARY_DIR}/kbuss" EXCLUDE_FROM_ALL)
 
@@ -73,7 +74,7 @@ endif()
 # App
 # ---------------------------------------------------------------------------
 juce_add_gui_app(Ds1OpampAcTracer
-    PRODUCT_NAME "DS-1 OpAmp AC Tracer"
+    PRODUCT_NAME "DS-1 White Box AC Tracer"
     VERSION 0.1.0
     COMPANY_NAME "nux"
 )
@@ -81,9 +82,18 @@ juce_add_gui_app(Ds1OpampAcTracer
 juce_generate_juce_header(Ds1OpampAcTracer)
 
 target_sources(Ds1OpampAcTracer PRIVATE
+    ../common/SchematicSignalOutput.cpp
+    ../common/SchematicSignalOutput.h
     Source/Main.cpp
     Source/MainComponent.cpp
     Source/MainComponent.h
+    Source/CircuitSchematicPanel.cpp
+    Source/CircuitSchematicPanel.h
+    Source/SchematicSvgAdapter.h
+    Source/SchematicComponentValues.cpp
+    Source/SchematicComponentValues.h
+    Source/SchematicComponentApply.cpp
+    Source/SchematicComponentApply.h
     Source/Ds1OpampAcMath.cpp
     Source/Ds1OpampAcMath.h
     Source/Ds1OpampAcPanel.cpp
@@ -93,7 +103,7 @@ target_sources(Ds1OpampAcTracer PRIVATE
 target_compile_definitions(Ds1OpampAcTracer PRIVATE
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
-    JUCE_APPLICATION_NAME_STRING="DS-1 OpAmp AC Tracer"
+    JUCE_APPLICATION_NAME_STRING="DS-1 White Box AC Tracer"
     JUCE_APPLICATION_VERSION_STRING="0.1.0"
 )
 
@@ -122,4 +132,9 @@ target_link_libraries(Ds1OpampAcTracer PRIVATE
     juce::juce_recommended_warning_flags
 )
 
-target_include_directories(Ds1OpampAcTracer PRIVATE "${MUDSP_ROOT}/core")
+target_include_directories(Ds1OpampAcTracer PRIVATE
+    "${CMAKE_SOURCE_DIR}/../common"
+    "${MUDSP_ROOT}/core")
+
+file(TO_CMAKE_PATH "${MUDSP_ROOT}" MUDSP_ROOT_CMAKE)
+target_compile_definitions(Ds1OpampAcTracer PRIVATE MUDSP_ROOT="${MUDSP_ROOT_CMAKE}")

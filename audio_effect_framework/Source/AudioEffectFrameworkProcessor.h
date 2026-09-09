@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "AefJuceIncludes.h"
+#include "DynamicPluginParamMetadata.h"
 #include "MinibussEffectEngine.h"
 #include "TunerDetector.h"
 #include "SpectrumAnalyzer.h"
@@ -87,8 +88,8 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   PluginParameterLinSlider paramMeterRelease;
   PluginParameterComboBox paramMeterDisplayRange;
 
-  // Footer QUALITY + Settings → Modeling (oversampling modes)
-  PluginParameterComboBox paramOversampleQuality;
+  // Footer QUALITY + Settings → Modeling (resampler modes)
+  PluginParameterComboBox paramProcessingQuality;
   PluginParameterComboBox paramUpsamplerMode;
   PluginParameterComboBox paramDownsamplerMode;
 
@@ -164,8 +165,16 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   /** Middle-processor kbuss parameter domains (UI + preset). */
   void setMiddleParamDomain(const juce::String& paramId, float domainValue);
   [[nodiscard]] float getMiddleParamDomain(const juce::String& paramId, float fallback) const;
+  /** Parsed knob metadata for dynamic .kbplug middle processors (empty for static plugins). */
+  [[nodiscard]] std::vector<aef::dynamic_plugin_params::Meta> getDynamicMiddleParamMetadata() const;
+  [[nodiscard]] const aef::dynamic_plugin_params::Meta* findDynamicMiddleParam(
+      const juce::String& paramId) const;
   /** Bumps when middle processor or its parameter layout changes (UI refresh). */
   [[nodiscard]] int middleProcessorGeneration() const noexcept { return middleProcessorGeneration_.load(); }
+  /** Composite chain hash, Zin staging, and Vout staging for the middle processor (footer). */
+  [[nodiscard]] juce::String getMiddleModelTelemetryText() const;
+  /** Apply footer QUALITY to the middle processor (offline / control thread — not processBlock). */
+  void syncMiddleProcessingQuality();
 
   KbussEffectEngine& getKbussEngine() noexcept;
   [[nodiscard]] const KbussEffectEngine& getKbussEngine() const noexcept;
@@ -173,9 +182,6 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
  protected:
   /** When true, bypass noise gate after prepare (typical for guitar pedals). */
   virtual bool bypassNoiseGateOnStartup() const { return false; }
-
-  /** Map footer QUALITY (0/1/2) to oversampling factor. Default: 2 / 4 / 8. */
-  virtual int oversampleFactorForQuality (int qualityChoice) const;
 
   /** Override to supply a plugin-specific kbuss engine (e.g. with a middle processor). */
   virtual std::unique_ptr<KbussEffectEngine> createEffectEngine();
@@ -204,9 +210,9 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   //==============================================================================
 
   void syncParametersFromValueTree();
-  /** Push QUALITY / upsampler / downsampler APVTS into the engine. Safe before prepare:
-      setOversampling only stores when !ready_, so the chain is built at the right rate. */
-  void applyOversamplingFromParameters();
+  /** Host wrapper stays at 1×; composite quality is pushed to the middle processor when supported. */
+  void applyResamplingModesFromParameters();
+  void applyProcessingQualityFromParameters();
   void ensureScratchBuffers(int numChannels, int numSamples);
   void mixToMonoBuffer(const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void pushTunerMono(const AudioSampleBuffer& buffer, int numChannels, int numSamples);

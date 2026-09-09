@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 
 #include "kbuss/audio_engine.hpp"
@@ -49,6 +51,17 @@ public:
      * @param downMode nx downsampler_mode_e
      */
     void setOversampling (int factor, int upMode, int downMode);
+
+    /** Push MuDSP composite quality (Standard / Deluxe / Ultra) to the middle processor when supported. */
+    virtual bool applyMiddleProcessingQuality (int choice);
+
+    /** When the middle slot is a .kbplug bundle, returns its scan path for UI metadata. */
+    [[nodiscard]] virtual std::optional<std::string> dynamicMiddlePluginBundlePath() const
+    {
+        return std::nullopt;
+    }
+
+    [[nodiscard]] virtual std::string_view dynamicMiddlePluginUid() const { return {}; }
 
     [[nodiscard]] int oversampleFactor() const noexcept { return oversampleFactor_; }
 

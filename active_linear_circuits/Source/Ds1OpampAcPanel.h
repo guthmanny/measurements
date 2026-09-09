@@ -17,6 +17,7 @@ public:
 
     void setCircuitKind(ds1_ac::CircuitKind circuitKind);
     void setOpampModel(nx_opamp_model_e model);
+    void setDiodeModel(nx_diode_model_t model);
     void setBjtModel(nx_bjt_npn_model_e bjtModel);
     void setJfetModel(nx_jfet_n_model_e jfetModel);
     void setGainControl(double gainControl);
@@ -25,7 +26,9 @@ public:
     void setPotTaper(nx_pot_taper_e potTaper);
     void setPlotKind(ds1_ac::PlotKind plotKind);
     void setPreviewFrequencyHz(double freqHz);
+    void setPreviewAmplitude(double amplitude);
     void setSampleRateHz(double sampleRateHz);
+    void setSchematicComponentValues(const ds1_ac::SchematicComponentValues& values);
     void applyTheme(const atom::ThemeColors& themeColors);
 
     void paint(juce::Graphics& g) override;
@@ -34,8 +37,9 @@ public:
 private:
     struct RebuildParams
     {
-        ds1_ac::CircuitKind circuitKind{ds1_ac::CircuitKind::Ds1Opamp};
+        ds1_ac::CircuitKind circuitKind{ds1_ac::CircuitKind::BjtFollower};
         nx_opamp_model_e model{NX_OPAMP_BA728};
+        nx_diode_model_t diodeModel{NX_DIODE_1N4148};
         nx_bjt_npn_model_e bjtModel{NX_BJT_2N3904};
         nx_jfet_n_model_e jfetModel{NX_JFET_2N5457};
         double gainControl{0.5};
@@ -45,7 +49,9 @@ private:
         ds1_ac::PlotKind plotKind{ds1_ac::PlotKind::Magnitude};
         ds1_ac::AcSweepParams sweep{};
         ds1_ac::AxisRange magnitudeAxis{};
+        ds1_ac::SchematicComponentValues schematicValues{};
         double previewFreqHz{ds1_ac::kDefaultPreviewFreqHz};
+        double previewAmplitude{ds1_ac::defaultPreviewAmplitude(ds1_ac::CircuitKind::BjtFollower)};
         bool recomputeMagnitudeAxis{false};
         uint32_t generation{0};
     };
@@ -70,8 +76,9 @@ private:
     ds1_ac::AcResponse lastResponse_;
     ds1_ac::SineWavePreview lastSinePreview_;
     ds1_ac::AxisRange fixedMagnitudeAxis_;
-    ds1_ac::CircuitKind fixedMagnitudeAxisCircuit_{ds1_ac::CircuitKind::Ds1Opamp};
+    ds1_ac::CircuitKind fixedMagnitudeAxisCircuit_{ds1_ac::CircuitKind::BjtFollower};
     nx_opamp_model_e fixedMagnitudeAxisModel_{NX_OPAMP_BA728};
+    nx_diode_model_t fixedMagnitudeAxisDiodeModel_{NX_DIODE_1N4148};
     nx_bjt_npn_model_e fixedMagnitudeAxisBjtModel_{NX_BJT_2N3904};
     nx_jfet_n_model_e fixedMagnitudeAxisJfetModel_{NX_JFET_2N5457};
     double fixedMagnitudeAxisSampleRate_{ds1_ac::kDefaultSampleRateHz};
@@ -80,15 +87,19 @@ private:
     nx_pot_taper_e fixedMagnitudeAxisPotTaper_{NX_POT_TAPER_LINEAR};
     bool hasFixedMagnitudeAxis_{false};
 
-    ds1_ac::CircuitKind circuitKind_{ds1_ac::CircuitKind::Ds1Opamp};
+    ds1_ac::CircuitKind circuitKind_{ds1_ac::CircuitKind::BjtFollower};
     nx_opamp_model_e model_{NX_OPAMP_BA728};
+    nx_diode_model_t diodeModel_{NX_DIODE_1N4148};
     nx_bjt_npn_model_e bjtModel_{NX_BJT_2N3904};
     nx_jfet_n_model_e jfetModel_{NX_JFET_2N5457};
     double gainControl_{0.5};
     double secondaryControl_{0.5};
     double tertiaryControl_{0.5};
     nx_pot_taper_e potTaper_{NX_POT_TAPER_LINEAR};
+    ds1_ac::SchematicComponentValues schematicValues_;
+    ds1_ac::SchematicComponentValues fixedMagnitudeAxisSchematicValues_;
     double previewFreqHz_{ds1_ac::kDefaultPreviewFreqHz};
+    double previewAmplitude_{ds1_ac::defaultPreviewAmplitude(ds1_ac::CircuitKind::BjtFollower)};
     ds1_ac::PlotKind plotKind_{ds1_ac::PlotKind::Magnitude};
     ds1_ac::AcSweepParams sweep_;
 

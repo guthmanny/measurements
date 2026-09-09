@@ -28,7 +28,7 @@ public:
             setUsingNativeTitleBar(true);
             setContentOwned(new MainComponent(), true);
             setResizable(true, true);
-            centreWithSize(1180, 720);
+            centreWithSize(1480, 880);
             setVisible(true);
             atom::setNativeTitleBarDarkMode(*this);
         }

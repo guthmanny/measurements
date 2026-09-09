@@ -4,61 +4,36 @@
 #include <vector>
 
 #include <juce_core/juce_core.h>
+#include <juce_gui_basics/juce_gui_basics.h>
 
-#include "nudsp/linear_circuits/ac_booster_eq_f32.h"
+#include "SchematicComponentValues.h"
+
+#include "nudsp/common/components.h"
 #include "nudsp/linear_circuits/ds1_opamp_f32.h"
 #include "nudsp/linear_circuits/ds1_tone_f32.h"
-#include "nudsp/linear_circuits/ds_plus_opamp_f32.h"
-#include "nudsp/linear_circuits/guvnor_level_f32.h"
-#include "nudsp/linear_circuits/guvnor_opamp_f32.h"
-#include "nudsp/linear_circuits/guvnor_postamp_f32.h"
-#include "nudsp/linear_circuits/guvnor_preamp_f32.h"
-#include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
-#include "nudsp/linear_circuits/rat_opamp_f32.h"
-#include "nudsp/linear_circuits/sansamp_classic_micing_f32.h"
-#include "nudsp/linear_circuits/sansamp_classic_spk_f32.h"
-#include "nudsp/linear_circuits/ts9_tone_f32.h"
-#include "nudsp/nonlinear_circuits/ac_booster_drive_f32.h"
-#include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
-#include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
-#include "nudsp/nonlinear_circuits/guvnor_clipper_f32.h"
-#include "nudsp/nonlinear_circuits/klon_centaur_f32.h"
+#include "nudsp/linear_circuits/rc_level_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_common_emitter_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_follower_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_follower_out_f32.h"
-#include "nudsp/nonlinear_circuits/jfet_follower_f32.h"
-#include "nudsp/nonlinear_circuits/rat_clipper_f32.h"
-#include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
+#include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
+
+namespace atom
+{
+class SvgView;
+}
 
 namespace ds1_ac
 {
 
     enum class CircuitKind
     {
-        Ds1Opamp,
-        RatOpamp,
-        GuvnorPreamp,
-        GuvnorPostamp,
-        GuvnorOpamp,
-        GuvnorLevel,
-        Ts9Tone,
-        Ds1Tone,
-        DsPlusOpamp,
-        KlonCentaurTone,
-        AcBoosterEq,
-        Ds1Clipper,
-        DiodeClipper,
-        RatClipper,
-        Ts9Opamp,
-        AcBoosterDrive,
-        KlonCentaur,
-        GuvnorClipper,
         BjtFollower,
-        BjtFollowerOut,
         BjtCommonEmitter,
-        JfetFollower,
-        SansampClassicSpk,
-        SansampClassicMicing
+        Ds1Opamp,
+        Ds1Clipper,
+        Ds1Tone,
+        RcLevel,
+        BjtFollowerOut
     };
 
     enum class PlotKind
@@ -100,6 +75,7 @@ namespace ds1_ac
         std::vector<std::pair<float, float>> outputCurve;
         AxisRange axis;
         float vccHalf{4.5f};
+        bool groundReferenced{false};
         juce::String title;
     };
 
@@ -113,13 +89,25 @@ namespace ds1_ac
     constexpr double kPreviewFreqMinHz = 20.0;
     constexpr double kPreviewFreqMaxHz = 10000.0;
     constexpr double kDefaultPreviewFreqHz = 1000.0;
+    constexpr double kPreviewAmpMin = 1.0e-6;
+    constexpr double kPreviewAmpMax = 2.0;
 
+    double defaultPreviewAmplitude(CircuitKind circuit) noexcept;
+
+    const char *compositeDisplayName() noexcept;
+    const char *compositeSvgRelativePath() noexcept;
+    const char *circuitTopologyId(CircuitKind circuit) noexcept;
+    const char *circuitOperatorKey(CircuitKind circuit) noexcept;
+    const char *circuitStageLabel(CircuitKind circuit) noexcept;
     const char *circuitDisplayName(CircuitKind circuit) noexcept;
+    juce::String circuitStageMenuLabel(CircuitKind circuit);
     const char *controlParameterName(CircuitKind circuit) noexcept;
     const char *secondaryControlParameterName(CircuitKind circuit) noexcept;
     const char *tertiaryControlParameterName(CircuitKind circuit) noexcept;
     const char *circuitProcessFunctionName(CircuitKind circuit) noexcept;
+    const char *circuitSvgRelativePath(CircuitKind circuit) noexcept;
     bool circuitUsesOpampModel(CircuitKind circuit) noexcept;
+    bool circuitUsesDiodeModel(CircuitKind circuit) noexcept;
     bool circuitUsesBjtModel(CircuitKind circuit) noexcept;
     bool circuitUsesJfetModel(CircuitKind circuit) noexcept;
     bool circuitHasPrimaryControl(CircuitKind circuit) noexcept;
@@ -131,14 +119,34 @@ namespace ds1_ac
     int potTaperComboId(nx_pot_taper_e taper) noexcept;
     nx_pot_taper_e potTaperFromComboId(int comboId) noexcept;
     const char *opampModelDisplayName(nx_opamp_model_e model) noexcept;
+    int opampModelComboId(nx_opamp_model_e model) noexcept;
+    nx_opamp_model_e opampModelFromComboId(int comboId) noexcept;
+    nx_opamp_model_e opampModelFromOverlayKey(const juce::String& overlayKey) noexcept;
+    void populateOpampModelCombo(juce::ComboBox& combo);
+    juce::String opampOverlayKeyForModel(nx_opamp_model_e model) noexcept;
+    /** Default op-amp model encoded in schematic OPAMP overlays (hex id or label text). */
+    nx_opamp_model_e defaultOpampModelFromSvgView(const atom::SvgView& view);
+    const char *diodeModelDisplayName(nx_diode_model_t model) noexcept;
+    nx_diode_model_t defaultDiodeModelForCircuit(CircuitKind circuit) noexcept;
+    int diodeModelComboId(nx_diode_model_t model) noexcept;
+    nx_diode_model_t diodeModelFromComboId(int comboId) noexcept;
+    void populateDiodeModelCombo(juce::ComboBox& combo);
+    /** Default diode model encoded in schematic DIODE overlays (hex id or label text). */
+    nx_diode_model_t defaultDiodeModelFromSvgView(const atom::SvgView& view);
     const char *bjtModelDisplayName(nx_bjt_npn_model_e model) noexcept;
     const char *jfetModelDisplayName(nx_jfet_n_model_e model) noexcept;
     nx_bjt_npn_model_e defaultBjtModel(CircuitKind circuit) noexcept;
     nx_jfet_n_model_e defaultJfetModel(CircuitKind circuit) noexcept;
     int bjtModelComboId(nx_bjt_npn_model_e model) noexcept;
     nx_bjt_npn_model_e bjtModelFromComboId(int comboId) noexcept;
+    void populateBjtModelCombo(juce::ComboBox& combo);
+    /** Default BJT model encoded in schematic BJT_NPN overlays (hex id or label text). */
+    nx_bjt_npn_model_e defaultBjtModelFromSvgView(const atom::SvgView& view);
     int jfetModelComboId(nx_jfet_n_model_e model) noexcept;
     nx_jfet_n_model_e jfetModelFromComboId(int comboId) noexcept;
+    void populateJfetModelCombo(juce::ComboBox& combo);
+    /** Default JFET model encoded in schematic JFET overlays (hex id or label text). */
+    nx_jfet_n_model_e defaultJfetModelFromSvgView(const atom::SvgView& view);
     juce::String formatFrequencyTick(float log10Hz) noexcept;
     juce::String formatMagnitudeTick(float magDb) noexcept;
     juce::String formatPhaseTick(float phaseDeg) noexcept;
@@ -151,15 +159,18 @@ namespace ds1_ac
     /** Magnitude Y-axis envelope from primary control at 0 and 1 (fixed while control is swept). */
     AxisRange computeMagnitudeAxisEnvelope(CircuitKind circuit,
                                            nx_opamp_model_e model,
+                                           nx_diode_model_t diodeModel,
                                            nx_bjt_npn_model_e bjtModel,
                                            nx_jfet_n_model_e jfetModel,
                                            const AcSweepParams &params,
                                            double secondaryControl,
                                            double tertiaryControl,
-                                           nx_pot_taper_e potTaper);
+                                           nx_pot_taper_e potTaper,
+                                           const SchematicComponentValues* componentValues = nullptr);
 
     AcResponse computeAcResponse(CircuitKind circuit,
                                  nx_opamp_model_e model,
+                                 nx_diode_model_t diodeModel,
                                  nx_bjt_npn_model_e bjtModel,
                                  nx_jfet_n_model_e jfetModel,
                                  double gainControl,
@@ -167,17 +178,21 @@ namespace ds1_ac
                                  const AxisRange &magnitudeAxis,
                                  double secondaryControl,
                                  double tertiaryControl,
-                                 nx_pot_taper_e potTaper);
+                                 nx_pot_taper_e potTaper,
+                                 const SchematicComponentValues* componentValues = nullptr);
 
     SineWavePreview computeSineWavePreview(CircuitKind circuit,
                                            nx_opamp_model_e model,
+                                           nx_diode_model_t diodeModel,
                                            nx_bjt_npn_model_e bjtModel,
                                            nx_jfet_n_model_e jfetModel,
                                            double gainControl,
                                            double freqHz,
+                                           double amplitude,
                                            const AcSweepParams &params,
                                            double secondaryControl,
                                            double tertiaryControl,
-                                           nx_pot_taper_e potTaper);
+                                           nx_pot_taper_e potTaper,
+                                           const SchematicComponentValues* componentValues = nullptr);
 
 } // namespace ds1_ac

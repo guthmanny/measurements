@@ -24,30 +24,13 @@ namespace
     };
 
     constexpr CircuitMenuEntry kCircuitMenuEntries[] = {
-        {"DS-1", ds1_ac::CircuitKind::Ds1Opamp},
-        {"RAT", ds1_ac::CircuitKind::RatOpamp},
-        {"Guvnor Preamp", ds1_ac::CircuitKind::GuvnorPreamp},
-        {"Guvnor Postamp", ds1_ac::CircuitKind::GuvnorPostamp},
-        {"Guvnor OpAmp", ds1_ac::CircuitKind::GuvnorOpamp},
-        {"Guvnor Level", ds1_ac::CircuitKind::GuvnorLevel},
-        {"TS-9 Tone", ds1_ac::CircuitKind::Ts9Tone},
-        {"DS-1 Tone", ds1_ac::CircuitKind::Ds1Tone},
-        {"DS+", ds1_ac::CircuitKind::DsPlusOpamp},
-        {"Klon Centaur Tone", ds1_ac::CircuitKind::KlonCentaurTone},
-        {"AC Booster EQ", ds1_ac::CircuitKind::AcBoosterEq},
-        {"DS-1 Clipper", ds1_ac::CircuitKind::Ds1Clipper},
-        {"Diode Clipper", ds1_ac::CircuitKind::DiodeClipper},
-        {"RAT Clipper", ds1_ac::CircuitKind::RatClipper},
-        {"TS-9 OpAmp", ds1_ac::CircuitKind::Ts9Opamp},
-        {"AC Booster Drive", ds1_ac::CircuitKind::AcBoosterDrive},
-        {"Klon Centaur", ds1_ac::CircuitKind::KlonCentaur},
-        {"Guvnor Clipper", ds1_ac::CircuitKind::GuvnorClipper},
-        {"BJT Follower", ds1_ac::CircuitKind::BjtFollower},
-        {"BJT Follower Out", ds1_ac::CircuitKind::BjtFollowerOut},
-        {"BJT Common Emitter", ds1_ac::CircuitKind::BjtCommonEmitter},
-        {"JFET Follower", ds1_ac::CircuitKind::JfetFollower},
-        {"SansAmp Classic Spk", ds1_ac::CircuitKind::SansampClassicSpk},
-        {"SansAmp Classic Micing", ds1_ac::CircuitKind::SansampClassicMicing},
+        {"input — Input BJT", ds1_ac::CircuitKind::BjtFollower},
+        {"emitter — BJT Emitter", ds1_ac::CircuitKind::BjtCommonEmitter},
+        {"opamp — Op Amp", ds1_ac::CircuitKind::Ds1Opamp},
+        {"clipper — Clipper", ds1_ac::CircuitKind::Ds1Clipper},
+        {"tone — Tone", ds1_ac::CircuitKind::Ds1Tone},
+        {"level — Level", ds1_ac::CircuitKind::RcLevel},
+        {"output — Output BJT", ds1_ac::CircuitKind::BjtFollowerOut},
     };
 
     constexpr int kKnobColumnWidth = 72;
@@ -58,11 +41,11 @@ MainComponent::MainComponent()
 {
     setLookAndFeel(&atomLookAndFeel);
 
-    titleLabel.setText("NuDSP OpAmp AC Tracer", juce::dontSendNotification);
+    titleLabel.setText("Boss DS-1 White Box", juce::dontSendNotification);
     titleLabel.setFont(juce::Font(28.0f, juce::Font::bold));
     titleLabel.setJustificationType(juce::Justification::centredLeft);
 
-    subtitleLabel.setText("Bode plot + 1-period sine preview", juce::dontSendNotification);
+    subtitleLabel.setText("input → emitter → opamp → clipper → tone → level → output", juce::dontSendNotification);
     subtitleLabel.setJustificationType(juce::Justification::centredLeft);
     subtitleLabel.setInterceptsMouseClicks(false, false);
 
@@ -81,7 +64,7 @@ MainComponent::MainComponent()
     configureCombo(sampleRateBox);
     configureCombo(taperBox);
 
-    circuitLabel.setText("Circuit", juce::dontSendNotification);
+    circuitLabel.setText("Stage", juce::dontSendNotification);
     circuitLabel.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(circuitLabel);
 
@@ -94,6 +77,7 @@ MainComponent::MainComponent()
         const auto circuit = getCircuitFromSelection();
         syncPotTaperToCircuitDefault(circuit);
         syncDeviceModelCombo(circuit);
+        syncInjectDefaultsToCircuit(circuit);
         updatePlotView();
     };
 
@@ -109,7 +93,7 @@ MainComponent::MainComponent()
     taperBox.addItem("G (4B)", 6);
     taperBox.addItem("C", 7);
     taperBox.addItem("3B", 8);
-    taperBox.setSelectedId(ds1_ac::potTaperComboId(ds1_ac::defaultPotTaper(ds1_ac::CircuitKind::Ds1Opamp)),
+    taperBox.setSelectedId(ds1_ac::potTaperComboId(ds1_ac::defaultPotTaper(ds1_ac::CircuitKind::BjtFollower)),
                            juce::dontSendNotification);
     taperBox.onChange = [this]()
     { updatePlotView(); };
@@ -159,18 +143,31 @@ MainComponent::MainComponent()
     { updatePlotView(); };
     addAndMakeVisible(tertiaryKnob);
 
-    sineFreqLabel.setText("Sine Hz", juce::dontSendNotification);
-    sineFreqLabel.setJustificationType(juce::Justification::centred);
-    addAndMakeVisible(sineFreqLabel);
+    injectFreqLabel.setText("Inject f", juce::dontSendNotification);
+    injectFreqLabel.setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(injectFreqLabel);
 
-    configureKnob(sineFreqKnob);
-    sineFreqKnob.setRange(ds1_ac::kPreviewFreqMinHz, ds1_ac::kPreviewFreqMaxHz, 1.0);
-    sineFreqKnob.setValue(ds1_ac::kDefaultPreviewFreqHz, juce::dontSendNotification);
-    sineFreqKnob.setSkewFactorFromMidPoint(1000.0);
-    sineFreqKnob.setTextValueSuffix(" Hz");
-    sineFreqKnob.onValueChange = [this]()
+    configureInjectBox(injectFreqBox);
+    injectFreqBox.setRange(ds1_ac::kPreviewFreqMinHz, ds1_ac::kPreviewFreqMaxHz, 0.0);
+    injectFreqBox.setSkewFactorFromMidPoint(1000.0);
+    injectFreqBox.setValue(ds1_ac::kDefaultPreviewFreqHz, juce::dontSendNotification);
+    injectFreqBox.setTextValueSuffix(" Hz");
+    injectFreqBox.onValueChange = [this]()
     { updatePlotView(); };
-    addAndMakeVisible(sineFreqKnob);
+    addAndMakeVisible(injectFreqBox);
+
+    injectAmpLabel.setText("Inject A", juce::dontSendNotification);
+    injectAmpLabel.setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(injectAmpLabel);
+
+    configureInjectBox(injectAmpBox);
+    injectAmpBox.setRange(ds1_ac::kPreviewAmpMin, ds1_ac::kPreviewAmpMax, 0.0);
+    injectAmpBox.setSkewFactorFromMidPoint(0.01);
+    injectAmpBox.setValue(ds1_ac::defaultPreviewAmplitude(ds1_ac::CircuitKind::BjtFollower),
+                           juce::dontSendNotification);
+    injectAmpBox.onValueChange = [this]()
+    { updatePlotView(); };
+    addAndMakeVisible(injectAmpBox);
 
     plotKindBox.addItem("Magnitude", 1);
     plotKindBox.addItem("Phase", 2);
@@ -179,15 +176,49 @@ MainComponent::MainComponent()
     plotKindBox.onChange = [this]()
     { updatePlotView(); };
 
-    opampModelBox.addItem("Ideal", 1);
-    opampModelBox.addItem("LM741", 2);
-    opampModelBox.addItem("JRC4558", 3);
-    opampModelBox.addItem("BA728", 4);
-    opampModelBox.addItem("LM308", 5);
-    opampModelBox.addItem("TL072", 6);
-    opampModelBox.setSelectedId(4, juce::dontSendNotification);
+    ds1_ac::populateOpampModelCombo(opampModelBox);
+    opampModelBox.setSelectedId(ds1_ac::opampModelComboId(NX_OPAMP_BA728), juce::dontSendNotification);
     opampModelBox.onChange = [this]()
     { updatePlotView(); };
+
+    schematicPanel = std::make_unique<CircuitSchematicPanel>();
+    schematicPanel->onOpampModelChanged = [this](nx_opamp_model_e model)
+    {
+        opampModelBox.setSelectedId(ds1_ac::opampModelComboId(model), juce::dontSendNotification);
+        if (acPanel != nullptr)
+            acPanel->setOpampModel(model);
+    };
+    schematicPanel->onDiodeModelChanged = [this](nx_diode_model_t model)
+    {
+        opampModelBox.setSelectedId(ds1_ac::diodeModelComboId(model), juce::dontSendNotification);
+        if (acPanel != nullptr)
+            acPanel->setDiodeModel(model);
+    };
+    schematicPanel->onBjtModelChanged = [this](nx_bjt_npn_model_e model)
+    {
+        if (acPanel != nullptr)
+            acPanel->setBjtModel(model);
+    };
+    schematicPanel->onJfetModelChanged = [this](nx_jfet_n_model_e model)
+    {
+        if (acPanel != nullptr)
+            acPanel->setJfetModel(model);
+    };
+    schematicPanel->onComponentValuesChanged = [this](const ds1_ac::SchematicComponentValues& values)
+    {
+        if (acPanel != nullptr)
+            acPanel->setSchematicComponentValues(values);
+    };
+    addAndMakeVisible(*schematicPanel);
+
+    addAndMakeVisible(schematicSplitter);
+    schematicSplitter.onDragDelta = [this](int deltaX)
+    {
+        const int maxWidth = getWidth() - 68 - kAcPanelMinWidth - kSchematicSplitterWidth - kPanelGap;
+        schematicPanelWidth_ =
+            juce::jlimit(kSchematicMinWidth, juce::jmax(kSchematicMinWidth, maxWidth), schematicPanelWidth_ + deltaX);
+        resized();
+    };
 
     acPanel = std::make_unique<Ds1OpampAcPanel>();
     addAndMakeVisible(*acPanel);
@@ -202,7 +233,7 @@ MainComponent::MainComponent()
     applyTheme();
     syncDeviceModelCombo(getCircuitFromSelection());
     updatePlotView();
-    setSize(1180, 760);
+    setSize(1480, 880);
 }
 
 MainComponent::~MainComponent()
@@ -220,6 +251,18 @@ void MainComponent::configureKnob(atom::Slider &knob)
     knob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     knob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     knob.setValueLabelPos(atom::Slider::ValueLabelPos::Below);
+}
+
+void MainComponent::configureInjectBox(atom::Slider &box)
+{
+    box.setSliderStyle(juce::Slider::LinearHorizontal);
+    box.setTextBoxStyle(juce::Slider::TextBoxRight, false, 72, 24);
+    box.setScrollWheelEnabled(false);
+}
+
+void MainComponent::syncInjectDefaultsToCircuit(ds1_ac::CircuitKind circuit)
+{
+    injectAmpBox.setValue(ds1_ac::defaultPreviewAmplitude(circuit), juce::dontSendNotification);
 }
 
 void MainComponent::layoutKnobColumn(juce::Rectangle<int> &area, atom::Label &label, atom::Slider &knob) const
@@ -243,9 +286,13 @@ void MainComponent::applyTheme()
     secondaryLabel.refreshTheme();
     tertiaryLabel.refreshTheme();
     circuitLabel.refreshTheme();
-    sineFreqLabel.refreshTheme();
+    injectFreqLabel.refreshTheme();
+    injectAmpLabel.refreshTheme();
     sampleRateLabel.refreshTheme();
     taperLabel.refreshTheme();
+
+    if (schematicPanel != nullptr)
+        schematicPanel->applyTheme(themeColors);
 
     if (acPanel != nullptr)
         acPanel->applyTheme(themeColors);
@@ -261,6 +308,7 @@ void MainComponent::updatePlotView()
 
     const auto circuit = getCircuitFromSelection();
     const bool usesOpamp = ds1_ac::circuitUsesOpampModel(circuit);
+    const bool usesDiode = ds1_ac::circuitUsesDiodeModel(circuit);
     const bool usesBjt = ds1_ac::circuitUsesBjtModel(circuit);
     const bool usesJfet = ds1_ac::circuitUsesJfetModel(circuit);
     const bool hasPrimary = ds1_ac::circuitHasPrimaryControl(circuit);
@@ -268,26 +316,43 @@ void MainComponent::updatePlotView()
     const bool hasSecondary = ds1_ac::circuitHasSecondaryControl(circuit);
     const bool hasTertiary = ds1_ac::circuitHasTertiaryControl(circuit);
 
+    if (schematicPanel != nullptr)
+        schematicPanel->setCircuitKind(circuit);
+
     acPanel->setCircuitKind(circuit);
-    acPanel->setOpampModel(getOpampModelFromSelection());
-    acPanel->setBjtModel(getBjtModelFromSelection());
-    acPanel->setJfetModel(getJfetModelFromSelection());
+    if (usesOpamp && schematicPanel != nullptr)
+        acPanel->setOpampModel(schematicPanel->getOpampModel());
+    else if (usesOpamp)
+        acPanel->setOpampModel(getOpampModelFromSelection());
+    if (usesDiode && schematicPanel != nullptr)
+        acPanel->setDiodeModel(schematicPanel->getDiodeModel());
+    if (usesBjt && schematicPanel != nullptr)
+        acPanel->setBjtModel(schematicPanel->getBjtModel());
+    else if (usesBjt)
+        acPanel->setBjtModel(getBjtModelFromSelection());
+    if (usesJfet && schematicPanel != nullptr)
+        acPanel->setJfetModel(schematicPanel->getJfetModel());
+    else if (usesJfet)
+        acPanel->setJfetModel(getJfetModelFromSelection());
     acPanel->setGainControl(gainKnob.getValue());
     acPanel->setSecondaryControl(secondaryKnob.getValue());
     acPanel->setTertiaryControl(tertiaryKnob.getValue());
     acPanel->setPotTaper(getPotTaperFromSelection());
-    acPanel->setPreviewFrequencyHz(sineFreqKnob.getValue());
+    acPanel->setPreviewFrequencyHz(injectFreqBox.getValue());
+    acPanel->setPreviewAmplitude(injectAmpBox.getValue());
     acPanel->setSampleRateHz(getSampleRateFromSelection());
     acPanel->setPlotKind(getPlotKindFromSelection());
 
     gainLabel.setText(ds1_ac::controlParameterName(circuit), juce::dontSendNotification);
     secondaryLabel.setText(ds1_ac::secondaryControlParameterName(circuit), juce::dontSendNotification);
     tertiaryLabel.setText(ds1_ac::tertiaryControlParameterName(circuit), juce::dontSendNotification);
-    subtitleLabel.setText("Bode plot + 1-period sine preview (" + juce::String(ds1_ac::circuitProcessFunctionName(circuit)) + ")",
+    subtitleLabel.setText("White-box stage " + ds1_ac::circuitStageMenuLabel(circuit)
+                              + "  |  " + juce::String(ds1_ac::circuitOperatorKey(circuit))
+                              + "  |  " + juce::String(ds1_ac::circuitProcessFunctionName(circuit)),
                           juce::dontSendNotification);
 
-    opampModelBox.setVisible(usesOpamp || usesBjt || usesJfet);
-    opampModelBox.setEnabled(usesOpamp || usesBjt || usesJfet);
+    opampModelBox.setVisible(false);
+    opampModelBox.setEnabled(false);
 
     taperLabel.setVisible(usesPotTaper);
     taperLabel.setEnabled(usesPotTaper);
@@ -309,11 +374,15 @@ void MainComponent::updatePlotView()
     tertiaryKnob.setVisible(hasTertiary);
     tertiaryKnob.setEnabled(hasTertiary);
 
-    const bool showSineControls = getPlotKindFromSelection() != ds1_ac::PlotKind::Magnitude;
-    sineFreqLabel.setVisible(showSineControls);
-    sineFreqLabel.setEnabled(showSineControls);
-    sineFreqKnob.setVisible(showSineControls);
-    sineFreqKnob.setEnabled(showSineControls);
+    const bool showInjectControls = getPlotKindFromSelection() != ds1_ac::PlotKind::Magnitude;
+    injectFreqLabel.setVisible(showInjectControls);
+    injectFreqLabel.setEnabled(showInjectControls);
+    injectFreqBox.setVisible(showInjectControls);
+    injectFreqBox.setEnabled(showInjectControls);
+    injectAmpLabel.setVisible(showInjectControls);
+    injectAmpLabel.setEnabled(showInjectControls);
+    injectAmpBox.setVisible(showInjectControls);
+    injectAmpBox.setEnabled(showInjectControls);
     resized();
 }
 
@@ -323,7 +392,7 @@ ds1_ac::CircuitKind MainComponent::getCircuitFromSelection() const
     if (selectedId >= 1 && selectedId <= static_cast<int>(std::size(kCircuitMenuEntries)))
         return kCircuitMenuEntries[static_cast<size_t>(selectedId - 1)].kind;
 
-    return ds1_ac::CircuitKind::Ds1Opamp;
+    return ds1_ac::CircuitKind::BjtFollower;
 }
 
 nx_pot_taper_e MainComponent::getPotTaperFromSelection() const
@@ -343,13 +412,16 @@ void MainComponent::syncDeviceModelCombo(ds1_ac::CircuitKind circuit)
 
     if (ds1_ac::circuitUsesOpampModel(circuit))
     {
-        opampModelBox.addItem("Ideal", 1);
-        opampModelBox.addItem("LM741", 2);
-        opampModelBox.addItem("JRC4558", 3);
-        opampModelBox.addItem("BA728", 4);
-        opampModelBox.addItem("LM308", 5);
-        opampModelBox.addItem("TL072", 6);
-        opampModelBox.setSelectedId(4, juce::dontSendNotification);
+        ds1_ac::populateOpampModelCombo(opampModelBox);
+        opampModelBox.setSelectedId(ds1_ac::opampModelComboId(NX_OPAMP_BA728), juce::dontSendNotification);
+        return;
+    }
+
+    if (ds1_ac::circuitUsesDiodeModel(circuit))
+    {
+        ds1_ac::populateDiodeModelCombo(opampModelBox);
+        opampModelBox.setSelectedId(ds1_ac::diodeModelComboId(ds1_ac::defaultDiodeModelForCircuit(circuit)),
+                                    juce::dontSendNotification);
         return;
     }
 
@@ -375,21 +447,7 @@ void MainComponent::syncDeviceModelCombo(ds1_ac::CircuitKind circuit)
 
 nx_opamp_model_e MainComponent::getOpampModelFromSelection() const
 {
-    switch (opampModelBox.getSelectedId())
-    {
-    case 1:
-        return NX_OPAMP_IDEAL;
-    case 2:
-        return NX_OPAMP_LM741;
-    case 3:
-        return NX_OPAMP_JRC4558;
-    case 5:
-        return NX_OPAMP_LM308;
-    case 6:
-        return NX_OPAMP_TL072;
-    default:
-        return NX_OPAMP_BA728;
-    }
+    return ds1_ac::opampModelFromComboId(opampModelBox.getSelectedId());
 }
 
 nx_bjt_npn_model_e MainComponent::getBjtModelFromSelection() const
@@ -456,7 +514,7 @@ void MainComponent::resized()
     auto toolbar = area.removeFromTop(34);
     themeButton.setBounds(toolbar.removeFromRight(160));
     circuitLabel.setBounds(toolbar.removeFromLeft(48));
-    circuitBox.setBounds(toolbar.removeFromLeft(132));
+    circuitBox.setBounds(toolbar.removeFromLeft(196));
     toolbar.removeFromLeft(8);
     opampModelBox.setBounds(toolbar.removeFromLeft(110));
     toolbar.removeFromLeft(8);
@@ -467,6 +525,15 @@ void MainComponent::resized()
     toolbar.removeFromLeft(8);
     taperLabel.setBounds(toolbar.removeFromLeft(40));
     taperBox.setBounds(toolbar.removeFromLeft(96));
+    if (injectFreqBox.isVisible())
+    {
+        toolbar.removeFromLeft(8);
+        injectFreqLabel.setBounds(toolbar.removeFromLeft(52));
+        injectFreqBox.setBounds(toolbar.removeFromLeft(108));
+        toolbar.removeFromLeft(8);
+        injectAmpLabel.setBounds(toolbar.removeFromLeft(52));
+        injectAmpBox.setBounds(toolbar.removeFromLeft(88));
+    }
 
     area.removeFromTop(8);
 
@@ -474,9 +541,32 @@ void MainComponent::resized()
     layoutKnobColumn(knobRow, gainLabel, gainKnob);
     layoutKnobColumn(knobRow, secondaryLabel, secondaryKnob);
     layoutKnobColumn(knobRow, tertiaryLabel, tertiaryKnob);
-    layoutKnobColumn(knobRow, sineFreqLabel, sineFreqKnob);
 
     area.removeFromTop(10);
+
+    layoutContentArea(area);
+}
+
+void MainComponent::layoutContentArea(juce::Rectangle<int> area)
+{
+    const int maxSchematicWidth =
+        area.getWidth() - kAcPanelMinWidth - kSchematicSplitterWidth - kPanelGap;
+
+    if (schematicPanelWidth_ <= 0)
+    {
+        schematicPanelWidth_ = juce::jlimit(kSchematicMinWidth,
+                                            juce::jmax(kSchematicMinWidth, maxSchematicWidth),
+                                            area.getWidth() * 38 / 100);
+    }
+
+    schematicPanelWidth_ =
+        juce::jlimit(kSchematicMinWidth, juce::jmax(kSchematicMinWidth, maxSchematicWidth), schematicPanelWidth_);
+
+    if (schematicPanel != nullptr)
+        schematicPanel->setBounds(area.removeFromLeft(schematicPanelWidth_));
+
+    schematicSplitter.setBounds(area.removeFromLeft(kSchematicSplitterWidth));
+    area.removeFromLeft(kPanelGap);
 
     if (acPanel != nullptr)
         acPanel->setBounds(area.reduced(0, 2));

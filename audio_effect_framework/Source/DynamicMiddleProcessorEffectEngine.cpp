@@ -70,3 +70,17 @@ bool DynamicMiddleProcessorEffectEngine::installMiddleProcessors (
     middleProcessorId_ = id;
     return true;
 }
+
+std::optional<std::string> DynamicMiddleProcessorEffectEngine::dynamicMiddlePluginBundlePath() const
+{
+    if (! hasMiddleDesc_)
+        return std::nullopt;
+    return middleDesc_.file_or_identifier;
+}
+
+std::string_view DynamicMiddleProcessorEffectEngine::dynamicMiddlePluginUid() const
+{
+    if (! hasMiddleDesc_)
+        return {};
+    return middleDesc_.uid;
+}

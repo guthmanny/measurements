@@ -1,0 +1,16 @@
+---
+description: MuDSP bilinear input is a voltage source at vin; incomplete Norton stamps look like a current source.
+globs:
+  - white_box_lab/**
+  - active_linear_circuits/**
+  - **/ds1_tone*
+alwaysApply: false
+---
+
+# White-box bilinear input: voltage source at vin
+
+When editing MuDSP white-box operators (sibling `MuDSP/`) or this repo's DS-1 / white-box tracers, the operator signal is always voltage `vi` at `vin`. There is no current-source input.
+
+Canonical rule: `../MuDSP/.cursor/rules/white-box-vin-voltage-source.mdc`.
+
+`input_stamp` (`rhs = g`) is only the Norton of that voltage source. The same `g` must be stamped node–gnd (`Gin = 1e12` clamp, or series-R Norton on the same node). If `rhs = G1` at `vin` but `G1` is stamped `vin`–`v1` with no clamp, `vin` is unforced and a passive stack can show gain > 0 dB — fix the stamps, do not change the tracer.

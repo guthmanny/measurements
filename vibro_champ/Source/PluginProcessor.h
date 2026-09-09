@@ -23,9 +23,6 @@ protected:
     std::unique_ptr<KbussEffectEngine> createEffectEngine() override;
     bool bypassNoiseGateOnStartup() const override { return true; }
 
-    /** Amp Newton is too heavy for default 2× OS — stay at 1× regardless of QUALITY. */
-    int oversampleFactorForQuality (int /*qualityChoice*/) const override { return 1; }
-
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VibroChampAudioProcessor)
 };

@@ -65,8 +65,10 @@ std::vector<float> buildPeriodTicks()
     return {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
 }
 
-std::vector<float> buildSupplyVoltageTicks(float vccHalf)
+std::vector<float> buildSupplyVoltageTicks(float vccHalf, bool groundReferenced)
 {
+    if (groundReferenced)
+        return {0.0f, vccHalf, vccHalf * 2.0f};
     return {-vccHalf, 0.0f, vccHalf};
 }
 
@@ -127,7 +129,8 @@ void configureSineWaveCurve(atom::CurveControl& curve, const ds1_ac::SineWavePre
     curve.setShowXLabel(true);
     curve.setShowYLabel(true);
     curve.setDataAxes(xAxis, yAxis);
-    curve.setCustomAxisTicks(buildPeriodTicks(), buildSupplyVoltageTicks(preview.vccHalf));
+    curve.setCustomAxisTicks(buildPeriodTicks(),
+                             buildSupplyVoltageTicks(preview.vccHalf, preview.groundReferenced));
     curve.setCustomCurve(preview.outputCurve);
     curve.clearSecondaryCustomCurve();
 }
@@ -230,6 +233,7 @@ void Ds1OpampAcPanel::setCircuitKind(ds1_ac::CircuitKind circuitKind)
         return;
 
     circuitKind_ = circuitKind;
+    schematicValues_ = {};
     hasFixedMagnitudeAxis_ = false;
     scheduleRebuild();
 }
@@ -240,6 +244,16 @@ void Ds1OpampAcPanel::setOpampModel(nx_opamp_model_e model)
         return;
 
     model_ = model;
+    hasFixedMagnitudeAxis_ = false;
+    scheduleRebuild();
+}
+
+void Ds1OpampAcPanel::setDiodeModel(nx_diode_model_t diodeModel)
+{
+    if (diodeModel_ == diodeModel)
+        return;
+
+    diodeModel_ = diodeModel;
     hasFixedMagnitudeAxis_ = false;
     scheduleRebuild();
 }
@@ -318,6 +332,16 @@ void Ds1OpampAcPanel::setPreviewFrequencyHz(double freqHz)
     scheduleRebuild();
 }
 
+void Ds1OpampAcPanel::setPreviewAmplitude(double amplitude)
+{
+    const double next = juce::jlimit(ds1_ac::kPreviewAmpMin, ds1_ac::kPreviewAmpMax, amplitude);
+    if (juce::approximatelyEqual(previewAmplitude_, next))
+        return;
+
+    previewAmplitude_ = next;
+    scheduleRebuild();
+}
+
 void Ds1OpampAcPanel::setSampleRateHz(double sampleRateHz)
 {
     const double next = juce::jmax(1000.0, sampleRateHz);
@@ -325,6 +349,16 @@ void Ds1OpampAcPanel::setSampleRateHz(double sampleRateHz)
         return;
 
     sweep_.sampleRateHz = next;
+    hasFixedMagnitudeAxis_ = false;
+    scheduleRebuild();
+}
+
+void Ds1OpampAcPanel::setSchematicComponentValues(const ds1_ac::SchematicComponentValues& values)
+{
+    if (schematicValues_ == values)
+        return;
+
+    schematicValues_ = values;
     hasFixedMagnitudeAxis_ = false;
     scheduleRebuild();
 }
@@ -367,6 +401,7 @@ void Ds1OpampAcPanel::handleAsyncUpdate()
     RebuildParams params;
     params.circuitKind = circuitKind_;
     params.model = model_;
+    params.diodeModel = diodeModel_;
     params.bjtModel = bjtModel_;
     params.jfetModel = jfetModel_;
     params.gainControl = gainControl_;
@@ -376,16 +411,20 @@ void Ds1OpampAcPanel::handleAsyncUpdate()
     params.plotKind = plotKind_;
     params.sweep = sweep_;
     params.previewFreqHz = previewFreqHz_;
+    params.previewAmplitude = previewAmplitude_;
+    params.schematicValues = schematicValues_;
     params.recomputeMagnitudeAxis = !hasFixedMagnitudeAxis_
                                  || !isValidMagnitudeAxis(fixedMagnitudeAxis_)
                                  || circuitKind_ != fixedMagnitudeAxisCircuit_
                                  || model_ != fixedMagnitudeAxisModel_
+                                 || diodeModel_ != fixedMagnitudeAxisDiodeModel_
                                  || bjtModel_ != fixedMagnitudeAxisBjtModel_
                                  || jfetModel_ != fixedMagnitudeAxisJfetModel_
                                  || !juce::approximatelyEqual(sweep_.sampleRateHz, fixedMagnitudeAxisSampleRate_)
                                  || !juce::approximatelyEqual(secondaryControl_, fixedMagnitudeAxisSecondaryControl_)
                                  || !juce::approximatelyEqual(tertiaryControl_, fixedMagnitudeAxisTertiaryControl_)
-                                 || potTaper_ != fixedMagnitudeAxisPotTaper_;
+                                 || potTaper_ != fixedMagnitudeAxisPotTaper_
+                                 || schematicValues_ != fixedMagnitudeAxisSchematicValues_;
     params.magnitudeAxis = fixedMagnitudeAxis_;
     params.generation = rebuildGeneration_.load(std::memory_order_acquire);
 
@@ -424,17 +463,22 @@ Ds1OpampAcPanel::RebuildResult Ds1OpampAcPanel::computeRebuild(const RebuildPara
     result.magnitudeAxis = params.recomputeMagnitudeAxis
         ? ds1_ac::computeMagnitudeAxisEnvelope(params.circuitKind,
                                                params.model,
+                                               params.diodeModel,
                                                params.bjtModel,
                                                params.jfetModel,
                                                params.sweep,
                                                params.secondaryControl,
                                                params.tertiaryControl,
-                                               params.potTaper)
+                                               params.potTaper,
+                                               params.schematicValues.empty() ? nullptr : &params.schematicValues)
         : params.magnitudeAxis;
     result.magnitudeAxisRecomputed = params.recomputeMagnitudeAxis;
 
+    const auto* componentValues = params.schematicValues.empty() ? nullptr : &params.schematicValues;
+
     result.response = ds1_ac::computeAcResponse(params.circuitKind,
                                                   params.model,
+                                                  params.diodeModel,
                                                   params.bjtModel,
                                                   params.jfetModel,
                                                   params.gainControl,
@@ -442,17 +486,21 @@ Ds1OpampAcPanel::RebuildResult Ds1OpampAcPanel::computeRebuild(const RebuildPara
                                                   result.magnitudeAxis,
                                                   params.secondaryControl,
                                                   params.tertiaryControl,
-                                                  params.potTaper);
+                                                  params.potTaper,
+                                                  componentValues);
     result.sinePreview = ds1_ac::computeSineWavePreview(params.circuitKind,
                                                         params.model,
+                                                        params.diodeModel,
                                                         params.bjtModel,
                                                         params.jfetModel,
                                                         params.gainControl,
                                                         params.previewFreqHz,
+                                                        params.previewAmplitude,
                                                         params.sweep,
                                                         params.secondaryControl,
                                                         params.tertiaryControl,
-                                                        params.potTaper);
+                                                        params.potTaper,
+                                                        componentValues);
     return result;
 }
 
@@ -489,12 +537,14 @@ void Ds1OpampAcPanel::applyRebuildResult(RebuildResult&& result)
         fixedMagnitudeAxis_ = result.magnitudeAxis;
         fixedMagnitudeAxisCircuit_ = circuitKind_;
         fixedMagnitudeAxisModel_ = model_;
+        fixedMagnitudeAxisDiodeModel_ = diodeModel_;
         fixedMagnitudeAxisBjtModel_ = bjtModel_;
         fixedMagnitudeAxisJfetModel_ = jfetModel_;
         fixedMagnitudeAxisSampleRate_ = sweep_.sampleRateHz;
         fixedMagnitudeAxisSecondaryControl_ = secondaryControl_;
         fixedMagnitudeAxisTertiaryControl_ = tertiaryControl_;
         fixedMagnitudeAxisPotTaper_ = potTaper_;
+        fixedMagnitudeAxisSchematicValues_ = schematicValues_;
         hasFixedMagnitudeAxis_ = true;
     }
     lastResponse_ = std::move(result.response);

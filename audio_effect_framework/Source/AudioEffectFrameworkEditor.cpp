@@ -139,18 +139,30 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
   addChildComponent (spectrumOverlay);
   spectrumOverlay.setAlwaysOnTop (true);
 
+  {
+    const auto font = AtomLookAndFeel::getUIFont(AtomLookAndFeel::getSystemUIFontHeight(), juce::Font::plain);
+    modelTelemetryLabel.setJustificationType(juce::Justification::centredRight);
+    modelTelemetryLabel.setMinimumHorizontalScale(0.75f);
+    modelTelemetryLabel.setBorderSize({});
+    modelTelemetryLabel.setAutoResizeEnabled(false);
+    modelTelemetryLabel.setFont(font);
+    modelTelemetryLabel.setInterceptsMouseClicks(false, false);
+    addChildComponent(modelTelemetryLabel);
+    modelTelemetryLabel.setAlwaysOnTop(true);
+  }
+
   footerBar.getBtnMidiPort().setVisible (false);
   footerBar.onZoomChanged = [this](float scale) { applyZoom(scale); };
 
   {
     auto& quality = footerBar.getQualityComboBox();
-    float qualityChoice = (float) processor.paramOversampleQuality.defaultChoice;
-    if (auto* param = processor.parameters.valueTreeState.getParameter (processor.paramOversampleQuality.paramID))
+    float qualityChoice = (float) processor.paramProcessingQuality.defaultChoice;
+    if (auto* param = processor.parameters.valueTreeState.getParameter (processor.paramProcessingQuality.paramID))
       qualityChoice = param->convertFrom0to1 (param->getValue());
     quality.setSelectedId (juce::jlimit (1, 3, juce::roundToInt (qualityChoice) + 1), juce::dontSendNotification);
     quality.onChange = [this]
     {
-      auto* param = processor.parameters.valueTreeState.getParameter (processor.paramOversampleQuality.paramID);
+      auto* param = processor.parameters.valueTreeState.getParameter (processor.paramProcessingQuality.paramID);
       if (param == nullptr)
         return;
       const int id = footerBar.getQualityComboBox().getSelectedId();
@@ -158,6 +170,7 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
       param->beginChangeGesture();
       param->setValueNotifyingHost (param->convertTo0to1 (choice));
       param->endChangeGesture();
+      processor.syncMiddleProcessingQuality();
     };
   }
 
@@ -247,7 +260,7 @@ void AudioEffectFrameworkEditor::buildParameterBodyRows()
   const juce::StringArray settingsOnlyParamIds{"dynamicplugin", "dynamic_plugin", "gatethreshmin", "gatethreshmax", "gateoffatmin", "gateratio",
                                                "gateattack", "gaterelease", "gateknee", "gatekneewidth",
                                                "meterattack", "meterrelease", "meterdisplayrange",
-                                               "oversamplequality", "upsamplermode", "downsamplermode"};
+                                               "processingquality", "upsamplermode", "downsamplermode"};
 
   const auto uiFont = AtomLookAndFeel::getUIFont(AtomLookAndFeel::getSystemUIFontHeight(), juce::Font::plain);
   const float uiFontHeight = AtomLookAndFeel::getSystemUIFontHeight();
@@ -514,6 +527,16 @@ void AudioEffectFrameworkEditor::timerCallback()
   }
 
   syncEffectUserParamsPanelIfNeeded();
+
+  {
+    const auto telemetryText = processor.getMiddleModelTelemetryText();
+    if (telemetryText != lastModelTelemetryText)
+    {
+      lastModelTelemetryText = telemetryText;
+      setModelTelemetryOverlayText(telemetryText);
+    }
+  }
+
   onEditorTimerTick();
 }
 
@@ -531,6 +554,7 @@ void AudioEffectFrameworkEditor::resized()
   headerBar.setBounds(bounds.removeFromTop(headerH));
   footerBar.setBounds(bounds.removeFromBottom(footerH));
   bodyViewport.setBounds(bounds);
+  layoutModelTelemetryOverlay(bounds);
 
   if (tunerOverlay.isVisible())
     tunerOverlay.setBounds(getLocalBounds());
@@ -549,6 +573,35 @@ void AudioEffectFrameworkEditor::resized()
     component->setBounds(area.removeFromTop(rowHeight));
     area.removeFromTop(juce::roundToInt((float)bodyPadding * zoomFactor));
   }
+}
+
+void AudioEffectFrameworkEditor::setModelTelemetryOverlayText(const juce::String& text)
+{
+  const bool shouldShow = text.isNotEmpty();
+  if (shouldShow != modelTelemetryLabel.isVisible())
+    modelTelemetryLabel.setVisible(shouldShow);
+
+  if (modelTelemetryLabel.getText() != text)
+    modelTelemetryLabel.setText(text, juce::dontSendNotification);
+
+  if (shouldShow)
+    layoutModelTelemetryOverlay(bodyViewport.getBounds());
+}
+
+void AudioEffectFrameworkEditor::layoutModelTelemetryOverlay(const juce::Rectangle<int>& bodyArea)
+{
+  if (! modelTelemetryLabel.isVisible() || bodyArea.isEmpty())
+    return;
+
+  const int pad = juce::roundToInt(12.0f * zoomFactor);
+  const int h = juce::roundToInt(18.0f * zoomFactor);
+  const auto font = modelTelemetryLabel.getFont();
+  const int textW = juce::roundToInt(font.getStringWidthFloat(modelTelemetryLabel.getText()));
+  const int w = juce::jmin(bodyArea.getWidth() - pad * 2, juce::jmax(textW + 4, 120));
+  modelTelemetryLabel.setBounds(bodyArea.getRight() - pad - w,
+                                bodyArea.getBottom() - pad - h,
+                                w,
+                                h);
 }
 
 #if JucePlugin_Build_Standalone

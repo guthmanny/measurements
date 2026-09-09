@@ -106,10 +106,9 @@ OversamplingSettingsPanel::OversamplingSettingsPanel (AudioEffectFrameworkProces
 {
     setLookAndFeel (&atomLookAndFeel);
 
-    introLabel.setHintText ("QUALITY in the footer sets the oversampling factor (2× / 4× / 8×). "
-                            "Modes control how intermediate samples are generated and anti-aliased. "
-                            "Nonlinear lookup tables for white-box DS-1 are selected at build time "
-                            "(MUDSP_NL_TABLE_PROFILE=none|full|balanced|tiny).");
+    introLabel.setHintText ("QUALITY in the footer selects MuDSP composite processing precision "
+                            "(Standard / Deluxe / Ultra) on effects that expose a quality parameter. "
+                            "Upsample and downsample modes apply to the host resampler wrappers only.");
     introLabel.setFont (AtomLookAndFeel::getUIFont (kIntroFontHeight, juce::Font::bold));
     addAndMakeVisible (introLabel);
 

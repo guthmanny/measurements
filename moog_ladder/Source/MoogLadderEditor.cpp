@@ -1,5 +1,7 @@
 #include "MoogLadderEditor.h"
 
+#include "CompositeQualityUtils.h"
+
 namespace
 {
 nx_moog_ladder_mode_t modeFromChoice(int choice) noexcept
@@ -80,8 +82,8 @@ void MoogLadderEditor::refreshFrequencyResponse()
   const int qualityChoice = juce::roundToInt(read("quality", 1.0f));
   const int adaaChoice = juce::roundToInt(read("adaa", 1.0f));
   const int osQualityChoice = juce::roundToInt(
-      read(processor.paramOversampleQuality.paramID, (float)processor.paramOversampleQuality.defaultChoice));
-  const int osFactor = osQualityChoice >= 2 ? 8 : (osQualityChoice >= 1 ? 4 : 2);
+      read(processor.paramProcessingQuality.paramID, (float)processor.paramProcessingQuality.defaultChoice));
+  const int osFactor = aef::composite_quality::islandUpFactorForChoice(osQualityChoice);
 
   double hostSr = processor.getSampleRate();
   if (!(hostSr > 0.0)) hostSr = 48000.0;

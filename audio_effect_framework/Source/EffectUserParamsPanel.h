@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "DynamicPluginParamMetadata.h"
 #include "KbussParamUiUtils.h"
 #include "kbuss/processor.hpp"
 
@@ -24,6 +25,7 @@ public:
 private:
     void clearRows();
     void addParamRow(const kbuss::ParameterDescriptor& desc);
+    void addMetaParamRow(const aef::dynamic_plugin_params::Meta& meta, kbuss::Processor& middle);
     void addIndexedParamRow(std::uint32_t index, float initialValue);
     void rebuildIndexedParams(kbuss::Processor& middle);
 

@@ -22,6 +22,9 @@ public:
 
     [[nodiscard]] bool hasResolvedMiddlePlugin() const noexcept { return hasMiddleDesc_; }
 
+    [[nodiscard]] std::optional<std::string> dynamicMiddlePluginBundlePath() const override;
+    [[nodiscard]] std::string_view dynamicMiddlePluginUid() const override;
+
 protected:
     void registerPluginFormats() override;
     bool installMiddleProcessors (const ProcessorCreateFn& create) override;

@@ -1,4 +1,5 @@
 #include "AefJuceIncludes.h"
+#include "CompositeQualityUtils.h"
 #include "KbussEffectEngine.h"
 
 #include <cmath>
@@ -155,6 +156,11 @@ void KbussEffectEngine::reprepareTrack()
     if (engine_ == nullptr || ! ready_)
         return;
     engine_->prepare (preparedSampleRate_, preparedMaxBlockSize_);
+}
+
+bool KbussEffectEngine::applyMiddleProcessingQuality (int choice)
+{
+    return aef::composite_quality::applyToMiddle (*this, choice);
 }
 
 void KbussEffectEngine::setOversampling (int factor, int upMode, int downMode)

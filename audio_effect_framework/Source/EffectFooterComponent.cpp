@@ -10,7 +10,7 @@ EffectFooterComponent::EffectFooterComponent()
   qualityLabel.setAutoResizeEnabled(false);
 
   qualityComboBox.addItem("STANDARD", 1);
-  qualityComboBox.addItem("HIGH", 2);
+  qualityComboBox.addItem("DELUXE", 2);
   qualityComboBox.addItem("ULTRA", 3);
   qualityComboBox.setSelectedId(1, juce::dontSendNotification);
   qualityComboBox.setJustificationType(juce::Justification::centredLeft);

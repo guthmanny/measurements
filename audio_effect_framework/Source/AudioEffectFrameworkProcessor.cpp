@@ -15,6 +15,9 @@
 #include <cmath>
 
 #include "KbussParamUiUtils.h"
+#include "CompositeQualityUtils.h"
+#include "DynamicPluginParamMetadata.h"
+#include "MiddleModelTelemetryFormat.h"
 #include "MeterDisplayUtils.h"
 #include "PluginParameter.h"
 
@@ -23,11 +26,6 @@
 std::unique_ptr<KbussEffectEngine> AudioEffectFrameworkProcessor::createEffectEngine()
 {
   return std::make_unique<KbussEffectEngine>();
-}
-
-int AudioEffectFrameworkProcessor::oversampleFactorForQuality (int qualityChoice) const
-{
-  return qualityChoice >= 2 ? 8 : (qualityChoice >= 1 ? 4 : 2);
 }
 
 AudioEffectFrameworkProcessor::AudioEffectFrameworkProcessor()
@@ -61,7 +59,7 @@ AudioEffectFrameworkProcessor::AudioEffectFrameworkProcessor()
                              "Meter Display Range",
                              {"20 dB", "40 dB", "60 dB", "80 dB", "100 dB", "120 dB"},
                              3),
-      paramOversampleQuality(parameters, "Oversample Quality", {"STANDARD", "HIGH", "ULTRA"}, 0),
+      paramProcessingQuality(parameters, "Processing Quality", {"STANDARD", "DELUXE", "ULTRA"}, 0),
       paramUpsamplerMode(parameters,
                          "Upsampler Mode",
                          {"Zero-Order Hold", "Zero Insert", "Linear", "Quadratic", "Cubic"},
@@ -197,8 +195,8 @@ void AudioEffectFrameworkProcessor::syncParametersFromValueTree()
       readParameterValue(paramGateKneeWidth.paramID, paramGateKneeWidth.defaultValue));
   paramOutputGain.setCurrentAndTargetValue(readParameterValue(paramOutputGain.paramID, paramOutputGain.defaultValue));
   paramBypass.setCurrentAndTargetValue(readParameterValue(paramBypass.paramID, (float)paramBypass.defaultState));
-  paramOversampleQuality.setCurrentAndTargetValue(
-      readParameterValue(paramOversampleQuality.paramID, (float)paramOversampleQuality.defaultChoice));
+  paramProcessingQuality.setCurrentAndTargetValue(
+      readParameterValue(paramProcessingQuality.paramID, (float)paramProcessingQuality.defaultChoice));
   paramUpsamplerMode.setCurrentAndTargetValue(
       readParameterValue(paramUpsamplerMode.paramID, (float)paramUpsamplerMode.defaultChoice));
   paramDownsamplerMode.setCurrentAndTargetValue(
@@ -259,21 +257,51 @@ void AudioEffectFrameworkProcessor::updateEffectParameters()
   getMinibussEngine().setParamDomain(getMinibussEngine().levelId(), "level",
                                 readParameterValue(paramOutputGain.paramID, paramOutputGain.defaultValue));
 
-  applyOversamplingFromParameters();
+  applyResamplingModesFromParameters();
 
   updateCustomEffectParameters();
   pushMiddleProcessorParamDomains();
 }
 
-void AudioEffectFrameworkProcessor::applyOversamplingFromParameters()
+void AudioEffectFrameworkProcessor::syncMiddleProcessingQuality()
 {
-  const int qualityChoice = juce::roundToInt(
-      readParameterValue(paramOversampleQuality.paramID, (float)paramOversampleQuality.defaultChoice));
+  ensureEffectEngine();
+  applyProcessingQualityFromParameters();
+
+  if (auto* proc = getMinibussEngine().getMiddleProcessor())
+  {
+    const float sr = currentSampleRate > 0.0 ? (float) currentSampleRate : 48000.f;
+    const auto blockSize = (std::uint32_t) juce::jmax (1, getBlockSize());
+    proc->prepare (sr, blockSize);
+    proc->reset();
+  }
+}
+
+void AudioEffectFrameworkProcessor::applyResamplingModesFromParameters()
+{
   const int upMode = juce::roundToInt(
       readParameterValue(paramUpsamplerMode.paramID, (float)paramUpsamplerMode.defaultChoice));
   const int downMode = juce::roundToInt(
       readParameterValue(paramDownsamplerMode.paramID, (float)paramDownsamplerMode.defaultChoice));
-  getMinibussEngine().setOversampling(oversampleFactorForQuality(qualityChoice), upMode, downMode);
+  getMinibussEngine().setOversampling(1, upMode, downMode);
+}
+
+void AudioEffectFrameworkProcessor::applyProcessingQualityFromParameters()
+{
+  const int qualityChoice = juce::roundToInt(
+      readParameterValue(paramProcessingQuality.paramID, (float)paramProcessingQuality.defaultChoice));
+
+  if (getMinibussEngine().applyMiddleProcessingQuality(qualityChoice))
+    return;
+
+  if (const auto* meta = findDynamicMiddleParam ("quality"))
+  {
+    if (auto* proc = getMinibussEngine().getMiddleProcessor())
+    {
+      (void) proc->set_parameter (meta->index,
+                                  aef::composite_quality::choiceToNormalized (qualityChoice));
+    }
+  }
 }
 
 void AudioEffectFrameworkProcessor::mixToMonoBuffer(const AudioSampleBuffer& buffer, int numChannels, int numSamples)
@@ -609,14 +637,12 @@ void AudioEffectFrameworkProcessor::prepareToPlay(double sampleRate, int samples
   ensureScratchBuffers(numChannels, samplesPerBlock);
 
   ensureEffectEngine();
-  // Must land before prepare: engine default factor is 2, and subclasses (e.g. Vibro Champ)
-  // may force 1× via oversampleFactorForQuality. Without this, prepare builds the middle at
-  // 2× host rate, then updateEffectParameters drops to 1× and reprepareTrack bakes again.
-  applyOversamplingFromParameters();
+  applyResamplingModesFromParameters();
   getMinibussEngine().prepare((float)sampleRate, (std::uint32_t)jmax(1, samplesPerBlock));
   resetMiddleProcessorParamDefaults();
   bumpMiddleProcessorGeneration();
   updateEffectParameters();
+  syncMiddleProcessingQuality();
 
   if (bypassNoiseGateOnStartup())
   {
@@ -878,6 +904,51 @@ bool AudioEffectFrameworkProcessor::isBusesLayoutSupported(const BusesLayout& la
 
 //==============================================================================
 
+//==============================================================================
+
+std::vector<aef::dynamic_plugin_params::Meta> AudioEffectFrameworkProcessor::getDynamicMiddleParamMetadata() const
+{
+  if (effectEngine_ == nullptr)
+    return {};
+
+  if (const auto bundlePath = effectEngine_->dynamicMiddlePluginBundlePath())
+  {
+    return aef::dynamic_plugin_params::loadFromBundle (
+        juce::File (juce::String (*bundlePath)),
+        juce::String (std::string (effectEngine_->dynamicMiddlePluginUid())));
+  }
+
+  return {};
+}
+
+juce::String AudioEffectFrameworkProcessor::getMiddleModelTelemetryText() const
+{
+  if (effectEngine_ == nullptr)
+    return {};
+
+  auto* proc = effectEngine_->getMiddleProcessor();
+  if (proc == nullptr)
+    return {};
+
+  KbModelTelemetry telemetry{};
+  if (! proc->queryModelTelemetry (telemetry))
+    return {};
+
+  return aef::model_telemetry::formatFooterText (telemetry);
+}
+
+const aef::dynamic_plugin_params::Meta* AudioEffectFrameworkProcessor::findDynamicMiddleParam(
+    const juce::String& paramId) const
+{
+  for (const auto& meta : getDynamicMiddleParamMetadata())
+  {
+    if (meta.id == paramId)
+      return &meta;
+  }
+
+  return nullptr;
+}
+
 void AudioEffectFrameworkProcessor::setMiddleParamDomain(const juce::String& paramId, float domainValue)
 {
   middleParamDomains_.set(paramId, domainValue);
@@ -895,6 +966,9 @@ void AudioEffectFrameworkProcessor::setMiddleParamDomain(const juce::String& par
   const auto* desc = proc->parameter(key);
   const auto topLevelIds = aef::kbuss_param_ui::collectTopLevelParamIds(proc->parameters());
   if (desc != nullptr && aef::kbuss_param_ui::isUserFacingParam(*desc, topLevelIds))
+    return;
+
+  if (desc == nullptr && findDynamicMiddleParam(paramId) != nullptr)
     return;
 
   // Settings / internal params are not re-pushed every audio block. Apply now.
@@ -926,6 +1000,16 @@ void AudioEffectFrameworkProcessor::resetMiddleProcessorParamDefaults()
       if (aef::kbuss_param_ui::isUserFacingParam(desc, topLevelIds))
         middleParamDomains_.set(juce::String(desc.id), desc.default_domain);
     }
+
+    if (params.empty())
+    {
+      for (const auto& meta : getDynamicMiddleParamMetadata())
+      {
+        if (aef::kbuss_param_ui::isFooterQualityParam(meta.id.toStdString()))
+          continue;
+        middleParamDomains_.set(meta.id, meta.defaultDomain);
+      }
+    }
   }
 }
 
@@ -951,7 +1035,18 @@ void AudioEffectFrameworkProcessor::pushMiddleProcessorParamDomains()
     if (desc != nullptr && ! aef::kbuss_param_ui::isUserFacingParam(*desc, topLevelIds))
       continue;
 
-    getMinibussEngine().setParamDomain(middleId, key, it.getValue());
+    if (desc != nullptr)
+    {
+      getMinibussEngine().setParamDomain(middleId, key, it.getValue());
+      continue;
+    }
+
+    if (const auto* meta = findDynamicMiddleParam(it.getKey()))
+    {
+      if (aef::kbuss_param_ui::isFooterQualityParam(meta->id.toStdString()))
+        continue;
+      (void) proc->set_parameter(meta->index, meta->domainToNormalized(it.getValue()));
+    }
   }
 }
 

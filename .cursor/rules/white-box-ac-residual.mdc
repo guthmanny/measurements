@@ -1,0 +1,34 @@
+---
+description: White-box / MuDSP operator AC must use z-domain process residuals (ds1_opamp form), never state-space ABCD.
+globs:
+  - white_box_lab/**
+  - active_linear_circuits/**
+  - **/ds1_opamp*
+  - **/ds1_clipper*
+  - **/ds1_tone*
+alwaysApply: false
+---
+
+# White-box AC: z-domain process residual (mandatory)
+
+When editing MuDSP white-box operators (sibling `MuDSP/`) or this repo's DS-1 / white-box tracers, operator `nx_*_ac_static*` must follow `ds1_opamp` — not state-space.
+
+Canonical rule + algorithm: `../MuDSP/.cursor/rules/white-box-ac-residual.mdc`.
+
+## Required
+
+1. `z_inv` on histories; evaluate `process` / `process_lti` in source order.
+2. Unit-basis probe → `F`; `vi=1` → `g`; solve `(I-F)x=g`; take `vo`.
+3. NL AC uses `process_lti` (`K_slope_lut`), not per-frequency Newton.
+4. Small-signal `process()` sine must match Bode (~0.1 dB).
+
+## Forbidden
+
+- `H = C(zI-A)^{-1}B+D` or `"ac_mode": "state_space"`
+- `s`-domain MNA as the operator AC
+- Dropping same-sample couplings (`b1*vo`, …) so the plot becomes a steep HPF
+- Changing tracer plots to hide a wrong `ac_static`
+
+If AC matches `process()` but a passive stage shows gain > 0 dB, the bilinear `vin` stamp is incomplete — see `white-box-vin-voltage-source.mdc`.
+
+Composite AC only sums child mag/phase. Do not add a second AC method in `white_box_lab` or `active_linear_circuits`.

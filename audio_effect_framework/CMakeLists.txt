@@ -27,6 +27,8 @@ add_library(audio_effect_framework STATIC
     Source/DynamicMiddleProcessorEffectEngine.h
     Source/DynamicPluginCatalog.cpp
     Source/DynamicPluginCatalog.h
+    Source/DynamicPluginParamMetadata.cpp
+    Source/DynamicPluginParamMetadata.h
     Source/AefAudioUtils.h
     Source/EffectHeaderComponent.cpp
     Source/EffectHeaderComponent.h
@@ -59,6 +61,8 @@ add_library(audio_effect_framework STATIC
     Source/EffectUserParamsPanel.h
     Source/ParamsSettingsPanel.cpp
     Source/ParamsSettingsPanel.h
+    Source/CompositeQualityUtils.h
+    Source/MiddleModelTelemetryFormat.h
     Source/KbussParamUiUtils.h
     Source/KbussParamSliderUtils.h
     Source/MeterDisplayUtils.h

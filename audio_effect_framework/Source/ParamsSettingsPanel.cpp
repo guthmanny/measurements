@@ -1,6 +1,7 @@
 #include "ParamsSettingsPanel.h"
 
 #include "AudioEffectFrameworkProcessor.h"
+#include "DynamicPluginParamMetadata.h"
 #include "KbussParamSliderUtils.h"
 #include "KbussParamUiUtils.h"
 
@@ -196,13 +197,13 @@ void ParamsSettingsPanel::rebuildFromMiddleProcessor()
     }
 
     int contentHeight = 0;
-    for (auto& [title, params] : grouped)
+    for (auto& [title, paramsInGroup] : grouped)
     {
         auto bundle = std::make_unique<SectionBundle>();
         bundle->section = std::make_unique<SettingsSection>(title);
         scrollContent.addAndMakeVisible(bundle->section.get());
 
-        for (const auto* desc : params)
+        for (const auto* desc : paramsInGroup)
         {
             const juce::String paramId(desc->id);
             const juce::String labelText = aef::kbuss_param_ui::paramDisplayLabel(*desc);
@@ -245,6 +246,55 @@ void ParamsSettingsPanel::rebuildFromMiddleProcessor()
 
         contentHeight += bundle->section->getPreferredHeight() + 12;
         sections_.push_back(std::move(bundle));
+    }
+
+    if (sections_.empty())
+    {
+        const auto dynamicParams = processor_.getDynamicMiddleParamMetadata();
+        if (! dynamicParams.empty())
+        {
+            auto bundle = std::make_unique<SectionBundle>();
+            bundle->section = std::make_unique<SettingsSection>("Effect Controls");
+            scrollContent.addAndMakeVisible(bundle->section.get());
+
+            for (const auto& meta : dynamicParams)
+            {
+                if (aef::kbuss_param_ui::isFooterQualityParam(meta.id.toStdString()))
+                    continue;
+
+                const juce::String paramId = meta.id;
+                const juce::String labelText = meta.displayLabel();
+                const float initial = processor_.getMiddleParamDomain(paramId, meta.defaultDomain);
+
+                kbuss::ParameterDescriptor desc;
+                desc.id = meta.id.toStdString();
+                desc.label = meta.label.toStdString();
+                desc.min_domain = meta.minDomain;
+                desc.max_domain = meta.maxDomain;
+                desc.default_domain = meta.defaultDomain;
+
+                auto* slider = new atom::Slider();
+                paramControls_.add(slider);
+                aef::kbuss_param_ui::configureKbussParamSlider(
+                    *slider,
+                    atomLookAndFeel_,
+                    meta.minDomain,
+                    meta.maxDomain,
+                    aef::kbuss_param_ui::paramSliderInterval(desc),
+                    aef::kbuss_param_ui::paramUnitSuffix(desc));
+                slider->setValue(initial, juce::dontSendNotification);
+                slider->onValueChange = [this, paramId, slider]() {
+                    processor_.setMiddleParamDomain(paramId, static_cast<float>(slider->getValue()));
+                };
+
+                auto row = std::make_unique<SettingsCardRow>(paramId + "Row", labelText, *slider);
+                bundle->section->addRow(*row);
+                bundle->rows.push_back(std::move(row));
+            }
+
+            contentHeight += bundle->section->getPreferredHeight() + 12;
+            sections_.push_back(std::move(bundle));
+        }
     }
 
     scrollContent.setSize(juce::jmax(400, getWidth()), juce::jmax(contentHeight, kScrollMinHeight));

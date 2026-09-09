@@ -29,6 +29,8 @@ std::vector<std::string> pluginSearchDirs()
     for (int depth = 0; depth < 5; ++depth)
     {
         addUniqueSearchDir (dirs, dir.getChildFile ("plugins"));
+        // Also accept .kbplug bundles placed next to the executable.
+        addUniqueSearchDir (dirs, dir);
         if (! dir.getParentDirectory().exists())
             break;
         dir = dir.getParentDirectory();

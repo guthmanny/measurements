@@ -84,6 +84,12 @@ template <typename ParamRange>
     return ! isUserFacingParam(desc, topLevelIds);
 }
 
+/** Middle-processor "quality" is driven by the footer QUALITY combo, not main-panel rows. */
+[[nodiscard]] inline bool isFooterQualityParam(std::string_view id) noexcept
+{
+    return id == "quality";
+}
+
 [[nodiscard]] inline juce::String paramDisplayLabel(const kbuss::ParameterDescriptor& desc)
 {
     if (! desc.label.empty())
