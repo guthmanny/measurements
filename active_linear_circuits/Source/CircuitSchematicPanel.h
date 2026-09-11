@@ -33,6 +33,11 @@ public:
 
     const ds1_ac::SchematicComponentValues& getComponentValues() const noexcept { return componentValues_; }
 
+    /** Panel width that keeps the loaded SVG's aspect ratio for the given height. */
+    int preferredWidthForHeight(int panelHeight) const noexcept;
+
+    std::function<void()> onPreferredSizeChanged;
+
     void paint(juce::Graphics& g) override;
     void resized() override;
 
@@ -54,6 +59,7 @@ private:
     void handleJfetOverlaySelection(const juce::String& overlayKey, int selectedId);
     void handleOverlayTextChange(const juce::String& overlayKey, const juce::String& text);
     void notifyComponentValuesChanged();
+    int chromeHeight() const noexcept;
 
     ds1_ac::CircuitKind circuitKind_{ds1_ac::CircuitKind::BjtFollower};
     nx_opamp_model_e opampModel_{NX_OPAMP_BA728};

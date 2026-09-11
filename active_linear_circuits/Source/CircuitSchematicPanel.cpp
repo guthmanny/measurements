@@ -517,7 +517,30 @@ void CircuitSchematicPanel::reloadSvg()
     notifyComponentValuesChanged();
 
     resized();
+    if (onPreferredSizeChanged)
+        onPreferredSizeChanged();
     repaint();
+}
+
+int CircuitSchematicPanel::chromeHeight() const noexcept
+{
+    int height = 16 + 20 + 4;
+    if (signalOutputActiveLabel.isVisible())
+        height += 20;
+    if (signalOutputOtherLabel.isVisible())
+        height += 18;
+    return height;
+}
+
+int CircuitSchematicPanel::preferredWidthForHeight(int panelHeight) const noexcept
+{
+    const auto natural = svgView.getSvgNaturalBounds();
+    if (natural.isEmpty() || natural.getHeight() <= 0.0f)
+        return 280;
+
+    const int svgHeight = juce::jmax(1, panelHeight - chromeHeight());
+    const int svgWidth = juce::roundToInt(static_cast<float>(svgHeight) * natural.getWidth() / natural.getHeight());
+    return juce::jmax(120, svgWidth + 20);
 }
 
 void CircuitSchematicPanel::paint(juce::Graphics& g)

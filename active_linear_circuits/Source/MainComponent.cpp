@@ -27,11 +27,14 @@ namespace
         {"input — Input BJT", ds1_ac::CircuitKind::BjtFollower},
         {"emitter — BJT Emitter", ds1_ac::CircuitKind::BjtCommonEmitter},
         {"opamp — Op Amp", ds1_ac::CircuitKind::Ds1Opamp},
-        {"clipper — Clipper", ds1_ac::CircuitKind::Ds1Clipper},
-        {"tone — Tone", ds1_ac::CircuitKind::Ds1Tone},
-        {"level — Level", ds1_ac::CircuitKind::RcLevel},
+        {"clipper — Clipper / Tone / Level", ds1_ac::CircuitKind::Ds1Clipper},
         {"output — Output BJT", ds1_ac::CircuitKind::BjtFollowerOut},
     };
+
+    int stageIndex(ds1_ac::CircuitKind circuit) noexcept
+    {
+        return juce::jlimit(0, 4, static_cast<int>(circuit));
+    }
 
     constexpr int kKnobColumnWidth = 72;
     constexpr int kKnobSize = 56;
@@ -41,11 +44,18 @@ MainComponent::MainComponent()
 {
     setLookAndFeel(&atomLookAndFeel);
 
+    for (int i = 0; i < kStageCount; ++i)
+    {
+        const auto circuit = static_cast<ds1_ac::CircuitKind>(i);
+        injectFreqHz_[static_cast<size_t>(i)] = ds1_ac::kDefaultPreviewFreqHz;
+        injectAmp_[static_cast<size_t>(i)] = ds1_ac::defaultPreviewAmplitude(circuit);
+    }
+
     titleLabel.setText("Boss DS-1 White Box", juce::dontSendNotification);
     titleLabel.setFont(juce::Font(28.0f, juce::Font::bold));
     titleLabel.setJustificationType(juce::Justification::centredLeft);
 
-    subtitleLabel.setText("input → emitter → opamp → clipper → tone → level → output", juce::dontSendNotification);
+    subtitleLabel.setText("input → emitter → opamp → clipper → output", juce::dontSendNotification);
     subtitleLabel.setJustificationType(juce::Justification::centredLeft);
     subtitleLabel.setInterceptsMouseClicks(false, false);
 
@@ -74,10 +84,12 @@ MainComponent::MainComponent()
     circuitBox.setSelectedId(1, juce::dontSendNotification);
     circuitBox.onChange = [this]()
     {
+        storeInjectForCircuit(lastCircuitKind_);
         const auto circuit = getCircuitFromSelection();
+        lastCircuitKind_ = circuit;
         syncPotTaperToCircuitDefault(circuit);
         syncDeviceModelCombo(circuit);
-        syncInjectDefaultsToCircuit(circuit);
+        restoreInjectForCircuit(circuit);
         updatePlotView();
     };
 
@@ -153,7 +165,14 @@ MainComponent::MainComponent()
     injectFreqBox.setValue(ds1_ac::kDefaultPreviewFreqHz, juce::dontSendNotification);
     injectFreqBox.setTextValueSuffix(" Hz");
     injectFreqBox.onValueChange = [this]()
-    { updatePlotView(); };
+    {
+        storeInjectForCircuit(getCircuitFromSelection());
+        if (acPanel != nullptr)
+        {
+            acPanel->setPreviewFrequencyHz(injectFreqBox.getValue());
+            acPanel->refreshPreview();
+        }
+    };
     addAndMakeVisible(injectFreqBox);
 
     injectAmpLabel.setText("Inject A", juce::dontSendNotification);
@@ -166,7 +185,14 @@ MainComponent::MainComponent()
     injectAmpBox.setValue(ds1_ac::defaultPreviewAmplitude(ds1_ac::CircuitKind::BjtFollower),
                            juce::dontSendNotification);
     injectAmpBox.onValueChange = [this]()
-    { updatePlotView(); };
+    {
+        storeInjectForCircuit(getCircuitFromSelection());
+        if (acPanel != nullptr)
+        {
+            acPanel->setPreviewAmplitude(injectAmpBox.getValue());
+            acPanel->refreshPreview();
+        }
+    };
     addAndMakeVisible(injectAmpBox);
 
     plotKindBox.addItem("Magnitude", 1);
@@ -210,15 +236,8 @@ MainComponent::MainComponent()
             acPanel->setSchematicComponentValues(values);
     };
     addAndMakeVisible(*schematicPanel);
-
-    addAndMakeVisible(schematicSplitter);
-    schematicSplitter.onDragDelta = [this](int deltaX)
-    {
-        const int maxWidth = getWidth() - 68 - kAcPanelMinWidth - kSchematicSplitterWidth - kPanelGap;
-        schematicPanelWidth_ =
-            juce::jlimit(kSchematicMinWidth, juce::jmax(kSchematicMinWidth, maxWidth), schematicPanelWidth_ + deltaX);
-        resized();
-    };
+    schematicPanel->onPreferredSizeChanged = [this]()
+    { resized(); };
 
     acPanel = std::make_unique<Ds1OpampAcPanel>();
     addAndMakeVisible(*acPanel);
@@ -260,9 +279,18 @@ void MainComponent::configureInjectBox(atom::Slider &box)
     box.setScrollWheelEnabled(false);
 }
 
-void MainComponent::syncInjectDefaultsToCircuit(ds1_ac::CircuitKind circuit)
+void MainComponent::storeInjectForCircuit(ds1_ac::CircuitKind circuit)
 {
-    injectAmpBox.setValue(ds1_ac::defaultPreviewAmplitude(circuit), juce::dontSendNotification);
+    const auto index = static_cast<size_t>(stageIndex(circuit));
+    injectFreqHz_[index] = injectFreqBox.getValue();
+    injectAmp_[index] = injectAmpBox.getValue();
+}
+
+void MainComponent::restoreInjectForCircuit(ds1_ac::CircuitKind circuit)
+{
+    const auto index = static_cast<size_t>(stageIndex(circuit));
+    injectFreqBox.setValue(injectFreqHz_[index], juce::dontSendNotification);
+    injectAmpBox.setValue(injectAmp_[index], juce::dontSendNotification);
 }
 
 void MainComponent::layoutKnobColumn(juce::Rectangle<int> &area, atom::Label &label, atom::Slider &knob) const
@@ -316,10 +344,11 @@ void MainComponent::updatePlotView()
     const bool hasSecondary = ds1_ac::circuitHasSecondaryControl(circuit);
     const bool hasTertiary = ds1_ac::circuitHasTertiaryControl(circuit);
 
+    acPanel->beginRebuildBatch();
+    acPanel->setCircuitKind(circuit);
+
     if (schematicPanel != nullptr)
         schematicPanel->setCircuitKind(circuit);
-
-    acPanel->setCircuitKind(circuit);
     if (usesOpamp && schematicPanel != nullptr)
         acPanel->setOpampModel(schematicPanel->getOpampModel());
     else if (usesOpamp)
@@ -342,6 +371,7 @@ void MainComponent::updatePlotView()
     acPanel->setPreviewAmplitude(injectAmpBox.getValue());
     acPanel->setSampleRateHz(getSampleRateFromSelection());
     acPanel->setPlotKind(getPlotKindFromSelection());
+    acPanel->endRebuildBatch();
 
     gainLabel.setText(ds1_ac::controlParameterName(circuit), juce::dontSendNotification);
     secondaryLabel.setText(ds1_ac::secondaryControlParameterName(circuit), juce::dontSendNotification);
@@ -549,23 +579,17 @@ void MainComponent::resized()
 
 void MainComponent::layoutContentArea(juce::Rectangle<int> area)
 {
-    const int maxSchematicWidth =
-        area.getWidth() - kAcPanelMinWidth - kSchematicSplitterWidth - kPanelGap;
+    const int maxSchematicWidth = juce::jmax(kSchematicMinWidth,
+                                             area.getWidth() - kAcPanelMinWidth - kPanelGap);
+    int schematicWidth = kSchematicMinWidth;
+    if (schematicPanel != nullptr)
+        schematicWidth = schematicPanel->preferredWidthForHeight(area.getHeight());
 
-    if (schematicPanelWidth_ <= 0)
-    {
-        schematicPanelWidth_ = juce::jlimit(kSchematicMinWidth,
-                                            juce::jmax(kSchematicMinWidth, maxSchematicWidth),
-                                            area.getWidth() * 38 / 100);
-    }
-
-    schematicPanelWidth_ =
-        juce::jlimit(kSchematicMinWidth, juce::jmax(kSchematicMinWidth, maxSchematicWidth), schematicPanelWidth_);
+    schematicWidth = juce::jlimit(kSchematicMinWidth, maxSchematicWidth, schematicWidth);
 
     if (schematicPanel != nullptr)
-        schematicPanel->setBounds(area.removeFromLeft(schematicPanelWidth_));
+        schematicPanel->setBounds(area.removeFromLeft(schematicWidth));
 
-    schematicSplitter.setBounds(area.removeFromLeft(kSchematicSplitterWidth));
     area.removeFromLeft(kPanelGap);
 
     if (acPanel != nullptr)

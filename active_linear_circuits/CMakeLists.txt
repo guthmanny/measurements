@@ -96,6 +96,8 @@ target_sources(Ds1OpampAcTracer PRIVATE
     Source/SchematicComponentApply.h
     Source/Ds1OpampAcMath.cpp
     Source/Ds1OpampAcMath.h
+    Source/SineWavePreviewEngine.cpp
+    Source/SineWavePreviewEngine.h
     Source/Ds1OpampAcPanel.cpp
     Source/Ds1OpampAcPanel.h
 )

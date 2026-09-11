@@ -33,12 +33,16 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
     }
     if constexpr (requires { cfg.tone.pot_params.value; })
     {
-        if (key.equalsIgnoreCase("P1") || key.equalsIgnoreCase("TONE"))
+        if (key.equalsIgnoreCase("TONE"))
+            cfg.tone.pot_params.control = juce::jlimit(0.0, 1.0, value);
+        else if (key.equalsIgnoreCase("P1") || key.equalsIgnoreCase("RT") || key.equalsIgnoreCase("Rt"))
             cfg.tone.pot_params.value = value;
     }
     if constexpr (requires { cfg.level.pot_params.value; })
     {
-        if (key.equalsIgnoreCase("P1") || key.equalsIgnoreCase("LEVEL"))
+        if (key.equalsIgnoreCase("LEVEL"))
+            cfg.level.pot_params.control = juce::jlimit(0.0, 1.0, value);
+        else if (key.equalsIgnoreCase("P1") || key.equalsIgnoreCase("RV") || key.equalsIgnoreCase("Rv"))
             cfg.level.pot_params.value = value;
     }
 
@@ -85,7 +89,12 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
     if constexpr (requires { cfg.vcc; })
         set(&Config::vcc, "VCC");
     if constexpr (requires { cfg.vbias; })
+    {
         set(&Config::vbias, "VBIAS");
+        // BJT schematics label the base-bias rail POWER:VA (+4.5V), not VBIAS.
+        if constexpr (!requires { cfg.va; })
+            set(&Config::vbias, "VA");
+    }
 }
 
 template<typename Inst, typename Config>
@@ -132,18 +141,6 @@ void applySchematicComponentValues(CircuitKind circuit,
                      nx_ds1_opamp_config_t,
                      nx_ds1_opamp_get_config_f32,
                      nx_ds1_opamp_set_config_f32);
-        APPLY_CONFIG(CircuitKind::Ds1Tone,
-                     instance,
-                     nx_ds1_tone_f32_t,
-                     nx_ds1_tone_config_t,
-                     nx_ds1_tone_get_config_f32,
-                     nx_ds1_tone_set_config_f32);
-        APPLY_CONFIG(CircuitKind::RcLevel,
-                     instance,
-                     nx_rc_level_f32_t,
-                     nx_rc_level_config_t,
-                     nx_rc_level_get_config_f32,
-                     nx_rc_level_set_config_f32);
         APPLY_CONFIG(CircuitKind::Ds1Clipper,
                      instance,
                      nx_ds1_clipper_f32_t,

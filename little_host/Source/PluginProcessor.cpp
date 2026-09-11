@@ -7,6 +7,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "AefAudioUtils.h"
 #include "DynamicMiddleProcessorEffectEngine.h"
+#include "MudspAssetResolver.h"
 
 namespace
 {
@@ -58,6 +59,10 @@ void addPluginChoiceParameter (juce::AudioProcessorValueTreeState& apvts,
 
 LittleHostProcessor::LittleHostProcessor()
 {
+    const bool catalogLoaded = white_box_lab::MudspAssetResolver::get().load();
+    if (! catalogLoaded)
+        juce::Logger::writeToLog ("LittleHost: MuDSP catalog not found — schematic UI disabled");
+
     catalog_.scan (pluginSearchDirs());
     addPluginChoiceParameter (parameters.valueTreeState, catalog_.displayNames());
     parameters.valueTreeState.addParameterListener (kPluginChoiceParamId, this);
@@ -97,6 +102,14 @@ int LittleHostProcessor::currentPluginIndex() const
                             (int) std::lround (param->convertFrom0to1 (param->getValue())));
 
     return 0;
+}
+
+juce::String LittleHostProcessor::currentCompositeKey() const
+{
+    const auto* entry = catalog_.entry ((std::size_t) currentPluginIndex());
+    if (entry == nullptr || entry->composite_key.empty())
+        return {};
+    return entry->composite_key;
 }
 
 void LittleHostProcessor::parameterChanged (const juce::String& parameterID, float newValue)

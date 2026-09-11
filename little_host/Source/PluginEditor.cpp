@@ -1,5 +1,7 @@
 #include "PluginEditor.h"
 
+#include "SchematicEditorPanel.h"
+
 namespace
 {
 class PluginSelectorRow final : public juce::Component
@@ -64,7 +66,8 @@ private:
 LittleHostProcessorEditor::LittleHostProcessorEditor (LittleHostProcessor& processor)
     : AudioEffectFrameworkEditor (processor, true),
       hostProcessor_ (processor),
-      pluginCombo ("pluginCombo")
+      pluginCombo ("pluginCombo"),
+      schematic_ (std::make_unique<SchematicEditorPanel> (processor, atomLookAndFeel))
 {
     const auto names = hostProcessor_.pluginCatalog().displayNames();
     for (int i = 0; i < names.size(); ++i)
@@ -83,6 +86,11 @@ LittleHostProcessorEditor::LittleHostProcessorEditor (LittleHostProcessor& proce
     bodyContent.addAndMakeVisible (*pluginSelectorRow);
     bodyComponents.add (pluginSelectorRow.get());
 
+    bodyContent.addAndMakeVisible (*schematic_);
+    bodyComponents.add (schematic_.get());
+
+    schematic_->setCompositeKey (hostProcessor_.currentCompositeKey());
+
     completeBodyConstruction();
     recalculateBodyContentHeight();
     applyZoom (1.0f);
@@ -94,11 +102,18 @@ int LittleHostProcessorEditor::getBodyComponentBaseHeight (const juce::Component
 {
     if (pluginSelectorRow != nullptr && component == pluginSelectorRow.get())
         return cardRowHeight;
+    if (schematic_ != nullptr && component == schematic_.get())
+        return 520;
 
     return AudioEffectFrameworkEditor::getBodyComponentBaseHeight (component);
 }
 
 int LittleHostProcessorEditor::getMaxBodyViewportHeight() const noexcept
 {
-    return 720;
+    return 900;
+}
+
+void LittleHostProcessorEditor::onEditorTimerTick()
+{
+    schematic_->setCompositeKey (hostProcessor_.currentCompositeKey());
 }

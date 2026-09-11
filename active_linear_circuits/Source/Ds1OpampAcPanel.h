@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <memory>
 
 #include <juce_atom_theme/juce_atom_theme.h>
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -27,8 +28,12 @@ public:
     void setPlotKind(ds1_ac::PlotKind plotKind);
     void setPreviewFrequencyHz(double freqHz);
     void setPreviewAmplitude(double amplitude);
+    /** Recompute sine preview synchronously (hot-path process only). */
+    void refreshPreview();
     void setSampleRateHz(double sampleRateHz);
     void setSchematicComponentValues(const ds1_ac::SchematicComponentValues& values);
+    void beginRebuildBatch();
+    void endRebuildBatch();
     void applyTheme(const atom::ThemeColors& themeColors);
 
     void paint(juce::Graphics& g) override;
@@ -53,6 +58,8 @@ private:
         double previewFreqHz{ds1_ac::kDefaultPreviewFreqHz};
         double previewAmplitude{ds1_ac::defaultPreviewAmplitude(ds1_ac::CircuitKind::BjtFollower)};
         bool recomputeMagnitudeAxis{false};
+        bool previewOnly{false};
+        ds1_ac::AcResponse cachedResponse;
         uint32_t generation{0};
     };
 
@@ -64,14 +71,21 @@ private:
         ds1_ac::SineWavePreview sinePreview;
         ds1_ac::AxisRange magnitudeAxis{};
         bool magnitudeAxisRecomputed{false};
+        bool previewOnly{false};
     };
 
     void scheduleRebuild();
     void handleAsyncUpdate() override;
-    static RebuildResult computeRebuild(const RebuildParams& params);
+    RebuildParams buildRebuildParams() const;
+    RebuildResult computeRebuild(const RebuildParams& params);
+    void recomputePreviewNow();
+    void launchIsolatedStageJobs();
+    void launchAcJob(RebuildParams params);
+    void launchPreviewJob(RebuildParams params);
     void applyRebuildResult(RebuildResult&& result);
     void refreshCurveViews();
     void paintBusyOverlay(juce::Graphics& g);
+    void waitForWorkers();
 
     ds1_ac::AcResponse lastResponse_;
     ds1_ac::SineWavePreview lastSinePreview_;
@@ -109,8 +123,11 @@ private:
     atom::CurveControl phaseCurve{atom::CurveControl::Direction::Speedup};
     atom::CurveControl sineWaveCurve{atom::CurveControl::Direction::Speedup};
 
+    std::unique_ptr<ds1_ac::SineWavePreviewEngine> previewEngine_;
     std::atomic<uint32_t> rebuildGeneration_{0};
-    std::atomic<bool> rebuildInFlight_{false};
+    std::atomic<int> outstandingWorkers_{0};
+    int rebuildBatchDepth_{0};
+    bool rebuildQueuedDuringBatch_{false};
     bool busy_{false};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Ds1OpampAcPanel)

@@ -10,8 +10,6 @@
 
 #include "nudsp/common/components.h"
 #include "nudsp/linear_circuits/ds1_opamp_f32.h"
-#include "nudsp/linear_circuits/ds1_tone_f32.h"
-#include "nudsp/linear_circuits/rc_level_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_common_emitter_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_follower_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_follower_out_f32.h"
@@ -25,14 +23,14 @@ class SvgView;
 namespace ds1_ac
 {
 
+    class SineWavePreviewEngine;
+
     enum class CircuitKind
     {
         BjtFollower,
         BjtCommonEmitter,
         Ds1Opamp,
         Ds1Clipper,
-        Ds1Tone,
-        RcLevel,
         BjtFollowerOut
     };
 
@@ -109,6 +107,7 @@ namespace ds1_ac
     bool circuitUsesOpampModel(CircuitKind circuit) noexcept;
     bool circuitUsesDiodeModel(CircuitKind circuit) noexcept;
     bool circuitUsesBjtModel(CircuitKind circuit) noexcept;
+    bool circuitAcSweepIsCheap(CircuitKind circuit) noexcept;
     bool circuitUsesJfetModel(CircuitKind circuit) noexcept;
     bool circuitHasPrimaryControl(CircuitKind circuit) noexcept;
     bool circuitUsesPotTaper(CircuitKind circuit) noexcept;
@@ -156,6 +155,9 @@ namespace ds1_ac
     std::vector<double> buildLogFrequencySweep(const AcSweepParams &params);
     std::vector<float> buildLogFrequencyGridTicks(float logMin, float logMax, int targetCount = 6);
 
+    AxisRange magnitudeAxisFromCurve(const std::vector<std::pair<float, float>>& magnitudeCurve,
+                                     const AcSweepParams& params);
+
     /** Magnitude Y-axis envelope from primary control at 0 and 1 (fixed while control is swept). */
     AxisRange computeMagnitudeAxisEnvelope(CircuitKind circuit,
                                            nx_opamp_model_e model,
@@ -193,6 +195,7 @@ namespace ds1_ac
                                            double secondaryControl,
                                            double tertiaryControl,
                                            nx_pot_taper_e potTaper,
+                                           SineWavePreviewEngine& engine,
                                            const SchematicComponentValues* componentValues = nullptr);
 
 } // namespace ds1_ac

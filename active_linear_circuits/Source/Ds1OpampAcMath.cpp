@@ -1,5 +1,6 @@
 #include "Ds1OpampAcMath.h"
 
+#include "SineWavePreviewEngine.h"
 #include "SchematicComponentApply.h"
 
 #include <atom/SvgView.h>
@@ -38,12 +39,8 @@ namespace ds1_ac
              "nx_bjt_common_emitter_process_f32", "assets/schematics/core/nonlinear_circuits/bjt_common_emitter.svg"},
             {CircuitKind::Ds1Opamp, "opamp", "ds1_opamp", "Op Amp",
              "nx_ds1_opamp_process_f32", "assets/schematics/core/linear_circuits/ds1_opamp.svg"},
-            {CircuitKind::Ds1Clipper, "clipper", "ds1_clipper", "Clipper",
+            {CircuitKind::Ds1Clipper, "clipper", "ds1_clipper", "Clipper / Tone / Level",
              "nx_ds1_clipper_process_f32", "assets/schematics/core/nonlinear_circuits/ds1_clipper.svg"},
-            {CircuitKind::Ds1Tone, "tone", "ds1_tone", "Tone",
-             "nx_ds1_tone_process_f32", "assets/schematics/core/linear_circuits/ds1_tone.svg"},
-            {CircuitKind::RcLevel, "level", "rc_level", "Level",
-             "nx_rc_level_process_f32", "assets/schematics/core/linear_circuits/rc_level.svg"},
             {CircuitKind::BjtFollowerOut, "output", "bjt_follower_out", "Output BJT",
              "nx_bjt_follower_out_process_f32", "assets/schematics/core/nonlinear_circuits/bjt_follower_out.svg"},
         };
@@ -101,13 +98,10 @@ namespace ds1_ac
         {
         case CircuitKind::Ds1Opamp:
             return "Gain";
-        case CircuitKind::Ds1Tone:
+        case CircuitKind::Ds1Clipper:
             return "Tone";
-        case CircuitKind::RcLevel:
-            return "Level";
         case CircuitKind::BjtFollower:
         case CircuitKind::BjtCommonEmitter:
-        case CircuitKind::Ds1Clipper:
         case CircuitKind::BjtFollowerOut:
             return "Control";
         }
@@ -115,8 +109,10 @@ namespace ds1_ac
         return "Control";
     }
 
-    const char* secondaryControlParameterName(CircuitKind) noexcept
+    const char* secondaryControlParameterName(CircuitKind circuit) noexcept
     {
+        if (circuit == CircuitKind::Ds1Clipper)
+            return "Level";
         return "Control";
     }
 
@@ -155,12 +151,15 @@ namespace ds1_ac
             return true;
         case CircuitKind::Ds1Opamp:
         case CircuitKind::Ds1Clipper:
-        case CircuitKind::Ds1Tone:
-        case CircuitKind::RcLevel:
             return false;
         }
 
         return false;
+    }
+
+    bool circuitAcSweepIsCheap(CircuitKind circuit) noexcept
+    {
+        return circuitUsesBjtModel(circuit);
     }
 
     bool circuitUsesJfetModel(CircuitKind) noexcept
@@ -173,12 +172,10 @@ namespace ds1_ac
         switch (circuit)
         {
         case CircuitKind::Ds1Opamp:
-        case CircuitKind::Ds1Tone:
-        case CircuitKind::RcLevel:
+        case CircuitKind::Ds1Clipper:
             return true;
         case CircuitKind::BjtFollower:
         case CircuitKind::BjtCommonEmitter:
-        case CircuitKind::Ds1Clipper:
         case CircuitKind::BjtFollowerOut:
             return false;
         }
@@ -191,9 +188,9 @@ namespace ds1_ac
         return circuitHasPrimaryControl(circuit);
     }
 
-    bool circuitHasSecondaryControl(CircuitKind) noexcept
+    bool circuitHasSecondaryControl(CircuitKind circuit) noexcept
     {
-        return false;
+        return circuit == CircuitKind::Ds1Clipper;
     }
 
     bool circuitHasTertiaryControl(CircuitKind) noexcept
@@ -900,7 +897,7 @@ namespace ds1_ac
                                        double secondaryControl,
                                        double tertiaryControl)
         {
-            juce::ignoreUnused(jfetModel, secondaryControl, tertiaryControl);
+            juce::ignoreUnused(jfetModel, tertiaryControl);
 
             juce::String title = juce::String(compositeDisplayName()) + "  |  "
                                  + circuitStageMenuLabel(circuit);
@@ -914,6 +911,9 @@ namespace ds1_ac
 
             if (circuitHasPrimaryControl(circuit))
                 title += "  |  " + juce::String(controlParameterName(circuit)) + " " + juce::String(control, 2);
+            if (circuitHasSecondaryControl(circuit))
+                title += "  |  " + juce::String(secondaryControlParameterName(circuit)) + " "
+                         + juce::String(secondaryControl, 2);
 
             return title;
         }
@@ -947,14 +947,10 @@ namespace ds1_ac
             updatePotTaper(opamp, nx_ds1_opamp_get_gain_pot_f32, nx_ds1_opamp_set_gain_pot_f32, taper);
         }
 
-        void applyDs1TonePotTaper(nx_ds1_tone_f32_t* tone, nx_pot_taper_e taper) noexcept
+        void applyDs1ClipperPotTapers(nx_ds1_clipper_f32_t* clipper, nx_pot_taper_e taper) noexcept
         {
-            updatePotTaper(tone, nx_ds1_tone_get_tone_pot_f32, nx_ds1_tone_set_tone_pot_f32, taper);
-        }
-
-        void applyRcLevelPotTaper(nx_rc_level_f32_t* level, nx_pot_taper_e taper) noexcept
-        {
-            updatePotTaper(level, nx_rc_level_get_level_pot_f32, nx_rc_level_set_level_pot_f32, taper);
+            updatePotTaper(clipper, nx_ds1_clipper_get_tone_pot_f32, nx_ds1_clipper_set_tone_pot_f32, taper);
+            updatePotTaper(clipper, nx_ds1_clipper_get_level_pot_f32, nx_ds1_clipper_set_level_pot_f32, taper);
         }
 
         void runDs1AcSweep(nx_ds1_opamp_f32_t* opamp,
@@ -969,48 +965,30 @@ namespace ds1_ac
             applyDs1OpampPotTaper(opamp, potTaper);
             nx_ds1_opamp_set_opamp_model_f32(opamp, model);
             nx_ds1_opamp_set_gain_control_f32(opamp, clampControl(control));
-            nx_ds1_opamp_prepare_f32(opamp, sampleRateHz);
-            nx_ds1_opamp_ac_f32(opamp, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
-        }
-
-        void runDs1ToneAcSweep(nx_ds1_tone_f32_t* tone,
-                               nx_pot_taper_e potTaper,
-                               double control,
-                               double sampleRateHz,
-                               const std::vector<double>& freqs,
-                               std::vector<double>& magDb,
-                               std::vector<double>& phaseDeg)
-        {
-            applyDs1TonePotTaper(tone, potTaper);
-            nx_ds1_tone_set_tone_control_f32(tone, clampControl(control));
-            nx_ds1_tone_prepare_f32(tone, sampleRateHz);
-            nx_ds1_tone_ac_f32(tone, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
-        }
-
-        void runRcLevelAcSweep(nx_rc_level_f32_t* level,
-                               nx_pot_taper_e potTaper,
-                               double control,
-                               double sampleRateHz,
-                               const std::vector<double>& freqs,
-                               std::vector<double>& magDb,
-                               std::vector<double>& phaseDeg)
-        {
-            applyRcLevelPotTaper(level, potTaper);
-            nx_rc_level_set_level_control_f32(level, clampControl(control));
-            nx_rc_level_prepare_f32(level, sampleRateHz);
-            nx_rc_level_ac_f32(level, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
+            nx_ds1_opamp_config_t cfg{};
+            if (nx_ds1_opamp_get_config_f32(opamp, &cfg) != NX_SUCCESS)
+                return;
+            nx_ds1_opamp_ac_static_f32(&cfg, sampleRateHz, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
         }
 
         void runDs1ClipperAcSweep(nx_ds1_clipper_f32_t* clipper,
                                   nx_diode_model_t diodeModel,
+                                  nx_pot_taper_e potTaper,
+                                  double toneControl,
+                                  double levelControl,
                                   double sampleRateHz,
                                   const std::vector<double>& freqs,
                                   std::vector<double>& magDb,
                                   std::vector<double>& phaseDeg)
         {
+            applyDs1ClipperPotTapers(clipper, potTaper);
             nx_ds1_clipper_set_diode_model_f32(clipper, diodeModel);
-            nx_ds1_clipper_prepare_f32(clipper, sampleRateHz);
-            nx_ds1_clipper_ac_f32(clipper, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
+            nx_ds1_clipper_set_tone_control_f32(clipper, clampControl(toneControl));
+            nx_ds1_clipper_set_level_control_f32(clipper, clampControl(levelControl));
+            nx_ds1_clipper_config_t cfg{};
+            if (nx_ds1_clipper_get_config_f32(clipper, &cfg) != NX_SUCCESS)
+                return;
+            nx_ds1_clipper_ac_static_f32(&cfg, sampleRateHz, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
         }
 
         void runBjtFollowerAcSweep(nx_bjt_follower_f32_t* follower,
@@ -1021,8 +999,10 @@ namespace ds1_ac
                                    std::vector<double>& phaseDeg)
         {
             nx_bjt_follower_set_bjt_model_f32(follower, bjtModel);
-            nx_bjt_follower_prepare_f32(follower, sampleRateHz);
-            nx_bjt_follower_ac_f32(follower, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
+            nx_bjt_follower_config_t cfg{};
+            if (nx_bjt_follower_get_config_f32(follower, &cfg) != NX_SUCCESS)
+                return;
+            nx_bjt_follower_ac_static_f32(&cfg, sampleRateHz, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
         }
 
         void runBjtFollowerOutAcSweep(nx_bjt_follower_out_f32_t* follower,
@@ -1033,8 +1013,10 @@ namespace ds1_ac
                                       std::vector<double>& phaseDeg)
         {
             nx_bjt_follower_out_set_bjt_model_f32(follower, bjtModel);
-            nx_bjt_follower_out_prepare_f32(follower, sampleRateHz);
-            nx_bjt_follower_out_ac_f32(follower, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
+            nx_bjt_follower_out_config_t cfg{};
+            if (nx_bjt_follower_out_get_config_f32(follower, &cfg) != NX_SUCCESS)
+                return;
+            nx_bjt_follower_out_ac_static_f32(&cfg, sampleRateHz, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
         }
 
         void runBjtCommonEmitterAcSweep(nx_bjt_common_emitter_f32_t* emitter,
@@ -1045,8 +1027,10 @@ namespace ds1_ac
                                         std::vector<double>& phaseDeg)
         {
             nx_bjt_common_emitter_set_bjt_model_f32(emitter, bjtModel);
-            nx_bjt_common_emitter_prepare_f32(emitter, sampleRateHz);
-            nx_bjt_common_emitter_ac_f32(emitter, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
+            nx_bjt_common_emitter_config_t cfg{};
+            if (nx_bjt_common_emitter_get_config_f32(emitter, &cfg) != NX_SUCCESS)
+                return;
+            nx_bjt_common_emitter_ac_static_f32(&cfg, sampleRateHz, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
         }
 
         AxisRange makeFrequencyAxis(float logMin, float logMax)
@@ -1118,74 +1102,32 @@ namespace ds1_ac
                                          float& maxMag,
                                          const SchematicComponentValues* componentValues)
         {
-            juce::ignoreUnused(jfetModel, secondaryControl, tertiaryControl);
+            juce::ignoreUnused(jfetModel, tertiaryControl);
 
             switch (circuit)
             {
-            case CircuitKind::Ds1Tone:
-            {
-                auto* tone = createCircuitInstance<nx_ds1_tone_f32_t>(nx_ds1_tone_create_f32, circuit, componentValues);
-                if (tone == nullptr)
-                    return;
-                runDs1ToneAcSweep(tone, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
-                accumulateMagnitudeExtents(magDb, minMag, maxMag);
-                runDs1ToneAcSweep(tone, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
-                accumulateMagnitudeExtents(magDb, minMag, maxMag);
-                nx_ds1_tone_destroy_f32(tone, nullptr);
-                break;
-            }
-            case CircuitKind::RcLevel:
-            {
-                auto* level = createCircuitInstance<nx_rc_level_f32_t>(nx_rc_level_create_f32, circuit, componentValues);
-                if (level == nullptr)
-                    return;
-                runRcLevelAcSweep(level, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
-                accumulateMagnitudeExtents(magDb, minMag, maxMag);
-                runRcLevelAcSweep(level, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
-                accumulateMagnitudeExtents(magDb, minMag, maxMag);
-                nx_rc_level_destroy_f32(level, nullptr);
-                break;
-            }
             case CircuitKind::Ds1Clipper:
             {
                 auto* clipper = createCircuitInstance<nx_ds1_clipper_f32_t>(nx_ds1_clipper_create_f32, circuit, componentValues);
                 if (clipper == nullptr)
                     return;
-                runDs1ClipperAcSweep(clipper, diodeModel, sampleRateHz, freqs, magDb, phaseDeg);
+                const double levelMid = clampControl(secondaryControl);
+                runDs1ClipperAcSweep(clipper, diodeModel, potTaper, 0.0, levelMid, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runDs1ClipperAcSweep(clipper, diodeModel, potTaper, 1.0, levelMid, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runDs1ClipperAcSweep(clipper, diodeModel, potTaper, 0.5, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runDs1ClipperAcSweep(clipper, diodeModel, potTaper, 0.5, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
                 accumulateMagnitudeExtents(magDb, minMag, maxMag);
                 nx_ds1_clipper_destroy_f32(clipper, nullptr);
                 break;
             }
             case CircuitKind::BjtFollower:
-            {
-                auto* follower = createCircuitInstance<nx_bjt_follower_f32_t>(nx_bjt_follower_create_f32, circuit, componentValues);
-                if (follower == nullptr)
-                    return;
-                runBjtFollowerAcSweep(follower, bjtModel, sampleRateHz, freqs, magDb, phaseDeg);
-                accumulateMagnitudeExtents(magDb, minMag, maxMag);
-                nx_bjt_follower_destroy_f32(follower, nullptr);
-                break;
-            }
             case CircuitKind::BjtFollowerOut:
-            {
-                auto* follower = createCircuitInstance<nx_bjt_follower_out_f32_t>(nx_bjt_follower_out_create_f32, circuit, componentValues);
-                if (follower == nullptr)
-                    return;
-                runBjtFollowerOutAcSweep(follower, bjtModel, sampleRateHz, freqs, magDb, phaseDeg);
-                accumulateMagnitudeExtents(magDb, minMag, maxMag);
-                nx_bjt_follower_out_destroy_f32(follower, nullptr);
-                break;
-            }
             case CircuitKind::BjtCommonEmitter:
-            {
-                auto* emitter = createCircuitInstance<nx_bjt_common_emitter_f32_t>(nx_bjt_common_emitter_create_f32, circuit, componentValues);
-                if (emitter == nullptr)
-                    return;
-                runBjtCommonEmitterAcSweep(emitter, bjtModel, sampleRateHz, freqs, magDb, phaseDeg);
-                accumulateMagnitudeExtents(magDb, minMag, maxMag);
-                nx_bjt_common_emitter_destroy_f32(emitter, nullptr);
+                juce::ignoreUnused(bjtModel, sampleRateHz, freqs, magDb, phaseDeg, componentValues);
                 break;
-            }
             case CircuitKind::Ds1Opamp:
             default:
             {
@@ -1217,34 +1159,24 @@ namespace ds1_ac
                                 std::vector<double>& phaseDeg,
                                 const SchematicComponentValues* componentValues)
         {
-            juce::ignoreUnused(jfetModel, secondaryControl, tertiaryControl);
+            juce::ignoreUnused(jfetModel, tertiaryControl);
 
             switch (circuit)
             {
-            case CircuitKind::Ds1Tone:
-            {
-                auto* tone = createCircuitInstance<nx_ds1_tone_f32_t>(nx_ds1_tone_create_f32, circuit, componentValues);
-                if (tone == nullptr)
-                    return false;
-                runDs1ToneAcSweep(tone, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
-                nx_ds1_tone_destroy_f32(tone, nullptr);
-                return true;
-            }
-            case CircuitKind::RcLevel:
-            {
-                auto* level = createCircuitInstance<nx_rc_level_f32_t>(nx_rc_level_create_f32, circuit, componentValues);
-                if (level == nullptr)
-                    return false;
-                runRcLevelAcSweep(level, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
-                nx_rc_level_destroy_f32(level, nullptr);
-                return true;
-            }
             case CircuitKind::Ds1Clipper:
             {
                 auto* clipper = createCircuitInstance<nx_ds1_clipper_f32_t>(nx_ds1_clipper_create_f32, circuit, componentValues);
                 if (clipper == nullptr)
                     return false;
-                runDs1ClipperAcSweep(clipper, diodeModel, sampleRateHz, freqs, magDb, phaseDeg);
+                runDs1ClipperAcSweep(clipper,
+                                       diodeModel,
+                                       potTaper,
+                                       gainControl,
+                                       secondaryControl,
+                                       sampleRateHz,
+                                       freqs,
+                                       magDb,
+                                       phaseDeg);
                 nx_ds1_clipper_destroy_f32(clipper, nullptr);
                 return true;
             }
@@ -1288,218 +1220,22 @@ namespace ds1_ac
             }
         }
 
-        constexpr int kPreviewDisplayPoints = 256;
-        constexpr int kWarmupPeriods = 8;
-        constexpr float kDs1TonePreviewInputScale = 0.5f;
-        constexpr float kClipperPreviewInputScale = 0.05f;
-        constexpr float kTransistorPreviewInputScale = 0.01f;
-        constexpr float kBjtCommonEmitterPreviewInputScale = 0.2f;
-        constexpr double kDs1TonePreviewVcc = 2.0;
-        constexpr double kClipperPreviewVcc = 9.0;
-
-        float previewInputScale(CircuitKind circuit) noexcept
-        {
-            switch (circuit)
-            {
-            case CircuitKind::Ds1Tone:
-                return kDs1TonePreviewInputScale;
-            case CircuitKind::Ds1Clipper:
-                return kClipperPreviewInputScale;
-            case CircuitKind::BjtCommonEmitter:
-                return kBjtCommonEmitterPreviewInputScale;
-            case CircuitKind::BjtFollower:
-            case CircuitKind::BjtFollowerOut:
-                return kTransistorPreviewInputScale;
-            case CircuitKind::Ds1Opamp:
-            case CircuitKind::RcLevel:
-                return 1.0f;
-            }
-
-            return 1.0f;
-        }
-
-        float lerpWaveSample(const std::vector<float>& samples, float index)
-        {
-            if (samples.empty())
-                return 0.0f;
-
-            if (samples.size() == 1)
-                return samples.front();
-
-            const float clamped = juce::jlimit(0.0f, static_cast<float>(samples.size() - 1), index);
-            const int i0 = static_cast<int>(std::floor(clamped));
-            const int i1 = juce::jmin(i0 + 1, static_cast<int>(samples.size()) - 1);
-            const float frac = clamped - static_cast<float>(i0);
-            return samples[static_cast<size_t>(i0)] * (1.0f - frac) + samples[static_cast<size_t>(i1)] * frac;
-        }
-
-        bool runSineWavePreviewProcess(CircuitKind circuit,
-                                       nx_opamp_model_e model,
-                                       nx_diode_model_t diodeModel,
-                                       nx_bjt_npn_model_e bjtModel,
-                                       nx_jfet_n_model_e jfetModel,
-                                       double gainControl,
-                                       double secondaryControl,
-                                       double tertiaryControl,
-                                       nx_pot_taper_e potTaper,
-                                       double sampleRateHz,
-                                       const std::vector<float>& input,
-                                       std::vector<float>& output,
-                                       size_t totalSamples,
-                                       double& vccOut,
-                                       const SchematicComponentValues* componentValues)
-        {
-            juce::ignoreUnused(jfetModel, secondaryControl, tertiaryControl);
-
-            if (circuit == CircuitKind::Ds1Tone)
-            {
-                auto* tone = createCircuitInstance<nx_ds1_tone_f32_t>(nx_ds1_tone_create_f32, circuit, componentValues);
-                if (tone == nullptr)
-                    return false;
-
-                applyDs1TonePotTaper(tone, potTaper);
-                nx_ds1_tone_set_tone_control_f32(tone, clampControl(gainControl));
-                nx_ds1_tone_prepare_f32(tone, sampleRateHz);
-                nx_ds1_tone_reset_f32(tone);
-
-                for (int i = 0; i < 500; ++i)
-                    nx_ds1_tone_tick_f32(tone, 128);
-
-                nx_ds1_tone_process_f32(tone, input.data(), output.data(), totalSamples);
-                nx_ds1_tone_tick_f32(tone, totalSamples);
-
-                vccOut = kDs1TonePreviewVcc;
-                nx_ds1_tone_destroy_f32(tone, nullptr);
-                return true;
-            }
-
-            if (circuit == CircuitKind::RcLevel)
-            {
-                auto* level = createCircuitInstance<nx_rc_level_f32_t>(nx_rc_level_create_f32, circuit, componentValues);
-                if (level == nullptr)
-                    return false;
-
-                applyRcLevelPotTaper(level, potTaper);
-                nx_rc_level_set_level_control_f32(level, clampControl(gainControl));
-                nx_rc_level_prepare_f32(level, sampleRateHz);
-                nx_rc_level_reset_f32(level);
-
-                for (int i = 0; i < 500; ++i)
-                    nx_rc_level_tick_f32(level, 128);
-
-                nx_rc_level_process_f32(level, input.data(), output.data(), totalSamples);
-                nx_rc_level_tick_f32(level, totalSamples);
-
-                vccOut = 9.0;
-                nx_rc_level_destroy_f32(level, nullptr);
-                return true;
-            }
-
-            if (circuit == CircuitKind::Ds1Clipper)
-            {
-                auto* clipper = createCircuitInstance<nx_ds1_clipper_f32_t>(nx_ds1_clipper_create_f32, circuit, componentValues);
-                if (clipper == nullptr)
-                    return false;
-
-                nx_ds1_clipper_set_diode_model_f32(clipper, diodeModel);
-                nx_ds1_clipper_prepare_f32(clipper, sampleRateHz);
-                nx_ds1_clipper_reset_f32(clipper);
-
-                for (int i = 0; i < 500; ++i)
-                    nx_ds1_clipper_tick_f32(clipper, 128);
-
-                nx_ds1_clipper_process_f32(clipper, input.data(), output.data(), totalSamples);
-                nx_ds1_clipper_tick_f32(clipper, totalSamples);
-
-                vccOut = kClipperPreviewVcc;
-                nx_ds1_clipper_destroy_f32(clipper, nullptr);
-                return true;
-            }
-
-            if (circuit == CircuitKind::BjtFollower)
-            {
-                auto* follower = createCircuitInstance<nx_bjt_follower_f32_t>(nx_bjt_follower_create_f32, circuit, componentValues);
-                if (follower == nullptr)
-                    return false;
-
-                nx_bjt_follower_set_bjt_model_f32(follower, bjtModel);
-                nx_bjt_follower_prepare_f32(follower, sampleRateHz);
-                nx_bjt_follower_reset_f32(follower);
-
-                for (int i = 0; i < 500; ++i)
-                    nx_bjt_follower_tick_f32(follower, 128);
-
-                nx_bjt_follower_process_f32(follower, input.data(), output.data(), totalSamples);
-                nx_bjt_follower_tick_f32(follower, totalSamples);
-
-                vccOut = nx_bjt_follower_get_vcc_f32(follower);
-                nx_bjt_follower_destroy_f32(follower, nullptr);
-                return true;
-            }
-
-            if (circuit == CircuitKind::BjtFollowerOut)
-            {
-                auto* follower = createCircuitInstance<nx_bjt_follower_out_f32_t>(nx_bjt_follower_out_create_f32, circuit, componentValues);
-                if (follower == nullptr)
-                    return false;
-
-                nx_bjt_follower_out_set_bjt_model_f32(follower, bjtModel);
-                nx_bjt_follower_out_prepare_f32(follower, sampleRateHz);
-                nx_bjt_follower_out_reset_f32(follower);
-
-                for (int i = 0; i < 500; ++i)
-                    nx_bjt_follower_out_tick_f32(follower, 128);
-
-                nx_bjt_follower_out_process_f32(follower, input.data(), output.data(), totalSamples);
-                nx_bjt_follower_out_tick_f32(follower, totalSamples);
-
-                vccOut = nx_bjt_follower_out_get_vcc_f32(follower);
-                nx_bjt_follower_out_destroy_f32(follower, nullptr);
-                return true;
-            }
-
-            if (circuit == CircuitKind::BjtCommonEmitter)
-            {
-                auto* emitter = createCircuitInstance<nx_bjt_common_emitter_f32_t>(nx_bjt_common_emitter_create_f32, circuit, componentValues);
-                if (emitter == nullptr)
-                    return false;
-
-                nx_bjt_common_emitter_set_bjt_model_f32(emitter, bjtModel);
-                nx_bjt_common_emitter_prepare_f32(emitter, sampleRateHz);
-                nx_bjt_common_emitter_reset_f32(emitter);
-
-                for (int i = 0; i < 500; ++i)
-                    nx_bjt_common_emitter_tick_f32(emitter, 128);
-
-                nx_bjt_common_emitter_process_f32(emitter, input.data(), output.data(), totalSamples);
-                nx_bjt_common_emitter_tick_f32(emitter, totalSamples);
-
-                vccOut = nx_bjt_common_emitter_get_vcc_f32(emitter);
-                nx_bjt_common_emitter_destroy_f32(emitter, nullptr);
-                return true;
-            }
-
-            auto* opamp = createCircuitInstance<nx_ds1_opamp_f32_t>(nx_ds1_opamp_create_f32, CircuitKind::Ds1Opamp, componentValues);
-            if (opamp == nullptr)
-                return false;
-
-            applyDs1OpampPotTaper(opamp, potTaper);
-            nx_ds1_opamp_set_opamp_model_f32(opamp, model);
-            nx_ds1_opamp_set_gain_control_f32(opamp, clampControl(gainControl));
-            nx_ds1_opamp_prepare_f32(opamp, sampleRateHz);
-            nx_ds1_opamp_reset_f32(opamp);
-
-            for (int i = 0; i < 500; ++i)
-                nx_ds1_opamp_tick_f32(opamp, 128);
-
-            nx_ds1_opamp_process_f32(opamp, input.data(), output.data(), totalSamples);
-            nx_ds1_opamp_tick_f32(opamp, totalSamples);
-
-            vccOut = nx_ds1_opamp_get_vcc_f32(opamp);
-            nx_ds1_opamp_destroy_f32(opamp, nullptr);
-            return true;
-        }
     } // namespace
+
+    float lerpWaveSample(const std::vector<float>& samples, float index)
+    {
+        if (samples.empty())
+            return 0.0f;
+
+        if (samples.size() == 1)
+            return samples.front();
+
+        const float clamped = juce::jlimit(0.0f, static_cast<float>(samples.size() - 1), index);
+        const int i0 = static_cast<int>(std::floor(clamped));
+        const int i1 = juce::jmin(i0 + 1, static_cast<int>(samples.size() - 1));
+        const float frac = clamped - static_cast<float>(i0);
+        return samples[static_cast<size_t>(i0)] * (1.0f - frac) + samples[static_cast<size_t>(i1)] * frac;
+    }
 
     AxisRange computeMagnitudeAxisEnvelope(CircuitKind circuit,
                                            nx_opamp_model_e model,
@@ -1549,6 +1285,29 @@ namespace ds1_ac
         if (minMag > maxMag)
             return paddedMagnitudeAxis(0.0f, 0.0f, logMin, logMax);
 
+        return paddedMagnitudeAxis(minMag, maxMag, logMin, logMax);
+    }
+
+    AxisRange magnitudeAxisFromCurve(const std::vector<std::pair<float, float>>& magnitudeCurve,
+                                     const AcSweepParams& params)
+    {
+        AcSweepParams safe = params;
+        safe.sanitise();
+        const float logMin = static_cast<float>(std::log10(safe.freqMinHz));
+        const float logMax = static_cast<float>(std::log10(safe.freqMaxHz));
+
+        float minMag = std::numeric_limits<float>::max();
+        float maxMag = std::numeric_limits<float>::lowest();
+        for (const auto& point : magnitudeCurve)
+        {
+            if (!std::isfinite(point.second))
+                continue;
+            minMag = juce::jmin(minMag, point.second);
+            maxMag = juce::jmax(maxMag, point.second);
+        }
+
+        if (minMag > maxMag)
+            return paddedMagnitudeAxis(0.0f, 0.0f, logMin, logMax);
         return paddedMagnitudeAxis(minMag, maxMag, logMin, logMax);
     }
 
@@ -1629,10 +1388,13 @@ namespace ds1_ac
                                            double secondaryControl,
                                            double tertiaryControl,
                                            nx_pot_taper_e potTaper,
+                                           SineWavePreviewEngine& engine,
                                            const SchematicComponentValues* componentValues)
     {
         AcSweepParams safe = params;
         safe.sanitise();
+
+        constexpr int kPreviewDisplayPoints = 256;
 
         SineWavePreview preview;
         const double clampedFreq = juce::jlimit(kPreviewFreqMinHz, kPreviewFreqMaxHz, freqHz);
@@ -1644,37 +1406,35 @@ namespace ds1_ac
         juce::ignoreUnused(gainControl);
         const int periodSamples =
             juce::jmax(8, static_cast<int>(std::llround(safe.sampleRateHz / clampedFreq)));
-        const int totalSamples = periodSamples * (kWarmupPeriods + 1);
-        std::vector<float> input(static_cast<size_t>(totalSamples));
-        std::vector<float> output(static_cast<size_t>(totalSamples));
+        std::vector<float> input(static_cast<size_t>(periodSamples));
+        std::vector<float> output(static_cast<size_t>(periodSamples));
 
-        for (int period = 0; period <= kWarmupPeriods; ++period)
+        for (int i = 0; i < periodSamples; ++i)
         {
-            const size_t offset = static_cast<size_t>(period * periodSamples);
-            for (int i = 0; i < periodSamples; ++i)
-            {
-                const double phase = juce::MathConstants<double>::twoPi * static_cast<double>(i) / static_cast<double>(periodSamples);
-                input[offset + static_cast<size_t>(i)] =
-                    inputScale * static_cast<float>(std::sin(phase));
-            }
+            const double phase = juce::MathConstants<double>::twoPi * static_cast<double>(i)
+                                 / static_cast<double>(periodSamples);
+            input[static_cast<size_t>(i)] = inputScale * static_cast<float>(std::sin(phase));
         }
 
+        SinePreviewSetupParams setup;
+        setup.circuit = circuit;
+        setup.model = model;
+        setup.diodeModel = diodeModel;
+        setup.bjtModel = bjtModel;
+        setup.jfetModel = jfetModel;
+        setup.gainControl = gainControl;
+        setup.secondaryControl = secondaryControl;
+        setup.tertiaryControl = tertiaryControl;
+        setup.potTaper = potTaper;
+        setup.sampleRateHz = safe.sampleRateHz;
+        setup.componentValues = componentValues;
+
         double vcc = 9.0;
-        if (!runSineWavePreviewProcess(circuit,
-                                       model,
-                                       diodeModel,
-                                       bjtModel,
-                                       jfetModel,
-                                       gainControl,
-                                       secondaryControl,
-                                       tertiaryControl,
-                                       potTaper,
-                                       safe.sampleRateHz,
-                                       input,
-                                       output,
-                                       static_cast<size_t>(totalSamples),
-                                       vcc,
-                                       componentValues))
+        if (! engine.runProcess(setup,
+                                input.data(),
+                                output.data(),
+                                static_cast<size_t>(periodSamples),
+                                vcc))
         {
             return preview;
         }
@@ -1694,18 +1454,13 @@ namespace ds1_ac
             preview.axis.maxY = preview.vccHalf + endpointPad;
         }
 
-        const size_t lastPeriodStart = static_cast<size_t>(periodSamples * kWarmupPeriods);
-        const std::vector<float> lastPeriodOutput(output.begin() + static_cast<std::ptrdiff_t>(lastPeriodStart),
-                                                  output.end());
-
         preview.outputCurve.reserve(static_cast<size_t>(kPreviewDisplayPoints));
 
         for (int i = 0; i < kPreviewDisplayPoints; ++i)
         {
             const float t = static_cast<float>(i) / static_cast<float>(kPreviewDisplayPoints - 1);
             const float srcIndex = t * static_cast<float>(periodSamples - 1);
-            const float outY = lerpWaveSample(lastPeriodOutput, srcIndex);
-            preview.outputCurve.emplace_back(t, outY);
+            preview.outputCurve.emplace_back(t, lerpWaveSample(output, srcIndex));
         }
 
         preview.axis.minX = 0.0f;
@@ -1718,8 +1473,6 @@ namespace ds1_ac
     {
         switch (circuit)
         {
-        case CircuitKind::Ds1Tone:
-            return 0.5;
         case CircuitKind::Ds1Clipper:
             return 0.05;
         case CircuitKind::BjtCommonEmitter:
@@ -1728,7 +1481,6 @@ namespace ds1_ac
         case CircuitKind::BjtFollowerOut:
             return 0.01;
         case CircuitKind::Ds1Opamp:
-        case CircuitKind::RcLevel:
             return 1.0;
         }
 

@@ -2,6 +2,8 @@
 
 #include <atom/CurveControl.h>
 
+#include "SineWavePreviewEngine.h"
+
 namespace
 {
 bool isValidMagnitudeAxis(const ds1_ac::AxisRange& axis) noexcept
@@ -216,15 +218,22 @@ Ds1OpampAcPanel::Ds1OpampAcPanel()
     sweep_.freqMaxHz = ds1_ac::kDefaultFreqMaxHz;
     sweep_.sampleRateHz = ds1_ac::kDefaultSampleRateHz;
 
+    previewEngine_ = std::make_unique<ds1_ac::SineWavePreviewEngine>();
+
     scheduleRebuild();
+}
+
+void Ds1OpampAcPanel::waitForWorkers()
+{
+    for (int i = 0; i < 2000 && outstandingWorkers_.load(std::memory_order_acquire) > 0; ++i)
+        juce::Thread::sleep(1);
 }
 
 Ds1OpampAcPanel::~Ds1OpampAcPanel()
 {
     rebuildGeneration_.fetch_add(1, std::memory_order_acq_rel);
     cancelPendingUpdate();
-    for (int i = 0; i < 200 && rebuildInFlight_.load(std::memory_order_acquire); ++i)
-        juce::Thread::sleep(1);
+    waitForWorkers();
 }
 
 void Ds1OpampAcPanel::setCircuitKind(ds1_ac::CircuitKind circuitKind)
@@ -235,6 +244,11 @@ void Ds1OpampAcPanel::setCircuitKind(ds1_ac::CircuitKind circuitKind)
     circuitKind_ = circuitKind;
     schematicValues_ = {};
     hasFixedMagnitudeAxis_ = false;
+    lastResponse_ = {};
+    lastSinePreview_ = {};
+    if (previewEngine_ != nullptr)
+        previewEngine_->invalidate();
+    refreshCurveViews();
     scheduleRebuild();
 }
 
@@ -324,22 +338,17 @@ void Ds1OpampAcPanel::setPotTaper(nx_pot_taper_e potTaper)
 
 void Ds1OpampAcPanel::setPreviewFrequencyHz(double freqHz)
 {
-    const double next = juce::jlimit(ds1_ac::kPreviewFreqMinHz, ds1_ac::kPreviewFreqMaxHz, freqHz);
-    if (juce::approximatelyEqual(previewFreqHz_, next))
-        return;
-
-    previewFreqHz_ = next;
-    scheduleRebuild();
+    previewFreqHz_ = juce::jlimit(ds1_ac::kPreviewFreqMinHz, ds1_ac::kPreviewFreqMaxHz, freqHz);
 }
 
 void Ds1OpampAcPanel::setPreviewAmplitude(double amplitude)
 {
-    const double next = juce::jlimit(ds1_ac::kPreviewAmpMin, ds1_ac::kPreviewAmpMax, amplitude);
-    if (juce::approximatelyEqual(previewAmplitude_, next))
-        return;
+    previewAmplitude_ = juce::jlimit(ds1_ac::kPreviewAmpMin, ds1_ac::kPreviewAmpMax, amplitude);
+}
 
-    previewAmplitude_ = next;
-    scheduleRebuild();
+void Ds1OpampAcPanel::refreshPreview()
+{
+    recomputePreviewNow();
 }
 
 void Ds1OpampAcPanel::setSampleRateHz(double sampleRateHz)
@@ -372,6 +381,14 @@ void Ds1OpampAcPanel::setPlotKind(ds1_ac::PlotKind plotKind)
     refreshCurveViews();
     resized();
     repaint();
+
+    if (plotKind_ != ds1_ac::PlotKind::Magnitude && lastSinePreview_.outputCurve.empty())
+    {
+        if (rebuildBatchDepth_ > 0)
+            rebuildQueuedDuringBatch_ = true;
+        else
+            launchPreviewJob(buildRebuildParams());
+    }
 }
 
 void Ds1OpampAcPanel::applyTheme(const atom::ThemeColors& themeColors)
@@ -388,15 +405,41 @@ void Ds1OpampAcPanel::applyTheme(const atom::ThemeColors& themeColors)
     repaint();
 }
 
+void Ds1OpampAcPanel::beginRebuildBatch()
+{
+    ++rebuildBatchDepth_;
+}
+
+void Ds1OpampAcPanel::endRebuildBatch()
+{
+    if (rebuildBatchDepth_ <= 0)
+        return;
+
+    --rebuildBatchDepth_;
+    if (rebuildBatchDepth_ > 0 || ! rebuildQueuedDuringBatch_)
+        return;
+
+    rebuildQueuedDuringBatch_ = false;
+    cancelPendingUpdate();
+    launchIsolatedStageJobs();
+}
+
 void Ds1OpampAcPanel::scheduleRebuild()
 {
     rebuildGeneration_.fetch_add(1, std::memory_order_acq_rel);
-    busy_ = true;
+    if (rebuildBatchDepth_ > 0)
+    {
+        rebuildQueuedDuringBatch_ = true;
+        return;
+    }
+
+    if (! ds1_ac::circuitAcSweepIsCheap(circuitKind_))
+        busy_ = true;
     triggerAsyncUpdate();
     repaint();
 }
 
-void Ds1OpampAcPanel::handleAsyncUpdate()
+Ds1OpampAcPanel::RebuildParams Ds1OpampAcPanel::buildRebuildParams() const
 {
     RebuildParams params;
     params.circuitKind = circuitKind_;
@@ -426,32 +469,123 @@ void Ds1OpampAcPanel::handleAsyncUpdate()
                                  || potTaper_ != fixedMagnitudeAxisPotTaper_
                                  || schematicValues_ != fixedMagnitudeAxisSchematicValues_;
     params.magnitudeAxis = fixedMagnitudeAxis_;
+    params.cachedResponse = lastResponse_;
     params.generation = rebuildGeneration_.load(std::memory_order_acquire);
+    return params;
+}
 
-    if (rebuildInFlight_.exchange(true, std::memory_order_acq_rel))
+void Ds1OpampAcPanel::recomputePreviewNow()
+{
+    if (plotKind_ == ds1_ac::PlotKind::Magnitude)
         return;
 
-    juce::Thread::launch([this, params]()
+    auto params = buildRebuildParams();
+    params.previewOnly = true;
+
+    if (previewEngine_ == nullptr)
+        previewEngine_ = std::make_unique<ds1_ac::SineWavePreviewEngine>();
+
+    applyRebuildResult(computeRebuild(params));
+}
+
+void Ds1OpampAcPanel::launchPreviewJob(RebuildParams params)
+{
+    if (params.plotKind == ds1_ac::PlotKind::Magnitude)
+        return;
+
+    params.previewOnly = true;
+    outstandingWorkers_.fetch_add(1, std::memory_order_acq_rel);
+
+    juce::Component::SafePointer<Ds1OpampAcPanel> safe(this);
+    juce::Thread::launch([safe, params = std::move(params)]()
     {
-        auto result = computeRebuild(params);
+        ds1_ac::SineWavePreviewEngine engine;
+        RebuildResult result;
+        result.generation = params.generation;
+        result.plotKind = params.plotKind;
+        result.previewOnly = true;
+        result.response = params.cachedResponse;
+        result.magnitudeAxis = params.magnitudeAxis;
 
-        juce::MessageManager::callAsync([this, result = std::move(result)]() mutable
+        const auto* componentValues = params.schematicValues.empty() ? nullptr : &params.schematicValues;
+        result.sinePreview = ds1_ac::computeSineWavePreview(params.circuitKind,
+                                                            params.model,
+                                                            params.diodeModel,
+                                                            params.bjtModel,
+                                                            params.jfetModel,
+                                                            params.gainControl,
+                                                            params.previewFreqHz,
+                                                            params.previewAmplitude,
+                                                            params.sweep,
+                                                            params.secondaryControl,
+                                                            params.tertiaryControl,
+                                                            params.potTaper,
+                                                            engine,
+                                                            componentValues);
+
+        if (safe != nullptr)
+            safe->outstandingWorkers_.fetch_sub(1, std::memory_order_acq_rel);
+
+        juce::MessageManager::callAsync([safe, result = std::move(result)]() mutable
         {
-            rebuildInFlight_.store(false, std::memory_order_release);
-
-            const auto currentGeneration = rebuildGeneration_.load(std::memory_order_acquire);
-            if (result.generation != currentGeneration)
-            {
-                scheduleRebuild();
+            if (safe == nullptr)
                 return;
-            }
+            if (result.generation != safe->rebuildGeneration_.load(std::memory_order_acquire))
+                return;
 
-            applyRebuildResult(std::move(result));
-
-            if (result.generation != rebuildGeneration_.load(std::memory_order_acquire))
-                scheduleRebuild();
+            safe->applyRebuildResult(std::move(result));
         });
     });
+}
+
+void Ds1OpampAcPanel::launchAcJob(RebuildParams params)
+{
+    params.previewOnly = false;
+
+    if (ds1_ac::circuitAcSweepIsCheap(params.circuitKind))
+    {
+        applyRebuildResult(computeRebuild(params));
+        return;
+    }
+
+    outstandingWorkers_.fetch_add(1, std::memory_order_acq_rel);
+    juce::Component::SafePointer<Ds1OpampAcPanel> safe(this);
+    juce::Thread::launch([safe, params = std::move(params)]()
+    {
+        RebuildResult result{};
+        if (safe != nullptr)
+            result = safe->computeRebuild(params);
+
+        if (safe != nullptr)
+            safe->outstandingWorkers_.fetch_sub(1, std::memory_order_acq_rel);
+
+        juce::MessageManager::callAsync([safe, result = std::move(result)]() mutable
+        {
+            if (safe == nullptr)
+                return;
+            if (result.generation != safe->rebuildGeneration_.load(std::memory_order_acquire))
+                return;
+
+            safe->applyRebuildResult(std::move(result));
+        });
+    });
+}
+
+void Ds1OpampAcPanel::launchIsolatedStageJobs()
+{
+    auto params = buildRebuildParams();
+    if (! ds1_ac::circuitAcSweepIsCheap(params.circuitKind))
+    {
+        busy_ = true;
+        repaint();
+    }
+    launchAcJob(params);
+    launchPreviewJob(params);
+}
+
+void Ds1OpampAcPanel::handleAsyncUpdate()
+{
+    launchIsolatedStageJobs();
 }
 
 Ds1OpampAcPanel::RebuildResult Ds1OpampAcPanel::computeRebuild(const RebuildParams& params)
@@ -459,48 +593,75 @@ Ds1OpampAcPanel::RebuildResult Ds1OpampAcPanel::computeRebuild(const RebuildPara
     RebuildResult result;
     result.generation = params.generation;
     result.plotKind = params.plotKind;
-
-    result.magnitudeAxis = params.recomputeMagnitudeAxis
-        ? ds1_ac::computeMagnitudeAxisEnvelope(params.circuitKind,
-                                               params.model,
-                                               params.diodeModel,
-                                               params.bjtModel,
-                                               params.jfetModel,
-                                               params.sweep,
-                                               params.secondaryControl,
-                                               params.tertiaryControl,
-                                               params.potTaper,
-                                               params.schematicValues.empty() ? nullptr : &params.schematicValues)
-        : params.magnitudeAxis;
-    result.magnitudeAxisRecomputed = params.recomputeMagnitudeAxis;
+    result.previewOnly = params.previewOnly;
 
     const auto* componentValues = params.schematicValues.empty() ? nullptr : &params.schematicValues;
 
-    result.response = ds1_ac::computeAcResponse(params.circuitKind,
-                                                  params.model,
-                                                  params.diodeModel,
-                                                  params.bjtModel,
-                                                  params.jfetModel,
-                                                  params.gainControl,
-                                                  params.sweep,
-                                                  result.magnitudeAxis,
-                                                  params.secondaryControl,
-                                                  params.tertiaryControl,
-                                                  params.potTaper,
-                                                  componentValues);
-    result.sinePreview = ds1_ac::computeSineWavePreview(params.circuitKind,
-                                                        params.model,
-                                                        params.diodeModel,
-                                                        params.bjtModel,
-                                                        params.jfetModel,
-                                                        params.gainControl,
-                                                        params.previewFreqHz,
-                                                        params.previewAmplitude,
-                                                        params.sweep,
-                                                        params.secondaryControl,
-                                                        params.tertiaryControl,
-                                                        params.potTaper,
-                                                        componentValues);
+    if (params.previewOnly)
+    {
+        result.response = params.cachedResponse;
+        result.magnitudeAxis = params.magnitudeAxis;
+        result.magnitudeAxisRecomputed = false;
+    }
+    else
+    {
+        result.magnitudeAxis = params.recomputeMagnitudeAxis
+            ? ds1_ac::computeMagnitudeAxisEnvelope(params.circuitKind,
+                                                   params.model,
+                                                   params.diodeModel,
+                                                   params.bjtModel,
+                                                   params.jfetModel,
+                                                   params.sweep,
+                                                   params.secondaryControl,
+                                                   params.tertiaryControl,
+                                                   params.potTaper,
+                                                   componentValues)
+            : params.magnitudeAxis;
+        result.magnitudeAxisRecomputed = params.recomputeMagnitudeAxis;
+
+        result.response = ds1_ac::computeAcResponse(params.circuitKind,
+                                                      params.model,
+                                                      params.diodeModel,
+                                                      params.bjtModel,
+                                                      params.jfetModel,
+                                                      params.gainControl,
+                                                      params.sweep,
+                                                      result.magnitudeAxis,
+                                                      params.secondaryControl,
+                                                      params.tertiaryControl,
+                                                      params.potTaper,
+                                                      componentValues);
+
+        if (params.recomputeMagnitudeAxis
+            && !ds1_ac::circuitHasPrimaryControl(params.circuitKind)
+            && !ds1_ac::circuitHasSecondaryControl(params.circuitKind))
+        {
+            result.magnitudeAxis = ds1_ac::magnitudeAxisFromCurve(result.response.magnitudeCurve, params.sweep);
+            result.response.magnitudeAxis = result.magnitudeAxis;
+        }
+    }
+
+    if (params.previewOnly)
+    {
+        if (previewEngine_ == nullptr)
+            previewEngine_ = std::make_unique<ds1_ac::SineWavePreviewEngine>();
+
+        result.sinePreview = ds1_ac::computeSineWavePreview(params.circuitKind,
+                                                            params.model,
+                                                            params.diodeModel,
+                                                            params.bjtModel,
+                                                            params.jfetModel,
+                                                            params.gainControl,
+                                                            params.previewFreqHz,
+                                                            params.previewAmplitude,
+                                                            params.sweep,
+                                                            params.secondaryControl,
+                                                            params.tertiaryControl,
+                                                            params.potTaper,
+                                                            *previewEngine_,
+                                                            componentValues);
+    }
+
     return result;
 }
 
@@ -532,6 +693,12 @@ void Ds1OpampAcPanel::applyRebuildResult(RebuildResult&& result)
 {
     busy_ = false;
     plotKind_ = result.plotKind;
+    if (! result.previewOnly)
+        lastResponse_ = std::move(result.response);
+
+    if (result.previewOnly)
+        lastSinePreview_ = std::move(result.sinePreview);
+
     if (result.magnitudeAxisRecomputed && isValidMagnitudeAxis(result.magnitudeAxis))
     {
         fixedMagnitudeAxis_ = result.magnitudeAxis;
@@ -547,8 +714,6 @@ void Ds1OpampAcPanel::applyRebuildResult(RebuildResult&& result)
         fixedMagnitudeAxisSchematicValues_ = schematicValues_;
         hasFixedMagnitudeAxis_ = true;
     }
-    lastResponse_ = std::move(result.response);
-    lastSinePreview_ = std::move(result.sinePreview);
     refreshCurveViews();
     resized();
     repaint();

@@ -26,6 +26,7 @@ public:
 
     [[nodiscard]] const DynamicPluginCatalog& pluginCatalog() const noexcept { return catalog_; }
     [[nodiscard]] int currentPluginIndex() const;
+    [[nodiscard]] juce::String currentCompositeKey() const;
     void rescanPlugins();
 
 protected:
