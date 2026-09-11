@@ -315,8 +315,6 @@ void KbussEffectEngine::setProcessorBypassed (kbuss::ObjectId processorId, bool 
 
 void KbussEffectEngine::setBypass (bool shouldBypass)
 {
-    if (bypassAll_ == shouldBypass)
-        return;
     bypassAll_ = shouldBypass;
     if (middleProcessorId_ != kbuss::kInvalidObjectId)
         sendProcessorBypass (middleProcessorId_, shouldBypass);

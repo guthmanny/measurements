@@ -266,6 +266,18 @@ void AudioEffectFrameworkProcessor::updateEffectParameters()
 void AudioEffectFrameworkProcessor::syncMiddleProcessingQuality()
 {
   ensureEffectEngine();
+
+  // set_quality / prepare rebuild the OS tree and are not concurrent-safe with process().
+  struct ScopedSuspend
+  {
+    explicit ScopedSuspend (juce::AudioProcessor& p) : processor (p)
+    {
+      processor.suspendProcessing (true);
+    }
+    ~ScopedSuspend() { processor.suspendProcessing (false); }
+    juce::AudioProcessor& processor;
+  } suspend (*this);
+
   applyProcessingQualityFromParameters();
 
   if (auto* proc = getMinibussEngine().getMiddleProcessor())
@@ -951,6 +963,9 @@ const aef::dynamic_plugin_params::Meta* AudioEffectFrameworkProcessor::findDynam
 
 void AudioEffectFrameworkProcessor::setMiddleParamDomain(const juce::String& paramId, float domainValue)
 {
+  if (aef::kbuss_param_ui::isFooterQualityParam(paramId.toStdString()))
+    return;
+
   middleParamDomains_.set(paramId, domainValue);
 
   ensureEffectEngine();
@@ -997,6 +1012,8 @@ void AudioEffectFrameworkProcessor::resetMiddleProcessorParamDefaults()
     {
       // Nested aliases (preamp.bass.control vs bass) share one pot. Pushing both
       // every block fights and zipper-clicks the white-box solve.
+      if (aef::kbuss_param_ui::isFooterQualityParam(desc.id))
+        continue;
       if (aef::kbuss_param_ui::isUserFacingParam(desc, topLevelIds))
         middleParamDomains_.set(juce::String(desc.id), desc.default_domain);
     }
@@ -1031,6 +1048,9 @@ void AudioEffectFrameworkProcessor::pushMiddleProcessorParamDomains()
   for (auto it = middleParamDomains_.begin(); it != middleParamDomains_.end(); ++it)
   {
     const auto key = it.getKey().toStdString();
+    if (aef::kbuss_param_ui::isFooterQualityParam(key))
+      continue;
+
     const auto* desc = proc->parameter(key);
     if (desc != nullptr && ! aef::kbuss_param_ui::isUserFacingParam(*desc, topLevelIds))
       continue;
