@@ -7,7 +7,6 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "AefAudioUtils.h"
 #include "DynamicMiddleProcessorEffectEngine.h"
-#include "MudspAssetResolver.h"
 
 namespace
 {
@@ -59,10 +58,6 @@ void addPluginChoiceParameter (juce::AudioProcessorValueTreeState& apvts,
 
 LittleHostProcessor::LittleHostProcessor()
 {
-    const bool catalogLoaded = white_box_lab::MudspAssetResolver::get().load();
-    if (! catalogLoaded)
-        juce::Logger::writeToLog ("LittleHost: MuDSP catalog not found — schematic UI disabled");
-
     catalog_.scan (pluginSearchDirs());
     addPluginChoiceParameter (parameters.valueTreeState, catalog_.displayNames());
     parameters.valueTreeState.addParameterListener (kPluginChoiceParamId, this);

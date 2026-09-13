@@ -6,6 +6,8 @@
 #include <atom/SvgView.h>
 
 #include <cmath>
+#include <cstddef>
+#include <iterator>
 #include <limits>
 #include <optional>
 
@@ -22,6 +24,14 @@ namespace ds1_ac
 
     namespace
     {
+        enum DeviceFlag : unsigned
+        {
+            DevNone = 0,
+            DevOpamp = 1u << 0,
+            DevDiode = 1u << 1,
+            DevBjt = 1u << 2,
+        };
+
         struct StageInfo
         {
             CircuitKind kind;
@@ -30,45 +40,292 @@ namespace ds1_ac
             const char* label;
             const char* processFn;
             const char* svgRel;
+            const char* primaryControl;
+            const char* secondaryControl;
+            const char* tertiaryControl;
+            unsigned devices;
+            bool cheapAc;
+            bool groundReferenced;
+            double previewAmp;
         };
 
-        constexpr StageInfo kDs1Stages[] = {
+        constexpr StageInfo kCircuits[] = {
             {CircuitKind::BjtFollower, "input", "bjt_follower", "Input BJT",
-             "nx_bjt_follower_process_f32", "assets/schematics/core/nonlinear_circuits/bjt_follower.svg"},
+             "nx_bjt_follower_process_f32", "assets/schematics/core/nonlinear_circuits/bjt_follower.svg",
+             nullptr, nullptr, nullptr, DevBjt, true, false, 0.01},
             {CircuitKind::BjtCommonEmitter, "emitter", "bjt_common_emitter", "BJT Emitter",
-             "nx_bjt_common_emitter_process_f32", "assets/schematics/core/nonlinear_circuits/bjt_common_emitter.svg"},
+             "nx_bjt_common_emitter_process_f32", "assets/schematics/core/nonlinear_circuits/bjt_common_emitter.svg",
+             nullptr, nullptr, nullptr, DevBjt, true, true, 0.2},
             {CircuitKind::Ds1Opamp, "opamp", "ds1_opamp", "Op Amp",
-             "nx_ds1_opamp_process_f32", "assets/schematics/core/linear_circuits/ds1_opamp.svg"},
+             "nx_ds1_opamp_process_f32", "assets/schematics/core/linear_circuits/ds1_opamp.svg",
+             "Gain", nullptr, nullptr, DevOpamp, true, false, 1.0},
             {CircuitKind::Ds1Clipper, "clipper", "ds1_clipper", "Clipper / Tone / Level",
-             "nx_ds1_clipper_process_f32", "assets/schematics/core/nonlinear_circuits/ds1_clipper.svg"},
+             "nx_ds1_clipper_process_f32", "assets/schematics/core/nonlinear_circuits/ds1_clipper.svg",
+             "Tone", "Level", nullptr, DevDiode, false, false, 0.05},
             {CircuitKind::BjtFollowerOut, "output", "bjt_follower_out", "Output BJT",
-             "nx_bjt_follower_out_process_f32", "assets/schematics/core/nonlinear_circuits/bjt_follower_out.svg"},
+             "nx_bjt_follower_out_process_f32", "assets/schematics/core/nonlinear_circuits/bjt_follower_out.svg",
+             nullptr, nullptr, nullptr, DevBjt, true, false, 0.01},
+            {CircuitKind::Od1Drive, "drive", "od1_drive", "OD-1 Drive",
+             "nx_od1_drive_process_f32", "assets/schematics/core/nonlinear_circuits/od1_drive.svg",
+             "Drive", nullptr, nullptr, DevOpamp | DevDiode, false, false, 0.05},
+            {CircuitKind::Sd1Tone, "tone", "sd1_tone", "SD-1 Tone",
+             "nx_sd1_tone_process_f32", "assets/schematics/core/linear_circuits/sd1_tone.svg",
+             "Tone", nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::RcLevel, "level", "rc_level", "Level",
+             "nx_rc_level_process_f32", "assets/schematics/core/linear_circuits/rc_level.svg",
+             "Level", nullptr, nullptr, DevNone, true, false, 1.0},
+            {CircuitKind::Od1Post, "post", "od1_post", "OD-1 Post",
+             "nx_od1_post_process_f32", "assets/schematics/core/linear_circuits/od1_post.svg",
+             nullptr, nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::AcBoosterDrive, "drive", "ac_booster_drive", "AC Booster Drive",
+             "nx_ac_booster_drive_process_f32", "assets/schematics/core/nonlinear_circuits/ac_booster_drive.svg",
+             "Gain", nullptr, nullptr, DevOpamp | DevDiode, false, false, 0.05},
+            {CircuitKind::AcBoosterEq, "eq", "ac_booster_eq", "AC Booster EQ",
+             "nx_ac_booster_eq_process_f32", "assets/schematics/core/linear_circuits/ac_booster_eq.svg",
+             "Bass", "Treble", nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::RcBoosterDrive1, "drive", "rc_booster_drive1", "RC Booster Drive",
+             "nx_rc_booster_drive1_process_f32", "assets/schematics/core/nonlinear_circuits/rc_booster_drive1.svg",
+             "Gain", nullptr, nullptr, DevOpamp | DevDiode, false, false, 0.05},
+            {CircuitKind::DsPlusOpamp, "opamp", "ds_plus_opamp", "Distortion+ Opamp",
+             "nx_ds_plus_opamp_process_f32", "assets/schematics/core/linear_circuits/ds_plus_opamp.svg",
+             "Distortion", nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::Ts9Opamp, "opamp", "ts9_opamp", "TS9 Opamp",
+             "nx_ts9_opamp_process_f32", "assets/schematics/core/nonlinear_circuits/ts9_opamp.svg",
+             "Drive", nullptr, nullptr, DevOpamp | DevDiode, false, false, 0.05},
+            {CircuitKind::Ts9Tone, "tone", "ts9_tone", "TS9 Tone",
+             "nx_ts9_tone_process_f32", "assets/schematics/core/linear_circuits/ts9_tone.svg",
+             "Tone", nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::KlonCentaur, "drive", "klon_centaur", "Klon Drive",
+             "nx_klon_centaur_process_f32", "assets/schematics/core/nonlinear_circuits/klon_centaur.svg",
+             "Gain", nullptr, nullptr, DevOpamp | DevDiode, false, false, 0.05},
+            {CircuitKind::KlonCentaurTone, "tone", "klon_centaur_tone", "Klon Tone",
+             "nx_klon_centaur_tone_process_f32", "assets/schematics/core/linear_circuits/klon_centaur_tone.svg",
+             "Treble", nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::GuvnorPreamp, "preamp", "guvnor_preamp", "Preamp",
+             "nx_guvnor_preamp_process_f32", "assets/schematics/core/linear_circuits/guvnor_preamp.svg",
+             "Gain", nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::GuvnorPostamp, "postamp", "guvnor_postamp", "Postamp",
+             "nx_guvnor_postamp_process_f32", "assets/schematics/core/linear_circuits/guvnor_postamp.svg",
+             "Gain", nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::GuvnorClipper, "clipper", "guvnor_clipper", "Clipper",
+             "nx_guvnor_clipper_process_f32", "assets/schematics/core/nonlinear_circuits/guvnor_clipper.svg",
+             "Bass", "Mid", "Treble", DevDiode, false, false, 0.05},
+            {CircuitKind::GuvnorLevel, "level", "guvnor_level", "Level",
+             "nx_guvnor_level_process_f32", "assets/schematics/core/linear_circuits/guvnor_level.svg",
+             "Level", nullptr, nullptr, DevNone, true, false, 1.0},
+            {CircuitKind::DiodeClipper, "clipper", "diode_clipper", "Diode Clipper",
+             "nx_diode_clipper_process_f32", "assets/schematics/core/nonlinear_circuits/diode_clipper.svg",
+             "Level", nullptr, nullptr, DevDiode, false, false, 0.05},
+        };
+
+        struct PedalStage
+        {
+            CircuitKind kind;
+            const char* topologyId;
+            const char* label;
+        };
+
+        struct PedalInfo
+        {
+            PedalKind kind;
+            const char* catalogKey;
+            const char* displayName;
+            const char* svgRel;
+            const PedalStage* stages;
+            int stageCount;
+        };
+
+        constexpr PedalStage kDs1PedalStages[] = {
+            {CircuitKind::BjtFollower, "input", "Input BJT"},
+            {CircuitKind::BjtCommonEmitter, "emitter", "BJT Emitter"},
+            {CircuitKind::Ds1Opamp, "opamp", "Op Amp"},
+            {CircuitKind::Ds1Clipper, "clipper", "Clipper / Tone / Level"},
+            {CircuitKind::BjtFollowerOut, "output", "Output BJT"},
+        };
+        constexpr PedalStage kSd1PedalStages[] = {
+            {CircuitKind::BjtFollower, "input", "Input Follower"},
+            {CircuitKind::Od1Drive, "drive", "OD-1 Drive"},
+            {CircuitKind::Sd1Tone, "tone", "Tone"},
+            {CircuitKind::RcLevel, "level", "Level"},
+            {CircuitKind::BjtFollowerOut, "output", "Output Follower"},
+        };
+        constexpr PedalStage kOd1PedalStages[] = {
+            {CircuitKind::BjtFollower, "input", "Input Follower"},
+            {CircuitKind::Od1Drive, "drive", "Drive"},
+            {CircuitKind::Od1Post, "post", "Post"},
+            {CircuitKind::RcLevel, "level", "Level"},
+            {CircuitKind::BjtFollowerOut, "output", "Output Follower"},
+        };
+        constexpr PedalStage kAcBoosterPedalStages[] = {
+            {CircuitKind::BjtFollower, "input", "Input Follower"},
+            {CircuitKind::AcBoosterDrive, "drive", "Drive"},
+            {CircuitKind::AcBoosterEq, "eq", "EQ"},
+            {CircuitKind::RcLevel, "level", "Level"},
+            {CircuitKind::BjtFollowerOut, "output", "Output Follower"},
+        };
+        constexpr PedalStage kRcBoosterPedalStages[] = {
+            {CircuitKind::BjtFollower, "input", "Input Follower"},
+            {CircuitKind::RcBoosterDrive1, "drive", "Drive"},
+            {CircuitKind::AcBoosterEq, "eq", "EQ"},
+            {CircuitKind::RcLevel, "level", "Level"},
+            {CircuitKind::BjtFollowerOut, "output", "Output Follower"},
+        };
+        constexpr PedalStage kDistortionPlusPedalStages[] = {
+            {CircuitKind::DsPlusOpamp, "opamp", "Opamp"},
+            {CircuitKind::DiodeClipper, "clipper", "Diode Clipper"},
+        };
+        constexpr PedalStage kTs9PedalStages[] = {
+            {CircuitKind::BjtFollower, "input", "Input Follower"},
+            {CircuitKind::Ts9Opamp, "opamp", "TS9 Opamp"},
+            {CircuitKind::Ts9Tone, "tone", "Tone"},
+            {CircuitKind::RcLevel, "level", "Level"},
+            {CircuitKind::BjtFollowerOut, "output", "Output Follower"},
+        };
+        constexpr PedalStage kKlonPedalStages[] = {
+            {CircuitKind::KlonCentaur, "drive", "Drive"},
+            {CircuitKind::KlonCentaurTone, "tone", "Tone"},
+            {CircuitKind::RcLevel, "level", "Level"},
+        };
+        constexpr PedalStage kGuvnorPedalStages[] = {
+            {CircuitKind::GuvnorPreamp, "preamp", "Preamp"},
+            {CircuitKind::GuvnorPostamp, "postamp", "Postamp"},
+            {CircuitKind::GuvnorClipper, "clipper", "Clipper"},
+            {CircuitKind::GuvnorLevel, "level", "Level"},
+        };
+
+        constexpr PedalInfo kPedals[] = {
+            {PedalKind::Ds1, "ds1", "Boss DS-1",
+             "assets/schematics/extensions/white_box/pedals/ds1.svg",
+             kDs1PedalStages, static_cast<int>(std::size(kDs1PedalStages))},
+            {PedalKind::Sd1, "sd1", "Boss SD-1",
+             "assets/schematics/extensions/white_box/pedals/sd1.svg",
+             kSd1PedalStages, static_cast<int>(std::size(kSd1PedalStages))},
+            {PedalKind::Od1, "od1", "Boss OD-1",
+             "assets/schematics/extensions/white_box/pedals/od1.svg",
+             kOd1PedalStages, static_cast<int>(std::size(kOd1PedalStages))},
+            {PedalKind::AcBooster, "ac_booster", "AC Booster",
+             "assets/schematics/extensions/white_box/pedals/ac_booster.svg",
+             kAcBoosterPedalStages, static_cast<int>(std::size(kAcBoosterPedalStages))},
+            {PedalKind::RcBooster, "rc_booster", "RC Booster",
+             "assets/schematics/extensions/white_box/pedals/rc_booster.svg",
+             kRcBoosterPedalStages, static_cast<int>(std::size(kRcBoosterPedalStages))},
+            {PedalKind::DistortionPlus, "distortion_plus", "Distortion+",
+             "assets/schematics/extensions/white_box/pedals/distortion_plus.svg",
+             kDistortionPlusPedalStages, static_cast<int>(std::size(kDistortionPlusPedalStages))},
+            {PedalKind::Ts9, "ts9", "Boss TS-9",
+             "assets/schematics/extensions/white_box/pedals/ts9.svg",
+             kTs9PedalStages, static_cast<int>(std::size(kTs9PedalStages))},
+            {PedalKind::Klon, "klon", "Klon Centaur",
+             "assets/schematics/extensions/white_box/pedals/klon.svg",
+             kKlonPedalStages, static_cast<int>(std::size(kKlonPedalStages))},
+            {PedalKind::Guvnor, "guvnor", "Guv'nor",
+             "assets/schematics/extensions/white_box/pedals/guvnor.svg",
+             kGuvnorPedalStages, static_cast<int>(std::size(kGuvnorPedalStages))},
         };
 
         const StageInfo& stageInfo(CircuitKind circuit) noexcept
         {
-            for (const auto& stage : kDs1Stages)
+            for (const auto& stage : kCircuits)
             {
                 if (stage.kind == circuit)
                     return stage;
             }
 
-            return kDs1Stages[2];
+            return kCircuits[0];
+        }
+
+        const PedalInfo& pedalInfo(PedalKind pedal) noexcept
+        {
+            for (const auto& info : kPedals)
+            {
+                if (info.kind == pedal)
+                    return info;
+            }
+
+            return kPedals[0];
+        }
+
+        const PedalStage* findPedalStage(PedalKind pedal, CircuitKind circuit) noexcept
+        {
+            const auto& info = pedalInfo(pedal);
+            for (int i = 0; i < info.stageCount; ++i)
+            {
+                if (info.stages[i].kind == circuit)
+                    return &info.stages[i];
+            }
+
+            return nullptr;
         }
     } // namespace
 
     const char* compositeDisplayName() noexcept
     {
-        return "Boss DS-1";
+        return compositeDisplayName(PedalKind::Ds1);
+    }
+
+    const char* compositeDisplayName(PedalKind pedal) noexcept
+    {
+        return pedalInfo(pedal).displayName;
     }
 
     const char* compositeSvgRelativePath() noexcept
     {
-        return "assets/schematics/extensions/white_box/pedals/ds1.svg";
+        return compositeSvgRelativePath(PedalKind::Ds1);
+    }
+
+    const char* compositeSvgRelativePath(PedalKind pedal) noexcept
+    {
+        return pedalInfo(pedal).svgRel;
+    }
+
+    const char* pedalCatalogKey(PedalKind pedal) noexcept
+    {
+        return pedalInfo(pedal).catalogKey;
+    }
+
+    int pedalStageCount(PedalKind pedal) noexcept
+    {
+        return pedalInfo(pedal).stageCount;
+    }
+
+    CircuitKind pedalStageCircuit(PedalKind pedal, int index) noexcept
+    {
+        const auto& info = pedalInfo(pedal);
+        if (index < 0 || index >= info.stageCount)
+            return info.stages[0].kind;
+        return info.stages[index].kind;
+    }
+
+    const char* pedalStageTopologyId(PedalKind pedal, int index) noexcept
+    {
+        const auto& info = pedalInfo(pedal);
+        if (index < 0 || index >= info.stageCount)
+            return info.stages[0].topologyId;
+        return info.stages[index].topologyId;
+    }
+
+    const char* pedalStageLabel(PedalKind pedal, int index) noexcept
+    {
+        const auto& info = pedalInfo(pedal);
+        if (index < 0 || index >= info.stageCount)
+            return info.stages[0].label;
+        return info.stages[index].label;
+    }
+
+    juce::String pedalStageMenuLabel(PedalKind pedal, int index)
+    {
+        return juce::String(pedalStageTopologyId(pedal, index)) + " — " + pedalStageLabel(pedal, index);
     }
 
     const char* circuitTopologyId(CircuitKind circuit) noexcept
     {
+        return stageInfo(circuit).topologyId;
+    }
+
+    const char* circuitTopologyId(PedalKind pedal, CircuitKind circuit) noexcept
+    {
+        if (const auto* stage = findPedalStage(pedal, circuit))
+            return stage->topologyId;
         return stageInfo(circuit).topologyId;
     }
 
@@ -94,31 +351,20 @@ namespace ds1_ac
 
     const char* controlParameterName(CircuitKind circuit) noexcept
     {
-        switch (circuit)
-        {
-        case CircuitKind::Ds1Opamp:
-            return "Gain";
-        case CircuitKind::Ds1Clipper:
-            return "Tone";
-        case CircuitKind::BjtFollower:
-        case CircuitKind::BjtCommonEmitter:
-        case CircuitKind::BjtFollowerOut:
-            return "Control";
-        }
-
-        return "Control";
+        const auto* name = stageInfo(circuit).primaryControl;
+        return name != nullptr ? name : "Control";
     }
 
     const char* secondaryControlParameterName(CircuitKind circuit) noexcept
     {
-        if (circuit == CircuitKind::Ds1Clipper)
-            return "Level";
-        return "Control";
+        const auto* name = stageInfo(circuit).secondaryControl;
+        return name != nullptr ? name : "Control";
     }
 
-    const char* tertiaryControlParameterName(CircuitKind) noexcept
+    const char* tertiaryControlParameterName(CircuitKind circuit) noexcept
     {
-        return "Control";
+        const auto* name = stageInfo(circuit).tertiaryControl;
+        return name != nullptr ? name : "Control";
     }
 
     const char* circuitProcessFunctionName(CircuitKind circuit) noexcept
@@ -133,33 +379,22 @@ namespace ds1_ac
 
     bool circuitUsesOpampModel(CircuitKind circuit) noexcept
     {
-        return circuit == CircuitKind::Ds1Opamp;
+        return (stageInfo(circuit).devices & DevOpamp) != 0;
     }
 
     bool circuitUsesDiodeModel(CircuitKind circuit) noexcept
     {
-        return circuit == CircuitKind::Ds1Clipper;
+        return (stageInfo(circuit).devices & DevDiode) != 0;
     }
 
     bool circuitUsesBjtModel(CircuitKind circuit) noexcept
     {
-        switch (circuit)
-        {
-        case CircuitKind::BjtFollower:
-        case CircuitKind::BjtFollowerOut:
-        case CircuitKind::BjtCommonEmitter:
-            return true;
-        case CircuitKind::Ds1Opamp:
-        case CircuitKind::Ds1Clipper:
-            return false;
-        }
-
-        return false;
+        return (stageInfo(circuit).devices & DevBjt) != 0;
     }
 
     bool circuitAcSweepIsCheap(CircuitKind circuit) noexcept
     {
-        return circuitUsesBjtModel(circuit);
+        return stageInfo(circuit).cheapAc;
     }
 
     bool circuitUsesJfetModel(CircuitKind) noexcept
@@ -169,18 +404,7 @@ namespace ds1_ac
 
     bool circuitHasPrimaryControl(CircuitKind circuit) noexcept
     {
-        switch (circuit)
-        {
-        case CircuitKind::Ds1Opamp:
-        case CircuitKind::Ds1Clipper:
-            return true;
-        case CircuitKind::BjtFollower:
-        case CircuitKind::BjtCommonEmitter:
-        case CircuitKind::BjtFollowerOut:
-            return false;
-        }
-
-        return false;
+        return stageInfo(circuit).primaryControl != nullptr;
     }
 
     bool circuitUsesPotTaper(CircuitKind circuit) noexcept
@@ -190,16 +414,45 @@ namespace ds1_ac
 
     bool circuitHasSecondaryControl(CircuitKind circuit) noexcept
     {
-        return circuit == CircuitKind::Ds1Clipper;
+        return stageInfo(circuit).secondaryControl != nullptr;
     }
 
-    bool circuitHasTertiaryControl(CircuitKind) noexcept
+    bool circuitHasTertiaryControl(CircuitKind circuit) noexcept
     {
-        return false;
+        return stageInfo(circuit).tertiaryControl != nullptr;
     }
 
-    nx_pot_taper_e defaultPotTaper(CircuitKind) noexcept
+    nx_pot_taper_e defaultPotTaper(CircuitKind circuit) noexcept
     {
+        switch (circuit)
+        {
+        case CircuitKind::Sd1Tone:
+        case CircuitKind::Ts9Tone:
+            return NX_POT_TAPER_G;
+        case CircuitKind::DsPlusOpamp:
+            return NX_POT_TAPER_C;
+        case CircuitKind::BjtFollower:
+        case CircuitKind::BjtCommonEmitter:
+        case CircuitKind::Ds1Opamp:
+        case CircuitKind::Ds1Clipper:
+        case CircuitKind::BjtFollowerOut:
+        case CircuitKind::Od1Drive:
+        case CircuitKind::RcLevel:
+        case CircuitKind::Od1Post:
+        case CircuitKind::AcBoosterDrive:
+        case CircuitKind::AcBoosterEq:
+        case CircuitKind::RcBoosterDrive1:
+        case CircuitKind::Ts9Opamp:
+        case CircuitKind::KlonCentaur:
+        case CircuitKind::KlonCentaurTone:
+        case CircuitKind::GuvnorPreamp:
+        case CircuitKind::GuvnorPostamp:
+        case CircuitKind::GuvnorClipper:
+        case CircuitKind::GuvnorLevel:
+        case CircuitKind::DiodeClipper:
+            return NX_POT_TAPER_LINEAR;
+        }
+
         return NX_POT_TAPER_LINEAR;
     }
 
@@ -895,12 +1148,12 @@ namespace ds1_ac
                                        nx_jfet_n_model_e jfetModel,
                                        double control,
                                        double secondaryControl,
-                                       double tertiaryControl)
+                                       double tertiaryControl,
+                                       nx_pot_taper_e potTaper)
         {
-            juce::ignoreUnused(jfetModel, tertiaryControl);
+            juce::ignoreUnused(jfetModel);
 
-            juce::String title = juce::String(compositeDisplayName()) + "  |  "
-                                 + circuitStageMenuLabel(circuit);
+            juce::String title = circuitStageMenuLabel(circuit);
 
             if (circuitUsesOpampModel(circuit))
                 title += "  |  " + juce::String(opampModelDisplayName(model));
@@ -910,10 +1163,14 @@ namespace ds1_ac
                 title += "  |  " + juce::String(bjtModelDisplayName(bjtModel));
 
             if (circuitHasPrimaryControl(circuit))
-                title += "  |  " + juce::String(controlParameterName(circuit)) + " " + juce::String(control, 2);
+                title += "  |  " + juce::String(controlParameterName(circuit)) + " " + juce::String(control, 2)
+                         + "  |  " + juce::String(potTaperDisplayName(potTaper));
             if (circuitHasSecondaryControl(circuit))
                 title += "  |  " + juce::String(secondaryControlParameterName(circuit)) + " "
                          + juce::String(secondaryControl, 2);
+            if (circuitHasTertiaryControl(circuit))
+                title += "  |  " + juce::String(tertiaryControlParameterName(circuit)) + " "
+                         + juce::String(tertiaryControl, 2);
 
             return title;
         }
@@ -951,6 +1208,24 @@ namespace ds1_ac
         {
             updatePotTaper(clipper, nx_ds1_clipper_get_tone_pot_f32, nx_ds1_clipper_set_tone_pot_f32, taper);
             updatePotTaper(clipper, nx_ds1_clipper_get_level_pot_f32, nx_ds1_clipper_set_level_pot_f32, taper);
+        }
+
+        template<typename Inst, typename Config>
+        void runConfigAcSweep(Inst* inst,
+                              nx_result_t (*getConfig)(const Inst*, Config*),
+                              void (*acStatic)(const Config*, double, const double*, double*, double*, size_t),
+                              double sampleRateHz,
+                              const std::vector<double>& freqs,
+                              std::vector<double>& magDb,
+                              std::vector<double>& phaseDeg)
+        {
+            if (inst == nullptr || getConfig == nullptr || acStatic == nullptr)
+                return;
+
+            Config cfg{};
+            if (getConfig(inst, &cfg) != NX_SUCCESS)
+                return;
+            acStatic(&cfg, sampleRateHz, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
         }
 
         void runDs1AcSweep(nx_ds1_opamp_f32_t* opamp,
@@ -1033,6 +1308,289 @@ namespace ds1_ac
             nx_bjt_common_emitter_ac_static_f32(&cfg, sampleRateHz, freqs.data(), magDb.data(), phaseDeg.data(), freqs.size());
         }
 
+        void runOd1DriveAcSweep(nx_od1_drive_f32_t* drive,
+                                nx_opamp_model_e model,
+                                nx_diode_model_t diodeModel,
+                                nx_pot_taper_e potTaper,
+                                double control,
+                                double sampleRateHz,
+                                const std::vector<double>& freqs,
+                                std::vector<double>& magDb,
+                                std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(drive, nx_od1_drive_get_drive_pot_f32, nx_od1_drive_set_drive_pot_f32, potTaper);
+            nx_od1_drive_set_opamp_model_f32(drive, model);
+            nx_od1_drive_set_diode_model_f32(drive, diodeModel);
+            nx_od1_drive_set_drive_control_f32(drive, clampControl(control));
+            runConfigAcSweep(drive, nx_od1_drive_get_config_f32, nx_od1_drive_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runSd1ToneAcSweep(nx_sd1_tone_f32_t* tone,
+                               nx_opamp_model_e model,
+                               nx_pot_taper_e potTaper,
+                               double control,
+                               double sampleRateHz,
+                               const std::vector<double>& freqs,
+                               std::vector<double>& magDb,
+                               std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(tone, nx_sd1_tone_get_tone_pot_f32, nx_sd1_tone_set_tone_pot_f32, potTaper);
+            nx_sd1_tone_set_opamp_model_f32(tone, model);
+            nx_sd1_tone_set_tone_control_f32(tone, clampControl(control));
+            runConfigAcSweep(tone, nx_sd1_tone_get_config_f32, nx_sd1_tone_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runRcLevelAcSweep(nx_rc_level_f32_t* level,
+                               nx_pot_taper_e potTaper,
+                               double control,
+                               double sampleRateHz,
+                               const std::vector<double>& freqs,
+                               std::vector<double>& magDb,
+                               std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(level, nx_rc_level_get_level_pot_f32, nx_rc_level_set_level_pot_f32, potTaper);
+            nx_rc_level_set_level_control_f32(level, clampControl(control));
+            runConfigAcSweep(level, nx_rc_level_get_config_f32, nx_rc_level_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runOd1PostAcSweep(nx_od1_post_f32_t* post,
+                               nx_opamp_model_e model,
+                               double sampleRateHz,
+                               const std::vector<double>& freqs,
+                               std::vector<double>& magDb,
+                               std::vector<double>& phaseDeg)
+        {
+            nx_od1_post_set_opamp_model_f32(post, model);
+            runConfigAcSweep(post, nx_od1_post_get_config_f32, nx_od1_post_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runAcBoosterDriveAcSweep(nx_ac_booster_drive_f32_t* drive,
+                                      nx_opamp_model_e model,
+                                      nx_diode_model_t diodeModel,
+                                      nx_pot_taper_e potTaper,
+                                      double control,
+                                      double sampleRateHz,
+                                      const std::vector<double>& freqs,
+                                      std::vector<double>& magDb,
+                                      std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(drive, nx_ac_booster_drive_get_gain_pot_f32, nx_ac_booster_drive_set_gain_pot_f32, potTaper);
+            nx_ac_booster_drive_set_opamp_model_f32(drive, model);
+            nx_ac_booster_drive_set_diode_model_f32(drive, diodeModel);
+            nx_ac_booster_drive_set_gain_control_f32(drive, clampControl(control));
+            runConfigAcSweep(drive, nx_ac_booster_drive_get_config_f32, nx_ac_booster_drive_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runAcBoosterEqAcSweep(nx_ac_booster_eq_f32_t* eq,
+                                   nx_opamp_model_e model,
+                                   nx_pot_taper_e potTaper,
+                                   double bassControl,
+                                   double trebleControl,
+                                   double sampleRateHz,
+                                   const std::vector<double>& freqs,
+                                   std::vector<double>& magDb,
+                                   std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(eq, nx_ac_booster_eq_get_bass_pot_f32, nx_ac_booster_eq_set_bass_pot_f32, potTaper);
+            updatePotTaper(eq, nx_ac_booster_eq_get_treble_pot_f32, nx_ac_booster_eq_set_treble_pot_f32, potTaper);
+            nx_ac_booster_eq_set_opamp_model_f32(eq, model);
+            nx_ac_booster_eq_set_bass_control_f32(eq, clampControl(bassControl));
+            nx_ac_booster_eq_set_treble_control_f32(eq, clampControl(trebleControl));
+            runConfigAcSweep(eq, nx_ac_booster_eq_get_config_f32, nx_ac_booster_eq_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runRcBoosterDrive1AcSweep(nx_rc_booster_drive1_f32_t* drive,
+                                       nx_opamp_model_e model,
+                                       nx_diode_model_t diodeModel,
+                                       nx_pot_taper_e potTaper,
+                                       double control,
+                                       double sampleRateHz,
+                                       const std::vector<double>& freqs,
+                                       std::vector<double>& magDb,
+                                       std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(drive, nx_rc_booster_drive1_get_gain_pot_f32, nx_rc_booster_drive1_set_gain_pot_f32, potTaper);
+            nx_rc_booster_drive1_set_opamp_model_f32(drive, model);
+            nx_rc_booster_drive1_set_diode_model_f32(drive, diodeModel);
+            nx_rc_booster_drive1_set_gain_control_f32(drive, clampControl(control));
+            runConfigAcSweep(drive, nx_rc_booster_drive1_get_config_f32, nx_rc_booster_drive1_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runDsPlusOpampAcSweep(nx_ds_plus_opamp_f32_t* opamp,
+                                   nx_opamp_model_e model,
+                                   nx_pot_taper_e potTaper,
+                                   double control,
+                                   double sampleRateHz,
+                                   const std::vector<double>& freqs,
+                                   std::vector<double>& magDb,
+                                   std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(opamp, nx_ds_plus_opamp_get_distortion_pot_f32, nx_ds_plus_opamp_set_distortion_pot_f32, potTaper);
+            nx_ds_plus_opamp_set_opamp_model_f32(opamp, model);
+            nx_ds_plus_opamp_set_distortion_control_f32(opamp, clampControl(control));
+            runConfigAcSweep(opamp, nx_ds_plus_opamp_get_config_f32, nx_ds_plus_opamp_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runDiodeClipperAcSweep(nx_diode_clipper_f32_t* clipper,
+                                    nx_diode_model_t diodeModel,
+                                    nx_pot_taper_e potTaper,
+                                    double control,
+                                    double sampleRateHz,
+                                    const std::vector<double>& freqs,
+                                    std::vector<double>& magDb,
+                                    std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(clipper, nx_diode_clipper_get_level_pot_f32, nx_diode_clipper_set_level_pot_f32, potTaper);
+            nx_diode_clipper_set_diode_model_f32(clipper, diodeModel);
+            nx_diode_clipper_set_level_control_f32(clipper, clampControl(control));
+            runConfigAcSweep(clipper, nx_diode_clipper_get_config_f32, nx_diode_clipper_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runTs9OpampAcSweep(nx_ts9_opamp_f32_t* opamp,
+                                nx_opamp_model_e model,
+                                nx_diode_model_t diodeModel,
+                                nx_pot_taper_e potTaper,
+                                double control,
+                                double sampleRateHz,
+                                const std::vector<double>& freqs,
+                                std::vector<double>& magDb,
+                                std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(opamp, nx_ts9_opamp_get_drive_pot_f32, nx_ts9_opamp_set_drive_pot_f32, potTaper);
+            nx_ts9_opamp_set_opamp_model_f32(opamp, model);
+            nx_ts9_opamp_set_diode_model_f32(opamp, diodeModel);
+            nx_ts9_opamp_set_drive_control_f32(opamp, clampControl(control));
+            runConfigAcSweep(opamp, nx_ts9_opamp_get_config_f32, nx_ts9_opamp_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runTs9ToneAcSweep(nx_ts9_tone_f32_t* tone,
+                               nx_opamp_model_e model,
+                               nx_pot_taper_e potTaper,
+                               double control,
+                               double sampleRateHz,
+                               const std::vector<double>& freqs,
+                               std::vector<double>& magDb,
+                               std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(tone, nx_ts9_tone_get_tone_pot_f32, nx_ts9_tone_set_tone_pot_f32, potTaper);
+            nx_ts9_tone_set_opamp_model_f32(tone, model);
+            nx_ts9_tone_set_tone_control_f32(tone, clampControl(control));
+            runConfigAcSweep(tone, nx_ts9_tone_get_config_f32, nx_ts9_tone_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runKlonCentaurAcSweep(nx_klon_centaur_f32_t* drive,
+                                   nx_opamp_model_e model,
+                                   nx_diode_model_t diodeModel,
+                                   nx_pot_taper_e potTaper,
+                                   double control,
+                                   double sampleRateHz,
+                                   const std::vector<double>& freqs,
+                                   std::vector<double>& magDb,
+                                   std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(drive, nx_klon_centaur_get_gain_pot_f32, nx_klon_centaur_set_gain_pot_f32, potTaper);
+            nx_klon_centaur_set_opamp_model_f32(drive, model);
+            nx_klon_centaur_set_diode_model_f32(drive, diodeModel);
+            nx_klon_centaur_set_gain_control_f32(drive, clampControl(control));
+            runConfigAcSweep(drive, nx_klon_centaur_get_config_f32, nx_klon_centaur_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runKlonCentaurToneAcSweep(nx_klon_centaur_tone_f32_t* tone,
+                                       nx_opamp_model_e model,
+                                       nx_pot_taper_e potTaper,
+                                       double control,
+                                       double sampleRateHz,
+                                       const std::vector<double>& freqs,
+                                       std::vector<double>& magDb,
+                                       std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(tone, nx_klon_centaur_tone_get_treble_pot_f32, nx_klon_centaur_tone_set_treble_pot_f32, potTaper);
+            nx_klon_centaur_tone_set_opamp_model_f32(tone, model);
+            nx_klon_centaur_tone_set_treble_control_f32(tone, clampControl(control));
+            runConfigAcSweep(tone, nx_klon_centaur_tone_get_config_f32, nx_klon_centaur_tone_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runGuvnorPreampAcSweep(nx_guvnor_preamp_f32_t* preamp,
+                                    nx_opamp_model_e model,
+                                    nx_pot_taper_e potTaper,
+                                    double control,
+                                    double sampleRateHz,
+                                    const std::vector<double>& freqs,
+                                    std::vector<double>& magDb,
+                                    std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(preamp, nx_guvnor_preamp_get_gain_pot_f32, nx_guvnor_preamp_set_gain_pot_f32, potTaper);
+            nx_guvnor_preamp_set_opamp_model_f32(preamp, model);
+            nx_guvnor_preamp_set_gain_control_f32(preamp, clampControl(control));
+            runConfigAcSweep(preamp, nx_guvnor_preamp_get_config_f32, nx_guvnor_preamp_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runGuvnorPostampAcSweep(nx_guvnor_postamp_f32_t* postamp,
+                                     nx_opamp_model_e model,
+                                     nx_pot_taper_e potTaper,
+                                     double control,
+                                     double sampleRateHz,
+                                     const std::vector<double>& freqs,
+                                     std::vector<double>& magDb,
+                                     std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(postamp, nx_guvnor_postamp_get_gain_pot_f32, nx_guvnor_postamp_set_gain_pot_f32, potTaper);
+            nx_guvnor_postamp_set_opamp_model_f32(postamp, model);
+            nx_guvnor_postamp_set_gain_control_f32(postamp, clampControl(control));
+            runConfigAcSweep(postamp, nx_guvnor_postamp_get_config_f32, nx_guvnor_postamp_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runGuvnorClipperAcSweep(nx_guvnor_clipper_f32_t* clipper,
+                                     nx_diode_model_t diodeModel,
+                                     nx_pot_taper_e potTaper,
+                                     double bassControl,
+                                     double midControl,
+                                     double trebleControl,
+                                     double sampleRateHz,
+                                     const std::vector<double>& freqs,
+                                     std::vector<double>& magDb,
+                                     std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(clipper, nx_guvnor_clipper_get_bass_pot_f32, nx_guvnor_clipper_set_bass_pot_f32, potTaper);
+            updatePotTaper(clipper, nx_guvnor_clipper_get_mid_pot_f32, nx_guvnor_clipper_set_mid_pot_f32, potTaper);
+            updatePotTaper(clipper, nx_guvnor_clipper_get_treble_pot_f32, nx_guvnor_clipper_set_treble_pot_f32, potTaper);
+            nx_guvnor_clipper_set_diode_model_f32(clipper, diodeModel);
+            nx_guvnor_clipper_set_bass_control_f32(clipper, clampControl(bassControl));
+            nx_guvnor_clipper_set_mid_control_f32(clipper, clampControl(midControl));
+            nx_guvnor_clipper_set_treble_control_f32(clipper, clampControl(trebleControl));
+            runConfigAcSweep(clipper, nx_guvnor_clipper_get_config_f32, nx_guvnor_clipper_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runGuvnorLevelAcSweep(nx_guvnor_level_f32_t* level,
+                                   nx_pot_taper_e potTaper,
+                                   double control,
+                                   double sampleRateHz,
+                                   const std::vector<double>& freqs,
+                                   std::vector<double>& magDb,
+                                   std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(level, nx_guvnor_level_get_level_pot_f32, nx_guvnor_level_set_level_pot_f32, potTaper);
+            nx_guvnor_level_set_level_control_f32(level, clampControl(control));
+            runConfigAcSweep(level, nx_guvnor_level_get_config_f32, nx_guvnor_level_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
         AxisRange makeFrequencyAxis(float logMin, float logMax)
         {
             AxisRange range;
@@ -1102,7 +1660,7 @@ namespace ds1_ac
                                          float& maxMag,
                                          const SchematicComponentValues* componentValues)
         {
-            juce::ignoreUnused(jfetModel, tertiaryControl);
+            juce::ignoreUnused(jfetModel);
 
             switch (circuit)
             {
@@ -1126,8 +1684,216 @@ namespace ds1_ac
             case CircuitKind::BjtFollower:
             case CircuitKind::BjtFollowerOut:
             case CircuitKind::BjtCommonEmitter:
+            case CircuitKind::Od1Post:
                 juce::ignoreUnused(bjtModel, sampleRateHz, freqs, magDb, phaseDeg, componentValues);
                 break;
+            case CircuitKind::Od1Drive:
+            {
+                auto* drive = createCircuitInstance<nx_od1_drive_f32_t>(nx_od1_drive_create_f32, circuit, componentValues);
+                if (drive == nullptr)
+                    return;
+                runOd1DriveAcSweep(drive, model, diodeModel, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runOd1DriveAcSweep(drive, model, diodeModel, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_od1_drive_destroy_f32(drive, nullptr);
+                break;
+            }
+            case CircuitKind::Sd1Tone:
+            {
+                auto* tone = createCircuitInstance<nx_sd1_tone_f32_t>(nx_sd1_tone_create_f32, circuit, componentValues);
+                if (tone == nullptr)
+                    return;
+                runSd1ToneAcSweep(tone, model, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runSd1ToneAcSweep(tone, model, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_sd1_tone_destroy_f32(tone, nullptr);
+                break;
+            }
+            case CircuitKind::RcLevel:
+            {
+                auto* level = createCircuitInstance<nx_rc_level_f32_t>(nx_rc_level_create_f32, circuit, componentValues);
+                if (level == nullptr)
+                    return;
+                runRcLevelAcSweep(level, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runRcLevelAcSweep(level, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_rc_level_destroy_f32(level, nullptr);
+                break;
+            }
+            case CircuitKind::AcBoosterDrive:
+            {
+                auto* drive = createCircuitInstance<nx_ac_booster_drive_f32_t>(nx_ac_booster_drive_create_f32, circuit, componentValues);
+                if (drive == nullptr)
+                    return;
+                runAcBoosterDriveAcSweep(drive, model, diodeModel, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runAcBoosterDriveAcSweep(drive, model, diodeModel, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_ac_booster_drive_destroy_f32(drive, nullptr);
+                break;
+            }
+            case CircuitKind::AcBoosterEq:
+            {
+                auto* eq = createCircuitInstance<nx_ac_booster_eq_f32_t>(nx_ac_booster_eq_create_f32, circuit, componentValues);
+                if (eq == nullptr)
+                    return;
+                const double trebleMid = clampControl(secondaryControl);
+                runAcBoosterEqAcSweep(eq, model, potTaper, 0.0, trebleMid, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runAcBoosterEqAcSweep(eq, model, potTaper, 1.0, trebleMid, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runAcBoosterEqAcSweep(eq, model, potTaper, 0.5, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runAcBoosterEqAcSweep(eq, model, potTaper, 0.5, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_ac_booster_eq_destroy_f32(eq, nullptr);
+                break;
+            }
+            case CircuitKind::RcBoosterDrive1:
+            {
+                auto* drive = createCircuitInstance<nx_rc_booster_drive1_f32_t>(nx_rc_booster_drive1_create_f32, circuit, componentValues);
+                if (drive == nullptr)
+                    return;
+                runRcBoosterDrive1AcSweep(drive, model, diodeModel, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runRcBoosterDrive1AcSweep(drive, model, diodeModel, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_rc_booster_drive1_destroy_f32(drive, nullptr);
+                break;
+            }
+            case CircuitKind::DsPlusOpamp:
+            {
+                auto* opamp = createCircuitInstance<nx_ds_plus_opamp_f32_t>(nx_ds_plus_opamp_create_f32, circuit, componentValues);
+                if (opamp == nullptr)
+                    return;
+                runDsPlusOpampAcSweep(opamp, model, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runDsPlusOpampAcSweep(opamp, model, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_ds_plus_opamp_destroy_f32(opamp, nullptr);
+                break;
+            }
+            case CircuitKind::Ts9Opamp:
+            {
+                auto* opamp = createCircuitInstance<nx_ts9_opamp_f32_t>(nx_ts9_opamp_create_f32, circuit, componentValues);
+                if (opamp == nullptr)
+                    return;
+                runTs9OpampAcSweep(opamp, model, diodeModel, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runTs9OpampAcSweep(opamp, model, diodeModel, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_ts9_opamp_destroy_f32(opamp, nullptr);
+                break;
+            }
+            case CircuitKind::Ts9Tone:
+            {
+                auto* tone = createCircuitInstance<nx_ts9_tone_f32_t>(nx_ts9_tone_create_f32, circuit, componentValues);
+                if (tone == nullptr)
+                    return;
+                runTs9ToneAcSweep(tone, model, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runTs9ToneAcSweep(tone, model, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_ts9_tone_destroy_f32(tone, nullptr);
+                break;
+            }
+            case CircuitKind::KlonCentaur:
+            {
+                auto* drive = createCircuitInstance<nx_klon_centaur_f32_t>(nx_klon_centaur_create_f32, circuit, componentValues);
+                if (drive == nullptr)
+                    return;
+                runKlonCentaurAcSweep(drive, model, diodeModel, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runKlonCentaurAcSweep(drive, model, diodeModel, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_klon_centaur_destroy_f32(drive, nullptr);
+                break;
+            }
+            case CircuitKind::KlonCentaurTone:
+            {
+                auto* tone = createCircuitInstance<nx_klon_centaur_tone_f32_t>(nx_klon_centaur_tone_create_f32, circuit, componentValues);
+                if (tone == nullptr)
+                    return;
+                runKlonCentaurToneAcSweep(tone, model, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runKlonCentaurToneAcSweep(tone, model, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_klon_centaur_tone_destroy_f32(tone, nullptr);
+                break;
+            }
+            case CircuitKind::GuvnorPreamp:
+            {
+                auto* preamp = createCircuitInstance<nx_guvnor_preamp_f32_t>(nx_guvnor_preamp_create_f32, circuit, componentValues);
+                if (preamp == nullptr)
+                    return;
+                runGuvnorPreampAcSweep(preamp, model, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runGuvnorPreampAcSweep(preamp, model, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_guvnor_preamp_destroy_f32(preamp, nullptr);
+                break;
+            }
+            case CircuitKind::GuvnorPostamp:
+            {
+                auto* postamp = createCircuitInstance<nx_guvnor_postamp_f32_t>(nx_guvnor_postamp_create_f32, circuit, componentValues);
+                if (postamp == nullptr)
+                    return;
+                runGuvnorPostampAcSweep(postamp, model, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runGuvnorPostampAcSweep(postamp, model, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_guvnor_postamp_destroy_f32(postamp, nullptr);
+                break;
+            }
+            case CircuitKind::GuvnorClipper:
+            {
+                auto* clipper = createCircuitInstance<nx_guvnor_clipper_f32_t>(nx_guvnor_clipper_create_f32, circuit, componentValues);
+                if (clipper == nullptr)
+                    return;
+                const double midMid = clampControl(secondaryControl);
+                const double trebleMid = clampControl(tertiaryControl);
+                runGuvnorClipperAcSweep(clipper, diodeModel, potTaper, 0.0, midMid, trebleMid, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runGuvnorClipperAcSweep(clipper, diodeModel, potTaper, 1.0, midMid, trebleMid, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runGuvnorClipperAcSweep(clipper, diodeModel, potTaper, 0.5, 0.0, trebleMid, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runGuvnorClipperAcSweep(clipper, diodeModel, potTaper, 0.5, 1.0, trebleMid, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runGuvnorClipperAcSweep(clipper, diodeModel, potTaper, 0.5, midMid, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runGuvnorClipperAcSweep(clipper, diodeModel, potTaper, 0.5, midMid, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_guvnor_clipper_destroy_f32(clipper, nullptr);
+                break;
+            }
+            case CircuitKind::GuvnorLevel:
+            {
+                auto* level = createCircuitInstance<nx_guvnor_level_f32_t>(nx_guvnor_level_create_f32, circuit, componentValues);
+                if (level == nullptr)
+                    return;
+                runGuvnorLevelAcSweep(level, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runGuvnorLevelAcSweep(level, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_guvnor_level_destroy_f32(level, nullptr);
+                break;
+            }
+            case CircuitKind::DiodeClipper:
+            {
+                auto* clipper = createCircuitInstance<nx_diode_clipper_f32_t>(nx_diode_clipper_create_f32, circuit, componentValues);
+                if (clipper == nullptr)
+                    return;
+                runDiodeClipperAcSweep(clipper, diodeModel, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runDiodeClipperAcSweep(clipper, diodeModel, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_diode_clipper_destroy_f32(clipper, nullptr);
+                break;
+            }
             case CircuitKind::Ds1Opamp:
             default:
             {
@@ -1159,7 +1925,7 @@ namespace ds1_ac
                                 std::vector<double>& phaseDeg,
                                 const SchematicComponentValues* componentValues)
         {
-            juce::ignoreUnused(jfetModel, tertiaryControl);
+            juce::ignoreUnused(jfetModel);
 
             switch (circuit)
             {
@@ -1205,6 +1971,168 @@ namespace ds1_ac
                     return false;
                 runBjtCommonEmitterAcSweep(emitter, bjtModel, sampleRateHz, freqs, magDb, phaseDeg);
                 nx_bjt_common_emitter_destroy_f32(emitter, nullptr);
+                return true;
+            }
+            case CircuitKind::Od1Drive:
+            {
+                auto* drive = createCircuitInstance<nx_od1_drive_f32_t>(nx_od1_drive_create_f32, circuit, componentValues);
+                if (drive == nullptr)
+                    return false;
+                runOd1DriveAcSweep(drive, model, diodeModel, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_od1_drive_destroy_f32(drive, nullptr);
+                return true;
+            }
+            case CircuitKind::Sd1Tone:
+            {
+                auto* tone = createCircuitInstance<nx_sd1_tone_f32_t>(nx_sd1_tone_create_f32, circuit, componentValues);
+                if (tone == nullptr)
+                    return false;
+                runSd1ToneAcSweep(tone, model, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sd1_tone_destroy_f32(tone, nullptr);
+                return true;
+            }
+            case CircuitKind::RcLevel:
+            {
+                auto* level = createCircuitInstance<nx_rc_level_f32_t>(nx_rc_level_create_f32, circuit, componentValues);
+                if (level == nullptr)
+                    return false;
+                runRcLevelAcSweep(level, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_rc_level_destroy_f32(level, nullptr);
+                return true;
+            }
+            case CircuitKind::Od1Post:
+            {
+                auto* post = createCircuitInstance<nx_od1_post_f32_t>(nx_od1_post_create_f32, circuit, componentValues);
+                if (post == nullptr)
+                    return false;
+                runOd1PostAcSweep(post, model, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_od1_post_destroy_f32(post, nullptr);
+                return true;
+            }
+            case CircuitKind::AcBoosterDrive:
+            {
+                auto* drive = createCircuitInstance<nx_ac_booster_drive_f32_t>(nx_ac_booster_drive_create_f32, circuit, componentValues);
+                if (drive == nullptr)
+                    return false;
+                runAcBoosterDriveAcSweep(drive, model, diodeModel, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_ac_booster_drive_destroy_f32(drive, nullptr);
+                return true;
+            }
+            case CircuitKind::AcBoosterEq:
+            {
+                auto* eq = createCircuitInstance<nx_ac_booster_eq_f32_t>(nx_ac_booster_eq_create_f32, circuit, componentValues);
+                if (eq == nullptr)
+                    return false;
+                runAcBoosterEqAcSweep(eq, model, potTaper, gainControl, secondaryControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_ac_booster_eq_destroy_f32(eq, nullptr);
+                return true;
+            }
+            case CircuitKind::RcBoosterDrive1:
+            {
+                auto* drive = createCircuitInstance<nx_rc_booster_drive1_f32_t>(nx_rc_booster_drive1_create_f32, circuit, componentValues);
+                if (drive == nullptr)
+                    return false;
+                runRcBoosterDrive1AcSweep(drive, model, diodeModel, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_rc_booster_drive1_destroy_f32(drive, nullptr);
+                return true;
+            }
+            case CircuitKind::DsPlusOpamp:
+            {
+                auto* opamp = createCircuitInstance<nx_ds_plus_opamp_f32_t>(nx_ds_plus_opamp_create_f32, circuit, componentValues);
+                if (opamp == nullptr)
+                    return false;
+                runDsPlusOpampAcSweep(opamp, model, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_ds_plus_opamp_destroy_f32(opamp, nullptr);
+                return true;
+            }
+            case CircuitKind::Ts9Opamp:
+            {
+                auto* opamp = createCircuitInstance<nx_ts9_opamp_f32_t>(nx_ts9_opamp_create_f32, circuit, componentValues);
+                if (opamp == nullptr)
+                    return false;
+                runTs9OpampAcSweep(opamp, model, diodeModel, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_ts9_opamp_destroy_f32(opamp, nullptr);
+                return true;
+            }
+            case CircuitKind::Ts9Tone:
+            {
+                auto* tone = createCircuitInstance<nx_ts9_tone_f32_t>(nx_ts9_tone_create_f32, circuit, componentValues);
+                if (tone == nullptr)
+                    return false;
+                runTs9ToneAcSweep(tone, model, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_ts9_tone_destroy_f32(tone, nullptr);
+                return true;
+            }
+            case CircuitKind::KlonCentaur:
+            {
+                auto* drive = createCircuitInstance<nx_klon_centaur_f32_t>(nx_klon_centaur_create_f32, circuit, componentValues);
+                if (drive == nullptr)
+                    return false;
+                runKlonCentaurAcSweep(drive, model, diodeModel, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_klon_centaur_destroy_f32(drive, nullptr);
+                return true;
+            }
+            case CircuitKind::KlonCentaurTone:
+            {
+                auto* tone = createCircuitInstance<nx_klon_centaur_tone_f32_t>(nx_klon_centaur_tone_create_f32, circuit, componentValues);
+                if (tone == nullptr)
+                    return false;
+                runKlonCentaurToneAcSweep(tone, model, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_klon_centaur_tone_destroy_f32(tone, nullptr);
+                return true;
+            }
+            case CircuitKind::GuvnorPreamp:
+            {
+                auto* preamp = createCircuitInstance<nx_guvnor_preamp_f32_t>(nx_guvnor_preamp_create_f32, circuit, componentValues);
+                if (preamp == nullptr)
+                    return false;
+                runGuvnorPreampAcSweep(preamp, model, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_guvnor_preamp_destroy_f32(preamp, nullptr);
+                return true;
+            }
+            case CircuitKind::GuvnorPostamp:
+            {
+                auto* postamp = createCircuitInstance<nx_guvnor_postamp_f32_t>(nx_guvnor_postamp_create_f32, circuit, componentValues);
+                if (postamp == nullptr)
+                    return false;
+                runGuvnorPostampAcSweep(postamp, model, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_guvnor_postamp_destroy_f32(postamp, nullptr);
+                return true;
+            }
+            case CircuitKind::GuvnorClipper:
+            {
+                auto* clipper = createCircuitInstance<nx_guvnor_clipper_f32_t>(nx_guvnor_clipper_create_f32, circuit, componentValues);
+                if (clipper == nullptr)
+                    return false;
+                runGuvnorClipperAcSweep(clipper,
+                                        diodeModel,
+                                        potTaper,
+                                        gainControl,
+                                        secondaryControl,
+                                        tertiaryControl,
+                                        sampleRateHz,
+                                        freqs,
+                                        magDb,
+                                        phaseDeg);
+                nx_guvnor_clipper_destroy_f32(clipper, nullptr);
+                return true;
+            }
+            case CircuitKind::GuvnorLevel:
+            {
+                auto* level = createCircuitInstance<nx_guvnor_level_f32_t>(nx_guvnor_level_create_f32, circuit, componentValues);
+                if (level == nullptr)
+                    return false;
+                runGuvnorLevelAcSweep(level, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_guvnor_level_destroy_f32(level, nullptr);
+                return true;
+            }
+            case CircuitKind::DiodeClipper:
+            {
+                auto* clipper = createCircuitInstance<nx_diode_clipper_f32_t>(nx_diode_clipper_create_f32, circuit, componentValues);
+                if (clipper == nullptr)
+                    return false;
+                runDiodeClipperAcSweep(clipper, diodeModel, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_diode_clipper_destroy_f32(clipper, nullptr);
                 return true;
             }
             case CircuitKind::Ds1Opamp:
@@ -1328,7 +2256,7 @@ namespace ds1_ac
         safe.sanitise();
 
         AcResponse response;
-        response.title = makeResponseTitle(circuit, model, diodeModel, bjtModel, jfetModel, gainControl, secondaryControl, tertiaryControl);
+        response.title = makeResponseTitle(circuit, model, diodeModel, bjtModel, jfetModel, gainControl, secondaryControl, tertiaryControl, potTaper);
 
         const auto freqs = buildLogFrequencySweep(safe);
         if (freqs.empty())
@@ -1440,7 +2368,7 @@ namespace ds1_ac
         }
 
         preview.vccHalf = static_cast<float>(vcc * 0.5);
-        preview.groundReferenced = (circuit == CircuitKind::BjtCommonEmitter);
+        preview.groundReferenced = stageInfo(circuit).groundReferenced;
         constexpr float kEndpointPadFraction = 0.02f;
         const float endpointPad = preview.vccHalf * kEndpointPadFraction;
         if (preview.groundReferenced)
@@ -1471,20 +2399,7 @@ namespace ds1_ac
 
     double defaultPreviewAmplitude(CircuitKind circuit) noexcept
     {
-        switch (circuit)
-        {
-        case CircuitKind::Ds1Clipper:
-            return 0.05;
-        case CircuitKind::BjtCommonEmitter:
-            return 0.2;
-        case CircuitKind::BjtFollower:
-        case CircuitKind::BjtFollowerOut:
-            return 0.01;
-        case CircuitKind::Ds1Opamp:
-            return 1.0;
-        }
-
-        return 1.0;
+        return stageInfo(circuit).previewAmp;
     }
 
 } // namespace ds1_ac

@@ -9,11 +9,28 @@
 #include "SchematicComponentValues.h"
 
 #include "nudsp/common/components.h"
+#include "nudsp/linear_circuits/ac_booster_eq_f32.h"
 #include "nudsp/linear_circuits/ds1_opamp_f32.h"
+#include "nudsp/linear_circuits/ds_plus_opamp_f32.h"
+#include "nudsp/linear_circuits/od1_post_f32.h"
+#include "nudsp/linear_circuits/guvnor_level_f32.h"
+#include "nudsp/linear_circuits/guvnor_postamp_f32.h"
+#include "nudsp/linear_circuits/guvnor_preamp_f32.h"
+#include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
+#include "nudsp/linear_circuits/rc_level_f32.h"
+#include "nudsp/linear_circuits/sd1_tone_f32.h"
+#include "nudsp/linear_circuits/ts9_tone_f32.h"
+#include "nudsp/nonlinear_circuits/ac_booster_drive_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_common_emitter_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_follower_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_follower_out_f32.h"
+#include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/guvnor_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/klon_centaur_f32.h"
+#include "nudsp/nonlinear_circuits/od1_drive_f32.h"
+#include "nudsp/nonlinear_circuits/rc_booster_drive1_f32.h"
+#include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
 
 namespace atom
 {
@@ -25,14 +42,46 @@ namespace ds1_ac
 
     class SineWavePreviewEngine;
 
+    enum class PedalKind
+    {
+        Ds1,
+        Sd1,
+        Od1,
+        AcBooster,
+        RcBooster,
+        DistortionPlus,
+        Ts9,
+        Klon,
+        Guvnor
+    };
+
     enum class CircuitKind
     {
         BjtFollower,
         BjtCommonEmitter,
         Ds1Opamp,
         Ds1Clipper,
-        BjtFollowerOut
+        BjtFollowerOut,
+        Od1Drive,
+        Sd1Tone,
+        RcLevel,
+        Od1Post,
+        AcBoosterDrive,
+        AcBoosterEq,
+        RcBoosterDrive1,
+        DsPlusOpamp,
+        Ts9Opamp,
+        Ts9Tone,
+        KlonCentaur,
+        KlonCentaurTone,
+        GuvnorPreamp,
+        GuvnorPostamp,
+        GuvnorClipper,
+        GuvnorLevel,
+        DiodeClipper
     };
+
+    constexpr int kCircuitCount = static_cast<int>(CircuitKind::DiodeClipper) + 1;
 
     enum class PlotKind
     {
@@ -93,8 +142,17 @@ namespace ds1_ac
     double defaultPreviewAmplitude(CircuitKind circuit) noexcept;
 
     const char *compositeDisplayName() noexcept;
+    const char *compositeDisplayName(PedalKind pedal) noexcept;
     const char *compositeSvgRelativePath() noexcept;
+    const char *compositeSvgRelativePath(PedalKind pedal) noexcept;
+    const char *pedalCatalogKey(PedalKind pedal) noexcept;
+    int pedalStageCount(PedalKind pedal) noexcept;
+    CircuitKind pedalStageCircuit(PedalKind pedal, int index) noexcept;
+    const char *pedalStageTopologyId(PedalKind pedal, int index) noexcept;
+    const char *pedalStageLabel(PedalKind pedal, int index) noexcept;
+    juce::String pedalStageMenuLabel(PedalKind pedal, int index);
     const char *circuitTopologyId(CircuitKind circuit) noexcept;
+    const char *circuitTopologyId(PedalKind pedal, CircuitKind circuit) noexcept;
     const char *circuitOperatorKey(CircuitKind circuit) noexcept;
     const char *circuitStageLabel(CircuitKind circuit) noexcept;
     const char *circuitDisplayName(CircuitKind circuit) noexcept;

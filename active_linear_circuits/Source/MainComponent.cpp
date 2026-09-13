@@ -1,5 +1,7 @@
 #include "MainComponent.h"
 
+#include <iterator>
+
 namespace
 {
     juce::Colour makeBackgroundColour(atom::ThemeType themeType)
@@ -17,23 +19,27 @@ namespace
         return themeType == atom::ThemeType::Dark ? juce::Colour(0xFF2B3240) : juce::Colour(0xFFD7DCE4);
     }
 
-    struct CircuitMenuEntry
+    struct PedalMenuEntry
     {
         const char *label;
-        ds1_ac::CircuitKind kind;
+        ds1_ac::PedalKind kind;
     };
 
-    constexpr CircuitMenuEntry kCircuitMenuEntries[] = {
-        {"input — Input BJT", ds1_ac::CircuitKind::BjtFollower},
-        {"emitter — BJT Emitter", ds1_ac::CircuitKind::BjtCommonEmitter},
-        {"opamp — Op Amp", ds1_ac::CircuitKind::Ds1Opamp},
-        {"clipper — Clipper / Tone / Level", ds1_ac::CircuitKind::Ds1Clipper},
-        {"output — Output BJT", ds1_ac::CircuitKind::BjtFollowerOut},
+    constexpr PedalMenuEntry kPedalMenuEntries[] = {
+        {"DS-1", ds1_ac::PedalKind::Ds1},
+        {"TS-9", ds1_ac::PedalKind::Ts9},
+        {"SD-1", ds1_ac::PedalKind::Sd1},
+        {"OD-1", ds1_ac::PedalKind::Od1},
+        {"AC Booster", ds1_ac::PedalKind::AcBooster},
+        {"RC Booster", ds1_ac::PedalKind::RcBooster},
+        {"Klon", ds1_ac::PedalKind::Klon},
+        {"Distortion+", ds1_ac::PedalKind::DistortionPlus},
+        {"Guv'nor", ds1_ac::PedalKind::Guvnor},
     };
 
-    int stageIndex(ds1_ac::CircuitKind circuit) noexcept
+    int circuitIndex(ds1_ac::CircuitKind circuit) noexcept
     {
-        return juce::jlimit(0, 4, static_cast<int>(circuit));
+        return juce::jlimit(0, ds1_ac::kCircuitCount - 1, static_cast<int>(circuit));
     }
 
     constexpr int kKnobColumnWidth = 72;
@@ -44,44 +50,68 @@ MainComponent::MainComponent()
 {
     setLookAndFeel(&atomLookAndFeel);
 
-    for (int i = 0; i < kStageCount; ++i)
+    for (int i = 0; i < ds1_ac::kCircuitCount; ++i)
     {
         const auto circuit = static_cast<ds1_ac::CircuitKind>(i);
         injectFreqHz_[static_cast<size_t>(i)] = ds1_ac::kDefaultPreviewFreqHz;
         injectAmp_[static_cast<size_t>(i)] = ds1_ac::defaultPreviewAmplitude(circuit);
     }
 
-    titleLabel.setText("Boss DS-1 White Box", juce::dontSendNotification);
+    titleLabel.setText("White Box AC Tracer", juce::dontSendNotification);
     titleLabel.setFont(juce::Font(28.0f, juce::Font::bold));
     titleLabel.setJustificationType(juce::Justification::centredLeft);
 
-    subtitleLabel.setText("input → emitter → opamp → clipper → output", juce::dontSendNotification);
+    subtitleLabel.setText("ds1 / ts9 / sd1 / od1 / ac booster / rc booster / klon / distortion+ / guvnor",
+                          juce::dontSendNotification);
     subtitleLabel.setJustificationType(juce::Justification::centredLeft);
     subtitleLabel.setInterceptsMouseClicks(false, false);
 
     addAndMakeVisible(titleLabel);
     addAndMakeVisible(subtitleLabel);
     addAndMakeVisible(themeButton);
+    addAndMakeVisible(pedalBox);
     addAndMakeVisible(circuitBox);
     addAndMakeVisible(plotKindBox);
     addAndMakeVisible(opampModelBox);
     addAndMakeVisible(sampleRateBox);
     addAndMakeVisible(taperBox);
 
+    configureCombo(pedalBox);
     configureCombo(circuitBox);
     configureCombo(plotKindBox);
     configureCombo(opampModelBox);
     configureCombo(sampleRateBox);
     configureCombo(taperBox);
 
+    pedalLabel.setText("Pedal", juce::dontSendNotification);
+    pedalLabel.setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(pedalLabel);
+
     circuitLabel.setText("Stage", juce::dontSendNotification);
     circuitLabel.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(circuitLabel);
 
-    for (size_t i = 0; i < std::size(kCircuitMenuEntries); ++i)
-        circuitBox.addItem(kCircuitMenuEntries[i].label, static_cast<int>(i + 1));
+    for (size_t i = 0; i < std::size(kPedalMenuEntries); ++i)
+        pedalBox.addItem(kPedalMenuEntries[i].label, static_cast<int>(i + 1));
 
+    pedalBox.setSelectedId(1, juce::dontSendNotification);
+    populateStageCombo(ds1_ac::PedalKind::Ds1);
     circuitBox.setSelectedId(1, juce::dontSendNotification);
+
+    pedalBox.onChange = [this]()
+    {
+        storeInjectForCircuit(lastCircuitKind_);
+        const auto pedal = getPedalFromSelection();
+        lastPedalKind_ = pedal;
+        populateStageCombo(pedal);
+        const auto circuit = getCircuitFromSelection();
+        lastCircuitKind_ = circuit;
+        syncPotTaperToCircuitDefault(circuit);
+        syncDeviceModelCombo(circuit);
+        restoreInjectForCircuit(circuit);
+        updatePlotView();
+    };
+
     circuitBox.onChange = [this]()
     {
         storeInjectForCircuit(lastCircuitKind_);
@@ -281,16 +311,25 @@ void MainComponent::configureInjectBox(atom::Slider &box)
 
 void MainComponent::storeInjectForCircuit(ds1_ac::CircuitKind circuit)
 {
-    const auto index = static_cast<size_t>(stageIndex(circuit));
+    const auto index = static_cast<size_t>(circuitIndex(circuit));
     injectFreqHz_[index] = injectFreqBox.getValue();
     injectAmp_[index] = injectAmpBox.getValue();
 }
 
 void MainComponent::restoreInjectForCircuit(ds1_ac::CircuitKind circuit)
 {
-    const auto index = static_cast<size_t>(stageIndex(circuit));
+    const auto index = static_cast<size_t>(circuitIndex(circuit));
     injectFreqBox.setValue(injectFreqHz_[index], juce::dontSendNotification);
     injectAmpBox.setValue(injectAmp_[index], juce::dontSendNotification);
+}
+
+void MainComponent::populateStageCombo(ds1_ac::PedalKind pedal)
+{
+    circuitBox.clear(juce::dontSendNotification);
+    const int count = ds1_ac::pedalStageCount(pedal);
+    for (int i = 0; i < count; ++i)
+        circuitBox.addItem(ds1_ac::pedalStageMenuLabel(pedal, i), i + 1);
+    circuitBox.setSelectedId(1, juce::dontSendNotification);
 }
 
 void MainComponent::layoutKnobColumn(juce::Rectangle<int> &area, atom::Label &label, atom::Slider &knob) const
@@ -313,6 +352,7 @@ void MainComponent::applyTheme()
     gainLabel.refreshTheme();
     secondaryLabel.refreshTheme();
     tertiaryLabel.refreshTheme();
+    pedalLabel.refreshTheme();
     circuitLabel.refreshTheme();
     injectFreqLabel.refreshTheme();
     injectAmpLabel.refreshTheme();
@@ -344,11 +384,13 @@ void MainComponent::updatePlotView()
     const bool hasSecondary = ds1_ac::circuitHasSecondaryControl(circuit);
     const bool hasTertiary = ds1_ac::circuitHasTertiaryControl(circuit);
 
+    const auto pedal = getPedalFromSelection();
+
     acPanel->beginRebuildBatch();
     acPanel->setCircuitKind(circuit);
 
     if (schematicPanel != nullptr)
-        schematicPanel->setCircuitKind(circuit);
+        schematicPanel->setSelection(pedal, circuit);
     if (usesOpamp && schematicPanel != nullptr)
         acPanel->setOpampModel(schematicPanel->getOpampModel());
     else if (usesOpamp)
@@ -376,6 +418,8 @@ void MainComponent::updatePlotView()
     gainLabel.setText(ds1_ac::controlParameterName(circuit), juce::dontSendNotification);
     secondaryLabel.setText(ds1_ac::secondaryControlParameterName(circuit), juce::dontSendNotification);
     tertiaryLabel.setText(ds1_ac::tertiaryControlParameterName(circuit), juce::dontSendNotification);
+    titleLabel.setText(juce::String(ds1_ac::compositeDisplayName(pedal)) + " White Box",
+                       juce::dontSendNotification);
     subtitleLabel.setText("White-box stage " + ds1_ac::circuitStageMenuLabel(circuit)
                               + "  |  " + juce::String(ds1_ac::circuitOperatorKey(circuit))
                               + "  |  " + juce::String(ds1_ac::circuitProcessFunctionName(circuit)),
@@ -416,13 +460,23 @@ void MainComponent::updatePlotView()
     resized();
 }
 
+ds1_ac::PedalKind MainComponent::getPedalFromSelection() const
+{
+    const int selectedId = pedalBox.getSelectedId();
+    if (selectedId >= 1 && selectedId <= static_cast<int>(std::size(kPedalMenuEntries)))
+        return kPedalMenuEntries[static_cast<size_t>(selectedId - 1)].kind;
+
+    return ds1_ac::PedalKind::Ds1;
+}
+
 ds1_ac::CircuitKind MainComponent::getCircuitFromSelection() const
 {
+    const auto pedal = getPedalFromSelection();
     const int selectedId = circuitBox.getSelectedId();
-    if (selectedId >= 1 && selectedId <= static_cast<int>(std::size(kCircuitMenuEntries)))
-        return kCircuitMenuEntries[static_cast<size_t>(selectedId - 1)].kind;
+    if (selectedId >= 1 && selectedId <= ds1_ac::pedalStageCount(pedal))
+        return ds1_ac::pedalStageCircuit(pedal, selectedId - 1);
 
-    return ds1_ac::CircuitKind::BjtFollower;
+    return ds1_ac::pedalStageCircuit(pedal, 0);
 }
 
 nx_pot_taper_e MainComponent::getPotTaperFromSelection() const
@@ -543,8 +597,11 @@ void MainComponent::resized()
 
     auto toolbar = area.removeFromTop(34);
     themeButton.setBounds(toolbar.removeFromRight(160));
+    pedalLabel.setBounds(toolbar.removeFromLeft(40));
+    pedalBox.setBounds(toolbar.removeFromLeft(120));
+    toolbar.removeFromLeft(8);
     circuitLabel.setBounds(toolbar.removeFromLeft(48));
-    circuitBox.setBounds(toolbar.removeFromLeft(196));
+    circuitBox.setBounds(toolbar.removeFromLeft(220));
     toolbar.removeFromLeft(8);
     opampModelBox.setBounds(toolbar.removeFromLeft(110));
     toolbar.removeFromLeft(8);

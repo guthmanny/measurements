@@ -29,33 +29,15 @@ juce_add_plugin(LittleHost
 
 juce_generate_juce_header(LittleHost)
 
-set(_little_host_white_box_lab "${CMAKE_SOURCE_DIR}/../white_box_lab")
-
 target_sources(LittleHost PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginProcessor.h
     Source/PluginEditor.cpp
     Source/PluginEditor.h
-    ../common/SchematicSignalOutput.cpp
-    ../common/SchematicSignalOutput.h
-    ${_little_host_white_box_lab}/Source/CircuitBindingResolver.cpp
-    ${_little_host_white_box_lab}/Source/CircuitBindingResolver.h
-    ${_little_host_white_box_lab}/Source/ComponentValueCodec.cpp
-    ${_little_host_white_box_lab}/Source/ComponentValueCodec.h
-    ${_little_host_white_box_lab}/Source/MudspAssetResolver.cpp
-    ${_little_host_white_box_lab}/Source/MudspAssetResolver.h
-    ${_little_host_white_box_lab}/Source/SchematicEditorPanel.cpp
-    ${_little_host_white_box_lab}/Source/SchematicEditorPanel.h
-    ${_little_host_white_box_lab}/Source/SvgCircuitParser.cpp
-    ${_little_host_white_box_lab}/Source/SvgCircuitParser.h
-    ${_little_host_white_box_lab}/Source/SvgCircuitSync.cpp
-    ${_little_host_white_box_lab}/Source/SvgCircuitSync.h
 )
 
 target_include_directories(LittleHost PRIVATE
-    "${CMAKE_SOURCE_DIR}/../audio_effect_framework/Source"
-    "${CMAKE_SOURCE_DIR}/../common"
-    "${_little_host_white_box_lab}/Source")
+    "${CMAKE_SOURCE_DIR}/../audio_effect_framework/Source")
 
 if(NOT MUDSP_ROOT STREQUAL "" AND EXISTS "${MUDSP_ROOT}/CMakeLists.txt")
     target_compile_definitions(LittleHost PRIVATE MUDSP_ROOT="${MUDSP_ROOT}")
@@ -63,16 +45,24 @@ endif()
 
 aef_apply_plugin_target(LittleHost)
 
+# kbuss dynamic plugins are built into ${CMAKE_BINARY_DIR}/plugins.
 set(LITTLE_HOST_PLUGIN_DIR "${CMAKE_BINARY_DIR}/plugins" CACHE PATH
     "Directory scanned for .kbplug bundles" FORCE)
 target_compile_definitions(LittleHost PRIVATE
     LITTLE_HOST_PLUGIN_DIR="${LITTLE_HOST_PLUGIN_DIR}")
-add_dependencies(LittleHost_Standalone dynamic_ds1)
+
+set(_little_host_dynamic_deps dynamic_ds1)
+foreach(_stem IN ITEMS ts9 klon distortion_plus guvnor sd1 od1 ac_booster rc_booster odr1 sansamp_classic gain)
+    if(TARGET dynamic_${_stem})
+        list(APPEND _little_host_dynamic_deps dynamic_${_stem})
+    endif()
+endforeach()
+add_dependencies(LittleHost_Standalone ${_little_host_dynamic_deps})
 
 add_custom_command(TARGET LittleHost_Standalone POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
             "$<TARGET_FILE_DIR:LittleHost_Standalone>/plugins"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_BINARY_DIR}/plugins"
+            "${LITTLE_HOST_PLUGIN_DIR}"
             "$<TARGET_FILE_DIR:LittleHost_Standalone>/plugins"
     COMMENT "Deploying .kbplug bundles next to Little Host standalone")

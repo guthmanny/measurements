@@ -1,5 +1,6 @@
 #include "CircuitSchematicPanel.h"
 
+#include "SchematicComponentApply.h"
 #include "SchematicSvgAdapter.h"
 
 #include <string_view>
@@ -426,6 +427,8 @@ void CircuitSchematicPanel::handleOverlayTextChange(const juce::String& overlayK
     if (colon >= 0)
         key = key.substring(colon + 1).trim();
     componentValues_.values[key] = *parsed;
+    if (const auto taper = ds1_ac::SchematicComponentValues::parsePotTaperSuffix(text))
+        componentValues_.potTapers[key] = *taper;
     notifyComponentValuesChanged();
 }
 
@@ -433,6 +436,68 @@ void CircuitSchematicPanel::notifyComponentValuesChanged()
 {
     if (onComponentValuesChanged)
         onComponentValuesChanged(componentValues_);
+}
+
+void CircuitSchematicPanel::applyOperatorValuesToOverlays()
+{
+    componentValues_ = ds1_ac::readOperatorComponentValues(circuitKind_);
+    const auto models = ds1_ac::readOperatorDeviceModels(circuitKind_);
+
+    const auto keys = svgView.findDocumentOverlayKeysWithPrefix("");
+    for (const auto& key : keys)
+    {
+        if (key.startsWithIgnoreCase("OPAMP_") || key.startsWithIgnoreCase("DIODE_")
+            || key.startsWithIgnoreCase("BJT_NPN_") || key.startsWithIgnoreCase("BJT_PNP_")
+            || key.startsWithIgnoreCase("JFET_"))
+            continue;
+
+        auto component = key;
+        const int colon = component.indexOfChar(':');
+        if (colon >= 0)
+            component = component.substring(colon + 1).trim();
+
+        auto it = componentValues_.values.find(component);
+        if (it == componentValues_.values.end())
+        {
+            it = componentValues_.values.end();
+            for (auto candidate = componentValues_.values.begin(); candidate != componentValues_.values.end(); ++candidate)
+            {
+                if (candidate->first.equalsIgnoreCase(component))
+                {
+                    it = candidate;
+                    break;
+                }
+            }
+        }
+
+        if (it == componentValues_.values.end())
+            continue;
+
+        auto taperIt = componentValues_.potTapers.find(it->first);
+        if (taperIt == componentValues_.potTapers.end())
+        {
+            for (auto candidate = componentValues_.potTapers.begin(); candidate != componentValues_.potTapers.end(); ++candidate)
+            {
+                if (candidate->first.equalsIgnoreCase(it->first))
+                {
+                    taperIt = candidate;
+                    break;
+                }
+            }
+        }
+
+        if (taperIt != componentValues_.potTapers.end())
+            svgView.setOverlayText(key, ds1_ac::SchematicComponentValues::formatLabelText(it->first, it->second, taperIt->second));
+        else
+            svgView.setOverlayText(key, ds1_ac::SchematicComponentValues::formatLabelText(it->first, it->second));
+    }
+
+    if (models.hasOpamp)
+        opampModel_ = models.opamp;
+    if (models.hasDiode)
+        diodeModel_ = models.diode;
+    if (models.hasBjt)
+        bjtModel_ = models.bjt;
 }
 
 void CircuitSchematicPanel::updateInternalToggleVisibility()
@@ -455,7 +520,9 @@ void CircuitSchematicPanel::syncSignalOutputDisplay()
         return;
 
     signalOutputInfo_ = schematic_assets::loadCompositeStageSignalOutput(
-        locateMudspRoot(), "ds1", juce::String(ds1_ac::circuitTopologyId(circuitKind_)));
+        locateMudspRoot(),
+        ds1_ac::pedalCatalogKey(pedalKind_),
+        juce::String(ds1_ac::circuitTopologyId(pedalKind_, circuitKind_)));
     if (! signalOutputInfo_.hasOptions || signalOutputInfo_.activeLine.isEmpty())
         return;
 
@@ -468,11 +535,22 @@ void CircuitSchematicPanel::syncSignalOutputDisplay()
         signalOutputOtherLabel.setText(signalOutputInfo_.otherLine, juce::dontSendNotification);
 }
 
+void CircuitSchematicPanel::setPedalKind(ds1_ac::PedalKind pedalKind)
+{
+    setSelection(pedalKind, circuitKind_);
+}
+
 void CircuitSchematicPanel::setCircuitKind(ds1_ac::CircuitKind circuitKind)
 {
-    if (circuitKind_ == circuitKind)
+    setSelection(pedalKind_, circuitKind);
+}
+
+void CircuitSchematicPanel::setSelection(ds1_ac::PedalKind pedalKind, ds1_ac::CircuitKind circuitKind)
+{
+    if (pedalKind_ == pedalKind && circuitKind_ == circuitKind)
         return;
 
+    pedalKind_ = pedalKind;
     circuitKind_ = circuitKind;
     showInternalSvg_ = false;
     internalToggle.setToggleState(false, juce::dontSendNotification);
@@ -501,17 +579,25 @@ void CircuitSchematicPanel::reloadSvg()
     componentValues_ = {};
     loadSvgIntoView(svgView, resolveCircuitSvgFile(circuitKind_, showInternalSvg_), status_);
 
-    auto title = juce::String("Stage schematic  |  ") + ds1_ac::circuitStageMenuLabel(circuitKind_);
+    auto title = juce::String("Stage schematic  |  ") + ds1_ac::compositeDisplayName(pedalKind_)
+                 + "  |  " + ds1_ac::circuitStageMenuLabel(circuitKind_);
     if (showInternalSvg_)
         title += "  (internal)";
     titleLabel.setText(title, juce::dontSendNotification);
 
     if (status_.isEmpty())
     {
-        syncOpampModelFromSvg();
-        syncDiodeModelFromSvg();
-        syncBjtModelFromSvg();
-        syncJfetModelFromSvg();
+        applyOperatorValuesToOverlays();
+        if (onOpampModelChanged && ds1_ac::circuitUsesOpampModel(circuitKind_))
+            onOpampModelChanged(opampModel_);
+        if (onDiodeModelChanged && ds1_ac::circuitUsesDiodeModel(circuitKind_))
+            onDiodeModelChanged(diodeModel_);
+        if (onBjtModelChanged && ds1_ac::circuitUsesBjtModel(circuitKind_))
+            onBjtModelChanged(bjtModel_);
+        syncOpampOverlaySelectors();
+        syncDiodeOverlaySelectors();
+        syncBjtOverlaySelectors();
+        syncJfetOverlaySelectors();
     }
 
     notifyComponentValuesChanged();

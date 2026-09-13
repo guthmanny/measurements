@@ -14,7 +14,9 @@ class CircuitSchematicPanel final : public juce::Component
 public:
     CircuitSchematicPanel();
 
+    void setPedalKind(ds1_ac::PedalKind pedalKind);
     void setCircuitKind(ds1_ac::CircuitKind circuitKind);
+    void setSelection(ds1_ac::PedalKind pedalKind, ds1_ac::CircuitKind circuitKind);
     void setOpampModel(nx_opamp_model_e model);
     void setDiodeModel(nx_diode_model_t model);
     void setBjtModel(nx_bjt_npn_model_e model);
@@ -59,8 +61,10 @@ private:
     void handleJfetOverlaySelection(const juce::String& overlayKey, int selectedId);
     void handleOverlayTextChange(const juce::String& overlayKey, const juce::String& text);
     void notifyComponentValuesChanged();
+    void applyOperatorValuesToOverlays();
     int chromeHeight() const noexcept;
 
+    ds1_ac::PedalKind pedalKind_{ds1_ac::PedalKind::Ds1};
     ds1_ac::CircuitKind circuitKind_{ds1_ac::CircuitKind::BjtFollower};
     nx_opamp_model_e opampModel_{NX_OPAMP_BA728};
     nx_diode_model_t diodeModel_{NX_DIODE_1N4148};

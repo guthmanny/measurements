@@ -5,11 +5,28 @@
 #include "Ds1OpampAcMath.h"
 #include "SchematicComponentValues.h"
 
+#include "nudsp/linear_circuits/ac_booster_eq_f32.h"
 #include "nudsp/linear_circuits/ds1_opamp_f32.h"
+#include "nudsp/linear_circuits/ds_plus_opamp_f32.h"
+#include "nudsp/linear_circuits/guvnor_level_f32.h"
+#include "nudsp/linear_circuits/guvnor_postamp_f32.h"
+#include "nudsp/linear_circuits/guvnor_preamp_f32.h"
+#include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
+#include "nudsp/linear_circuits/od1_post_f32.h"
+#include "nudsp/linear_circuits/rc_level_f32.h"
+#include "nudsp/linear_circuits/sd1_tone_f32.h"
+#include "nudsp/linear_circuits/ts9_tone_f32.h"
+#include "nudsp/nonlinear_circuits/ac_booster_drive_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_common_emitter_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_follower_f32.h"
 #include "nudsp/nonlinear_circuits/bjt_follower_out_f32.h"
+#include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/guvnor_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/klon_centaur_f32.h"
+#include "nudsp/nonlinear_circuits/od1_drive_f32.h"
+#include "nudsp/nonlinear_circuits/rc_booster_drive1_f32.h"
+#include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
 
 namespace ds1_ac
 {
@@ -61,6 +78,23 @@ private:
     nx_bjt_follower_f32_t* bjtFollower_{nullptr};
     nx_bjt_follower_out_f32_t* bjtFollowerOut_{nullptr};
     nx_bjt_common_emitter_f32_t* bjtCommonEmitter_{nullptr};
+    nx_od1_drive_f32_t* od1Drive_{nullptr};
+    nx_sd1_tone_f32_t* sd1Tone_{nullptr};
+    nx_rc_level_f32_t* rcLevel_{nullptr};
+    nx_od1_post_f32_t* od1Post_{nullptr};
+    nx_ac_booster_drive_f32_t* acBoosterDrive_{nullptr};
+    nx_ac_booster_eq_f32_t* acBoosterEq_{nullptr};
+    nx_rc_booster_drive1_f32_t* rcBoosterDrive1_{nullptr};
+    nx_ds_plus_opamp_f32_t* dsPlusOpamp_{nullptr};
+    nx_ts9_opamp_f32_t* ts9Opamp_{nullptr};
+    nx_ts9_tone_f32_t* ts9Tone_{nullptr};
+    nx_klon_centaur_f32_t* klonCentaur_{nullptr};
+    nx_klon_centaur_tone_f32_t* klonCentaurTone_{nullptr};
+    nx_guvnor_preamp_f32_t* guvnorPreamp_{nullptr};
+    nx_guvnor_postamp_f32_t* guvnorPostamp_{nullptr};
+    nx_guvnor_clipper_f32_t* guvnorClipper_{nullptr};
+    nx_guvnor_level_f32_t* guvnorLevel_{nullptr};
+    nx_diode_clipper_f32_t* diodeClipper_{nullptr};
 };
 
 } // namespace ds1_ac

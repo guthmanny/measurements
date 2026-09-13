@@ -29,6 +29,8 @@ private:
     void layoutKnobColumn(juce::Rectangle<int>& area, atom::Label& label, atom::Slider& knob) const;
     void storeInjectForCircuit(ds1_ac::CircuitKind circuit);
     void restoreInjectForCircuit(ds1_ac::CircuitKind circuit);
+    void populateStageCombo(ds1_ac::PedalKind pedal);
+    ds1_ac::PedalKind getPedalFromSelection() const;
     ds1_ac::CircuitKind getCircuitFromSelection() const;
     nx_pot_taper_e getPotTaperFromSelection() const;
     void syncPotTaperToCircuitDefault(ds1_ac::CircuitKind circuit);
@@ -44,6 +46,7 @@ private:
     atom::Label titleLabel;
     atom::Label subtitleLabel;
     atom::TextButton themeButton{"themeButton", "Switch theme"};
+    atom::ComboBox pedalBox{"pedalBox"};
     atom::ComboBox circuitBox{"circuitBox"};
     atom::ComboBox plotKindBox{"plotKindBox"};
     atom::ComboBox opampModelBox{"opampModelBox"};
@@ -52,6 +55,7 @@ private:
 
     atom::Label sampleRateLabel;
     atom::Label taperLabel;
+    atom::Label pedalLabel;
     atom::Label circuitLabel;
 
     atom::Label gainLabel;
@@ -71,9 +75,9 @@ private:
     std::unique_ptr<CircuitSchematicPanel> schematicPanel;
     std::unique_ptr<Ds1OpampAcPanel> acPanel;
 
-    static constexpr int kStageCount = 5;
-    std::array<double, kStageCount> injectFreqHz_{};
-    std::array<double, kStageCount> injectAmp_{};
+    std::array<double, ds1_ac::kCircuitCount> injectFreqHz_{};
+    std::array<double, ds1_ac::kCircuitCount> injectAmp_{};
+    ds1_ac::PedalKind lastPedalKind_{ds1_ac::PedalKind::Ds1};
     ds1_ac::CircuitKind lastCircuitKind_{ds1_ac::CircuitKind::BjtFollower};
 
     static constexpr int kSchematicMinWidth = 120;
