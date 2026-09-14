@@ -30,6 +30,8 @@ private:
     void storeInjectForCircuit(ds1_ac::CircuitKind circuit);
     void restoreInjectForCircuit(ds1_ac::CircuitKind circuit);
     void populateStageCombo(ds1_ac::PedalKind pedal);
+    void populateOperatorCombo();
+    bool isStandaloneOperator() const;
     ds1_ac::PedalKind getPedalFromSelection() const;
     ds1_ac::CircuitKind getCircuitFromSelection() const;
     nx_pot_taper_e getPotTaperFromSelection() const;

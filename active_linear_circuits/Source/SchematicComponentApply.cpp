@@ -34,6 +34,18 @@
 #include "nudsp/nonlinear_circuits/rc_booster_drive1_f32.h"
 #include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
 
+#include "extensions/white_box/pedals/ac_booster_f32.h"
+#include "extensions/white_box/pedals/distortion_plus_f32.h"
+#include "extensions/white_box/pedals/ds1_f32.h"
+#include "extensions/white_box/pedals/guvnor_f32.h"
+#include "extensions/white_box/pedals/klon_f32.h"
+#include "extensions/white_box/pedals/od1_f32.h"
+#include "extensions/white_box/pedals/rat_f32.h"
+#include "extensions/white_box/pedals/rc_booster_f32.h"
+#include "extensions/white_box/pedals/sansamp_classic_f32.h"
+#include "extensions/white_box/pedals/sd1_f32.h"
+#include "extensions/white_box/pedals/ts9_f32.h"
+
 #include <cmath>
 #include <type_traits>
 
@@ -392,6 +404,47 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
     }
 }
 
+template<typename Config>
+void extractFromConfig(const Config& cfg, SchematicComponentValues* values, OperatorDeviceModels* models)
+{
+    if (values != nullptr)
+        extractCommonFields(cfg, *values, models);
+    else if (models != nullptr)
+    {
+        SchematicComponentValues unused;
+        extractCommonFields(cfg, unused, models);
+    }
+}
+
+void splitGuvnorOpamp(const nx_guvnor_opamp_config_t& opamp,
+                      nx_guvnor_preamp_config_t& preamp,
+                      nx_guvnor_postamp_config_t& postamp)
+{
+    nx_guvnor_preamp_config_init(&preamp);
+    nx_guvnor_postamp_config_init(&postamp);
+    preamp.gain = opamp.gain;
+    preamp.R1 = opamp.R1;
+    preamp.R2 = opamp.R2;
+    preamp.R3 = opamp.R3;
+    preamp.C1 = opamp.C1;
+    preamp.C2 = opamp.C2;
+    preamp.C3 = opamp.C3;
+    preamp.vcc = opamp.vcc;
+    preamp.va = opamp.va;
+    preamp.custom_opamp = opamp.custom_opamp;
+    preamp.opamp_model = opamp.opamp_model;
+    postamp.gain = opamp.gain;
+    postamp.R6 = opamp.R6;
+    postamp.R7 = opamp.R7;
+    postamp.C4 = opamp.C4;
+    postamp.C5 = opamp.C5;
+    postamp.C6 = opamp.C6;
+    postamp.vcc = opamp.vcc;
+    postamp.va = opamp.va;
+    postamp.custom_opamp = opamp.custom_opamp;
+    postamp.opamp_model = opamp.opamp_model;
+}
+
 template<typename Inst, typename Config>
 void applyViaConfig(Inst* inst,
                     const SchematicComponentValues* values,
@@ -665,6 +718,313 @@ void readOperatorState(CircuitKind circuit,
 
 #undef READ_CONFIG
 
+bool readCompositeStageState(PedalKind pedal,
+                             CircuitKind circuit,
+                             SchematicComponentValues* valuesOut,
+                             OperatorDeviceModels* modelsOut)
+{
+    switch (pedal)
+    {
+    case PedalKind::Ds1:
+    {
+        nx_ds1_config_t cfg{};
+        if (nx_ds1_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::BjtFollower:
+            extractFromConfig(cfg.input, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BjtCommonEmitter:
+            extractFromConfig(cfg.emitter, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Ds1Opamp:
+            extractFromConfig(cfg.opamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Ds1Clipper:
+            extractFromConfig(cfg.clipper, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BjtFollowerOut:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::Ts9:
+    {
+        nx_ts9_config_t cfg{};
+        if (nx_ts9_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::BjtFollower:
+            extractFromConfig(cfg.input, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Ts9Opamp:
+            extractFromConfig(cfg.opamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Ts9Tone:
+            extractFromConfig(cfg.tone, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BjtFollowerOut:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::Sd1:
+    {
+        nx_sd1_config_t cfg{};
+        if (nx_sd1_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::BjtFollower:
+            extractFromConfig(cfg.input, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Od1Drive:
+            extractFromConfig(cfg.drive, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Sd1Tone:
+            extractFromConfig(cfg.tone, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BjtFollowerOut:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::Od1:
+    {
+        nx_od1_config_t cfg{};
+        if (nx_od1_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::BjtFollower:
+            extractFromConfig(cfg.input, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Od1Drive:
+            extractFromConfig(cfg.drive, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Od1Post:
+            extractFromConfig(cfg.post, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BjtFollowerOut:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::AcBooster:
+    {
+        nx_ac_booster_config_t cfg{};
+        if (nx_ac_booster_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::BjtFollower:
+            extractFromConfig(cfg.input, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::AcBoosterDrive:
+            extractFromConfig(cfg.drive, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::AcBoosterEq:
+            extractFromConfig(cfg.eq, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BjtFollowerOut:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::RcBooster:
+    {
+        nx_rc_booster_config_t cfg{};
+        if (nx_rc_booster_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::BjtFollower:
+            extractFromConfig(cfg.input, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcBoosterDrive1:
+            extractFromConfig(cfg.drive, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::AcBoosterEq:
+            extractFromConfig(cfg.eq, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BjtFollowerOut:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::Klon:
+    {
+        nx_klon_config_t cfg{};
+        if (nx_klon_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::KlonCentaur:
+            extractFromConfig(cfg.centaur, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::KlonCentaurTone:
+            extractFromConfig(cfg.tone, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::DistortionPlus:
+    {
+        nx_distortion_plus_config_t cfg{};
+        if (nx_distortion_plus_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::DsPlusOpamp:
+            extractFromConfig(cfg.opamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::DiodeClipper:
+            extractFromConfig(cfg.clipper, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::Guvnor:
+    {
+        nx_guvnor_config_t cfg{};
+        if (nx_guvnor_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::GuvnorPreamp:
+        case CircuitKind::GuvnorPostamp:
+        {
+            nx_guvnor_preamp_config_t preamp{};
+            nx_guvnor_postamp_config_t postamp{};
+            splitGuvnorOpamp(cfg.opamp, preamp, postamp);
+            if (circuit == CircuitKind::GuvnorPreamp)
+                extractFromConfig(preamp, valuesOut, modelsOut);
+            else
+                extractFromConfig(postamp, valuesOut, modelsOut);
+            return true;
+        }
+        case CircuitKind::GuvnorClipper:
+            extractFromConfig(cfg.clipper, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::GuvnorLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::Rat:
+    {
+        nx_rat_config_t cfg{};
+        if (nx_rat_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::RatOpamp:
+            extractFromConfig(cfg.opamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RatClipper:
+            extractFromConfig(cfg.clipper, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::JfetFollower:
+            extractFromConfig(cfg.follower, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::SansampClassic:
+    {
+        nx_sansamp_classic_config_t cfg{};
+        if (nx_sansamp_classic_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::BjtFollower:
+            extractFromConfig(cfg.bjt_follower, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::SansampPreEq:
+            extractFromConfig(cfg.pre_eq, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::SansampPreamp:
+            extractFromConfig(cfg.preamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::SansampGainCtrl:
+            extractFromConfig(cfg.gain_ctrl, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::SansampPostamp:
+            extractFromConfig(cfg.postamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::SansampSpk:
+            extractFromConfig(cfg.spk, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::SansampPosition:
+            extractFromConfig(cfg.position, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::SansampCapture:
+            extractFromConfig(cfg.capture, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::SansampOutput:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    }
+
+    return false;
+}
+
+void readStageState(PedalKind pedal,
+                    CircuitKind circuit,
+                    bool useCompositeConfig,
+                    SchematicComponentValues* valuesOut,
+                    OperatorDeviceModels* modelsOut)
+{
+    if (useCompositeConfig && readCompositeStageState(pedal, circuit, valuesOut, modelsOut))
+        return;
+
+    readOperatorState(circuit, valuesOut, modelsOut);
+}
+
 } // namespace
 
 void applySchematicComponentValues(CircuitKind circuit,
@@ -892,6 +1252,20 @@ OperatorDeviceModels readOperatorDeviceModels(CircuitKind circuit)
 {
     OperatorDeviceModels models;
     readOperatorState(circuit, nullptr, &models);
+    return models;
+}
+
+SchematicComponentValues readStageComponentValues(PedalKind pedal, CircuitKind circuit, bool useCompositeConfig)
+{
+    SchematicComponentValues values;
+    readStageState(pedal, circuit, useCompositeConfig, &values, nullptr);
+    return values;
+}
+
+OperatorDeviceModels readStageDeviceModels(PedalKind pedal, CircuitKind circuit, bool useCompositeConfig)
+{
+    OperatorDeviceModels models;
+    readStageState(pedal, circuit, useCompositeConfig, nullptr, &models);
     return models;
 }
 

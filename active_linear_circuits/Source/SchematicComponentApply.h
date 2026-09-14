@@ -29,4 +29,8 @@ SchematicComponentValues readOperatorComponentValues(CircuitKind circuit);
 /** Read default device models from a freshly created operator instance. */
 OperatorDeviceModels readOperatorDeviceModels(CircuitKind circuit);
 
+/** Operator defaults, or the matching stage from the composite config when useCompositeConfig. */
+SchematicComponentValues readStageComponentValues(PedalKind pedal, CircuitKind circuit, bool useCompositeConfig);
+OperatorDeviceModels readStageDeviceModels(PedalKind pedal, CircuitKind circuit, bool useCompositeConfig);
+
 } // namespace ds1_ac

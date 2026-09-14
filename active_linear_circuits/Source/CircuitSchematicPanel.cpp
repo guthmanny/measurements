@@ -495,8 +495,8 @@ void CircuitSchematicPanel::notifyComponentValuesChanged()
 
 void CircuitSchematicPanel::applyOperatorValuesToOverlays()
 {
-    componentValues_ = ds1_ac::readOperatorComponentValues(circuitKind_);
-    const auto models = ds1_ac::readOperatorDeviceModels(circuitKind_);
+    componentValues_ = ds1_ac::readStageComponentValues(pedalKind_, circuitKind_, useCompositeConfig_);
+    const auto models = ds1_ac::readStageDeviceModels(pedalKind_, circuitKind_, useCompositeConfig_);
 
     const auto keys = svgView.findDocumentOverlayKeysWithPrefix("");
     for (const auto& key : keys)
@@ -576,6 +576,9 @@ void CircuitSchematicPanel::syncSignalOutputDisplay()
     if (! showInternalSvg_)
         return;
 
+    if (! useCompositeConfig_)
+        return;
+
     signalOutputInfo_ = schematic_assets::loadCompositeStageSignalOutput(
         locateMudspRoot(),
         ds1_ac::pedalCatalogKey(pedalKind_),
@@ -594,21 +597,24 @@ void CircuitSchematicPanel::syncSignalOutputDisplay()
 
 void CircuitSchematicPanel::setPedalKind(ds1_ac::PedalKind pedalKind)
 {
-    setSelection(pedalKind, circuitKind_);
+    setSelection(pedalKind, circuitKind_, useCompositeConfig_);
 }
 
 void CircuitSchematicPanel::setCircuitKind(ds1_ac::CircuitKind circuitKind)
 {
-    setSelection(pedalKind_, circuitKind);
+    setSelection(pedalKind_, circuitKind, useCompositeConfig_);
 }
 
-void CircuitSchematicPanel::setSelection(ds1_ac::PedalKind pedalKind, ds1_ac::CircuitKind circuitKind)
+void CircuitSchematicPanel::setSelection(ds1_ac::PedalKind pedalKind,
+                                        ds1_ac::CircuitKind circuitKind,
+                                        bool useCompositeConfig)
 {
-    if (pedalKind_ == pedalKind && circuitKind_ == circuitKind)
+    if (pedalKind_ == pedalKind && circuitKind_ == circuitKind && useCompositeConfig_ == useCompositeConfig)
         return;
 
     pedalKind_ = pedalKind;
     circuitKind_ = circuitKind;
+    useCompositeConfig_ = useCompositeConfig;
     showInternalSvg_ = false;
     internalToggle.setToggleState(false, juce::dontSendNotification);
     reloadSvg();
@@ -636,8 +642,13 @@ void CircuitSchematicPanel::reloadSvg()
     componentValues_ = {};
     loadSvgIntoView(svgView, resolveCircuitSvgFile(circuitKind_, showInternalSvg_), status_);
 
-    auto title = juce::String("Stage schematic  |  ") + ds1_ac::compositeDisplayName(pedalKind_)
-                 + "  |  " + ds1_ac::circuitStageMenuLabel(circuitKind_);
+    juce::String title;
+    if (useCompositeConfig_)
+        title = juce::String("Stage schematic  |  ") + ds1_ac::compositeDisplayName(pedalKind_)
+                + "  |  " + ds1_ac::circuitStageMenuLabel(circuitKind_);
+    else
+        title = juce::String("Operator schematic  |  ") + ds1_ac::circuitOperatorKey(circuitKind_)
+                + " — " + ds1_ac::circuitStageLabel(circuitKind_);
     if (showInternalSvg_)
         title += "  (internal)";
     titleLabel.setText(title, juce::dontSendNotification);

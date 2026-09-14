@@ -16,7 +16,7 @@ public:
 
     void setPedalKind(ds1_ac::PedalKind pedalKind);
     void setCircuitKind(ds1_ac::CircuitKind circuitKind);
-    void setSelection(ds1_ac::PedalKind pedalKind, ds1_ac::CircuitKind circuitKind);
+    void setSelection(ds1_ac::PedalKind pedalKind, ds1_ac::CircuitKind circuitKind, bool useCompositeConfig);
     void setOpampModel(nx_opamp_model_e model);
     void setDiodeModel(nx_diode_model_t model);
     void setBjtModel(nx_bjt_npn_model_e model);
@@ -68,6 +68,7 @@ private:
 
     ds1_ac::PedalKind pedalKind_{ds1_ac::PedalKind::Ds1};
     ds1_ac::CircuitKind circuitKind_{ds1_ac::CircuitKind::BjtFollower};
+    bool useCompositeConfig_{true};
     nx_opamp_model_e opampModel_{NX_OPAMP_BA728};
     nx_diode_model_t diodeModel_{NX_DIODE_1N4148};
     nx_bjt_npn_model_e bjtModel_{NX_BJT_2N3904};

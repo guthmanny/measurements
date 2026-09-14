@@ -46,6 +46,7 @@ namespace
 
     constexpr int kKnobColumnWidth = 72;
     constexpr int kKnobSize = 56;
+    constexpr int kOperatorsMenuId = static_cast<int>(std::size(kPedalMenuEntries)) + 1;
 } // namespace
 
 MainComponent::MainComponent()
@@ -63,7 +64,7 @@ MainComponent::MainComponent()
     titleLabel.setFont(juce::Font(28.0f, juce::Font::bold));
     titleLabel.setJustificationType(juce::Justification::centredLeft);
 
-    subtitleLabel.setText("ds1 / ts9 / sd1 / od1 / ac booster / rc booster / klon / distortion+ / guvnor / rat / sansamp classic",
+    subtitleLabel.setText("pedals use composite stage config  |  operators use default params",
                           juce::dontSendNotification);
     subtitleLabel.setJustificationType(juce::Justification::centredLeft);
     subtitleLabel.setInterceptsMouseClicks(false, false);
@@ -95,6 +96,7 @@ MainComponent::MainComponent()
 
     for (size_t i = 0; i < std::size(kPedalMenuEntries); ++i)
         pedalBox.addItem(kPedalMenuEntries[i].label, static_cast<int>(i + 1));
+    pedalBox.addItem("Operators", kOperatorsMenuId);
 
     pedalBox.setSelectedId(1, juce::dontSendNotification);
     populateStageCombo(ds1_ac::PedalKind::Ds1);
@@ -103,9 +105,18 @@ MainComponent::MainComponent()
     pedalBox.onChange = [this]()
     {
         storeInjectForCircuit(lastCircuitKind_);
-        const auto pedal = getPedalFromSelection();
-        lastPedalKind_ = pedal;
-        populateStageCombo(pedal);
+        if (isStandaloneOperator())
+        {
+            populateOperatorCombo();
+            circuitLabel.setText("Operator", juce::dontSendNotification);
+        }
+        else
+        {
+            const auto pedal = getPedalFromSelection();
+            lastPedalKind_ = pedal;
+            populateStageCombo(pedal);
+            circuitLabel.setText("Stage", juce::dontSendNotification);
+        }
         const auto circuit = getCircuitFromSelection();
         lastCircuitKind_ = circuit;
         syncPotTaperToCircuitDefault(circuit);
@@ -334,6 +345,19 @@ void MainComponent::populateStageCombo(ds1_ac::PedalKind pedal)
     circuitBox.setSelectedId(1, juce::dontSendNotification);
 }
 
+void MainComponent::populateOperatorCombo()
+{
+    circuitBox.clear(juce::dontSendNotification);
+    for (int i = 0; i < ds1_ac::kCircuitCount; ++i)
+    {
+        const auto circuit = static_cast<ds1_ac::CircuitKind>(i);
+        circuitBox.addItem(juce::String(ds1_ac::circuitOperatorKey(circuit)) + " — "
+                               + ds1_ac::circuitStageLabel(circuit),
+                           i + 1);
+    }
+    circuitBox.setSelectedId(1, juce::dontSendNotification);
+}
+
 void MainComponent::layoutKnobColumn(juce::Rectangle<int> &area, atom::Label &label, atom::Slider &knob) const
 {
     auto column = area.removeFromLeft(kKnobColumnWidth);
@@ -386,13 +410,14 @@ void MainComponent::updatePlotView()
     const bool hasSecondary = ds1_ac::circuitHasSecondaryControl(circuit);
     const bool hasTertiary = ds1_ac::circuitHasTertiaryControl(circuit);
 
+    const bool standalone = isStandaloneOperator();
     const auto pedal = getPedalFromSelection();
 
     acPanel->beginRebuildBatch();
     acPanel->setCircuitKind(circuit);
 
     if (schematicPanel != nullptr)
-        schematicPanel->setSelection(pedal, circuit);
+        schematicPanel->setSelection(pedal, circuit, ! standalone);
     if (usesOpamp && schematicPanel != nullptr)
         acPanel->setOpampModel(schematicPanel->getOpampModel());
     else if (usesOpamp)
@@ -410,7 +435,16 @@ void MainComponent::updatePlotView()
     acPanel->setGainControl(gainKnob.getValue());
     acPanel->setSecondaryControl(secondaryKnob.getValue());
     acPanel->setTertiaryControl(tertiaryKnob.getValue());
-    acPanel->setPotTaper(getPotTaperFromSelection());
+    if (schematicPanel != nullptr && ! schematicPanel->getComponentValues().potTapers.empty())
+    {
+        const auto taper = schematicPanel->getComponentValues().potTapers.begin()->second;
+        taperBox.setSelectedId(ds1_ac::potTaperComboId(taper), juce::dontSendNotification);
+        acPanel->setPotTaper(taper);
+    }
+    else
+    {
+        acPanel->setPotTaper(getPotTaperFromSelection());
+    }
     acPanel->setPreviewFrequencyHz(injectFreqBox.getValue());
     acPanel->setPreviewAmplitude(injectAmpBox.getValue());
     acPanel->setSampleRateHz(getSampleRateFromSelection());
@@ -420,12 +454,23 @@ void MainComponent::updatePlotView()
     gainLabel.setText(ds1_ac::controlParameterName(circuit), juce::dontSendNotification);
     secondaryLabel.setText(ds1_ac::secondaryControlParameterName(circuit), juce::dontSendNotification);
     tertiaryLabel.setText(ds1_ac::tertiaryControlParameterName(circuit), juce::dontSendNotification);
-    titleLabel.setText(juce::String(ds1_ac::compositeDisplayName(pedal)) + " White Box",
-                       juce::dontSendNotification);
-    subtitleLabel.setText("White-box stage " + ds1_ac::circuitStageMenuLabel(circuit)
-                              + "  |  " + juce::String(ds1_ac::circuitOperatorKey(circuit))
-                              + "  |  " + juce::String(ds1_ac::circuitProcessFunctionName(circuit)),
-                          juce::dontSendNotification);
+    if (standalone)
+    {
+        titleLabel.setText(juce::String(ds1_ac::circuitStageLabel(circuit)) + " Operator",
+                           juce::dontSendNotification);
+        subtitleLabel.setText("Operator default  |  " + juce::String(ds1_ac::circuitOperatorKey(circuit))
+                                  + "  |  " + juce::String(ds1_ac::circuitProcessFunctionName(circuit)),
+                              juce::dontSendNotification);
+    }
+    else
+    {
+        titleLabel.setText(juce::String(ds1_ac::compositeDisplayName(pedal)) + " White Box",
+                           juce::dontSendNotification);
+        subtitleLabel.setText("Composite stage " + ds1_ac::circuitStageMenuLabel(circuit)
+                                  + "  |  " + juce::String(ds1_ac::circuitOperatorKey(circuit))
+                                  + "  |  " + juce::String(ds1_ac::circuitProcessFunctionName(circuit)),
+                              juce::dontSendNotification);
+    }
 
     opampModelBox.setVisible(false);
     opampModelBox.setEnabled(false);
@@ -462,19 +507,31 @@ void MainComponent::updatePlotView()
     resized();
 }
 
+bool MainComponent::isStandaloneOperator() const
+{
+    return pedalBox.getSelectedId() == kOperatorsMenuId;
+}
+
 ds1_ac::PedalKind MainComponent::getPedalFromSelection() const
 {
     const int selectedId = pedalBox.getSelectedId();
     if (selectedId >= 1 && selectedId <= static_cast<int>(std::size(kPedalMenuEntries)))
         return kPedalMenuEntries[static_cast<size_t>(selectedId - 1)].kind;
 
-    return ds1_ac::PedalKind::Ds1;
+    return lastPedalKind_;
 }
 
 ds1_ac::CircuitKind MainComponent::getCircuitFromSelection() const
 {
-    const auto pedal = getPedalFromSelection();
     const int selectedId = circuitBox.getSelectedId();
+    if (isStandaloneOperator())
+    {
+        if (selectedId >= 1 && selectedId <= ds1_ac::kCircuitCount)
+            return static_cast<ds1_ac::CircuitKind>(selectedId - 1);
+        return ds1_ac::CircuitKind::BjtFollower;
+    }
+
+    const auto pedal = getPedalFromSelection();
     if (selectedId >= 1 && selectedId <= ds1_ac::pedalStageCount(pedal))
         return ds1_ac::pedalStageCircuit(pedal, selectedId - 1);
 
@@ -600,10 +657,10 @@ void MainComponent::resized()
     auto toolbar = area.removeFromTop(34);
     themeButton.setBounds(toolbar.removeFromRight(160));
     pedalLabel.setBounds(toolbar.removeFromLeft(40));
-    pedalBox.setBounds(toolbar.removeFromLeft(120));
+    pedalBox.setBounds(toolbar.removeFromLeft(160));
     toolbar.removeFromLeft(8);
-    circuitLabel.setBounds(toolbar.removeFromLeft(48));
-    circuitBox.setBounds(toolbar.removeFromLeft(220));
+    circuitLabel.setBounds(toolbar.removeFromLeft(isStandaloneOperator() ? 64 : 48));
+    circuitBox.setBounds(toolbar.removeFromLeft(isStandaloneOperator() ? 260 : 220));
     toolbar.removeFromLeft(8);
     opampModelBox.setBounds(toolbar.removeFromLeft(110));
     toolbar.removeFromLeft(8);
