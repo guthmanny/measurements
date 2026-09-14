@@ -3,6 +3,8 @@
 #include "SineWavePreviewEngine.h"
 #include "SchematicComponentApply.h"
 
+#include <mudsp/schematic/svg_cell_id.hpp>
+
 #include <atom/SvgView.h>
 
 #include <cmath>
@@ -1127,16 +1129,7 @@ namespace ds1_ac
 
     juce::String switchCanonicalName(const juce::String& overlayKey)
     {
-        auto name = overlayKey;
-        if (name.startsWithIgnoreCase("SWITCH_"))
-            name = name.substring(7);
-        else if (name.startsWithIgnoreCase("SWITCH:"))
-            name = name.substring(7);
-
-        name = name.trim();
-        if (name.equalsIgnoreCase("SW2"))
-            return "SW1";
-        return name.toUpperCase();
+        return juce::String(mudsp::schematic::switchGangName(overlayKey.toStdString()));
     }
 
     namespace

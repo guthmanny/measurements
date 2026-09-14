@@ -1,5 +1,7 @@
 #include "SchematicComponentApply.h"
 
+#include <mudsp/schematic/svg_cell_id.hpp>
+
 #include "nudsp/linear_circuits/ac_booster_eq_f32.h"
 #include "nudsp/linear_circuits/ds1_opamp_f32.h"
 #include "nudsp/linear_circuits/ds_plus_opamp_f32.h"
@@ -227,7 +229,7 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
     if constexpr (requires { cfg.sw1.position; })
     {
         applySwitch(cfg.sw1, "SW1");
-        if (key.equalsIgnoreCase("SW2") || key.equalsIgnoreCase("SWITCH_SW2"))
+        if (mudsp::schematic::switchGangName(key.toStdString()) == "SW1")
             cfg.sw1.position = static_cast<uint8_t>(juce::jlimit(0, 255, juce::roundToInt(value)));
     }
     if constexpr (requires { cfg.sw_clean.position; })
