@@ -199,6 +199,61 @@ void SineWavePreviewEngine::destroyInstance() noexcept
         nx_diode_clipper_destroy_f32(diodeClipper_, nullptr);
         diodeClipper_ = nullptr;
     }
+    if (ratOpamp_ != nullptr)
+    {
+        nx_rat_opamp_destroy_f32(ratOpamp_, nullptr);
+        ratOpamp_ = nullptr;
+    }
+    if (ratClipper_ != nullptr)
+    {
+        nx_rat_clipper_destroy_f32(ratClipper_, nullptr);
+        ratClipper_ = nullptr;
+    }
+    if (jfetFollower_ != nullptr)
+    {
+        nx_jfet_follower_destroy_f32(jfetFollower_, nullptr);
+        jfetFollower_ = nullptr;
+    }
+    if (sansampPreEq_ != nullptr)
+    {
+        nx_sansamp_classic_pre_eq_destroy_f32(sansampPreEq_, nullptr);
+        sansampPreEq_ = nullptr;
+    }
+    if (sansampPreamp_ != nullptr)
+    {
+        nx_sansamp_classic_preamp_destroy_f32(sansampPreamp_, nullptr);
+        sansampPreamp_ = nullptr;
+    }
+    if (sansampGainCtrl_ != nullptr)
+    {
+        nx_sansamp_classic_gain_ctrl_destroy_f32(sansampGainCtrl_, nullptr);
+        sansampGainCtrl_ = nullptr;
+    }
+    if (sansampPostamp_ != nullptr)
+    {
+        nx_sansamp_classic_postamp_destroy_f32(sansampPostamp_, nullptr);
+        sansampPostamp_ = nullptr;
+    }
+    if (sansampSpk_ != nullptr)
+    {
+        nx_sansamp_classic_spk_destroy_f32(sansampSpk_, nullptr);
+        sansampSpk_ = nullptr;
+    }
+    if (sansampPosition_ != nullptr)
+    {
+        nx_sansamp_classic_position_destroy_f32(sansampPosition_, nullptr);
+        sansampPosition_ = nullptr;
+    }
+    if (sansampCapture_ != nullptr)
+    {
+        nx_sansamp_classic_capture_destroy_f32(sansampCapture_, nullptr);
+        sansampCapture_ = nullptr;
+    }
+    if (sansampOutput_ != nullptr)
+    {
+        nx_sansamp_classic_output_destroy_f32(sansampOutput_, nullptr);
+        sansampOutput_ = nullptr;
+    }
 }
 
 bool SineWavePreviewEngine::ensureStructuralReady(const SinePreviewSetupParams& setup)
@@ -480,6 +535,125 @@ bool SineWavePreviewEngine::ensureStructuralReady(const SinePreviewSetupParams& 
         nx_diode_clipper_reset_f32(diodeClipper_);
         break;
 
+    case CircuitKind::RatOpamp:
+        ratOpamp_ = nx_rat_opamp_create_f32(nullptr);
+        if (ratOpamp_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, ratOpamp_, setup.componentValues);
+        updatePotTaper(ratOpamp_, nx_rat_opamp_get_distortion_pot_f32, nx_rat_opamp_set_distortion_pot_f32, setup.potTaper);
+        nx_rat_opamp_set_opamp_model_f32(ratOpamp_, setup.model);
+        nx_rat_opamp_set_distortion_control_f32(ratOpamp_, clampControl(setup.gainControl));
+        nx_rat_opamp_prepare_f32(ratOpamp_, setup.sampleRateHz);
+        nx_rat_opamp_reset_f32(ratOpamp_);
+        break;
+
+    case CircuitKind::RatClipper:
+        ratClipper_ = nx_rat_clipper_create_f32(nullptr);
+        if (ratClipper_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, ratClipper_, setup.componentValues);
+        updatePotTaper(ratClipper_, nx_rat_clipper_get_filter_pot_f32, nx_rat_clipper_set_filter_pot_f32, setup.potTaper);
+        nx_rat_clipper_set_diode_model_f32(ratClipper_, setup.diodeModel);
+        nx_rat_clipper_set_filter_control_f32(ratClipper_, clampControl(setup.gainControl));
+        nx_rat_clipper_prepare_f32(ratClipper_, setup.sampleRateHz);
+        nx_rat_clipper_reset_f32(ratClipper_);
+        break;
+
+    case CircuitKind::JfetFollower:
+        jfetFollower_ = nx_jfet_follower_create_f32(nullptr);
+        if (jfetFollower_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, jfetFollower_, setup.componentValues);
+        nx_jfet_follower_set_jfet_model_f32(jfetFollower_, setup.jfetModel);
+        nx_jfet_follower_prepare_f32(jfetFollower_, setup.sampleRateHz);
+        nx_jfet_follower_reset_f32(jfetFollower_);
+        break;
+
+    case CircuitKind::SansampPreEq:
+        sansampPreEq_ = nx_sansamp_classic_pre_eq_create_f32(nullptr);
+        if (sansampPreEq_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, sansampPreEq_, setup.componentValues);
+        nx_sansamp_classic_pre_eq_prepare_f32(sansampPreEq_, setup.sampleRateHz);
+        nx_sansamp_classic_pre_eq_reset_f32(sansampPreEq_);
+        break;
+
+    case CircuitKind::SansampPreamp:
+        sansampPreamp_ = nx_sansamp_classic_preamp_create_f32(nullptr);
+        if (sansampPreamp_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, sansampPreamp_, setup.componentValues);
+        updatePotTaper(sansampPreamp_, nx_sansamp_classic_preamp_get_p1_pot_f32, nx_sansamp_classic_preamp_set_p1_pot_f32, setup.potTaper);
+        nx_sansamp_classic_preamp_set_opamp_model_f32(sansampPreamp_, setup.model);
+        nx_sansamp_classic_preamp_set_p1_control_f32(sansampPreamp_, clampControl(setup.gainControl));
+        nx_sansamp_classic_preamp_prepare_f32(sansampPreamp_, setup.sampleRateHz);
+        nx_sansamp_classic_preamp_reset_f32(sansampPreamp_);
+        break;
+
+    case CircuitKind::SansampGainCtrl:
+        sansampGainCtrl_ = nx_sansamp_classic_gain_ctrl_create_f32(nullptr);
+        if (sansampGainCtrl_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, sansampGainCtrl_, setup.componentValues);
+        updatePotTaper(sansampGainCtrl_, nx_sansamp_classic_gain_ctrl_get_p1_pot_f32, nx_sansamp_classic_gain_ctrl_set_p1_pot_f32, setup.potTaper);
+        nx_sansamp_classic_gain_ctrl_set_p1_control_f32(sansampGainCtrl_, clampControl(setup.gainControl));
+        nx_sansamp_classic_gain_ctrl_prepare_f32(sansampGainCtrl_, setup.sampleRateHz);
+        nx_sansamp_classic_gain_ctrl_reset_f32(sansampGainCtrl_);
+        break;
+
+    case CircuitKind::SansampPostamp:
+        sansampPostamp_ = nx_sansamp_classic_postamp_create_f32(nullptr);
+        if (sansampPostamp_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, sansampPostamp_, setup.componentValues);
+        nx_sansamp_classic_postamp_set_opamp_model_f32(sansampPostamp_, setup.model);
+        nx_sansamp_classic_postamp_prepare_f32(sansampPostamp_, setup.sampleRateHz);
+        nx_sansamp_classic_postamp_reset_f32(sansampPostamp_);
+        break;
+
+    case CircuitKind::SansampSpk:
+        sansampSpk_ = nx_sansamp_classic_spk_create_f32(nullptr);
+        if (sansampSpk_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, sansampSpk_, setup.componentValues);
+        nx_sansamp_classic_spk_set_opamp_model_f32(sansampSpk_, setup.model);
+        nx_sansamp_classic_spk_prepare_f32(sansampSpk_, setup.sampleRateHz);
+        nx_sansamp_classic_spk_reset_f32(sansampSpk_);
+        break;
+
+    case CircuitKind::SansampPosition:
+        sansampPosition_ = nx_sansamp_classic_position_create_f32(nullptr);
+        if (sansampPosition_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, sansampPosition_, setup.componentValues);
+        nx_sansamp_classic_position_set_opamp_model_f32(sansampPosition_, setup.model);
+        nx_sansamp_classic_position_prepare_f32(sansampPosition_, setup.sampleRateHz);
+        nx_sansamp_classic_position_reset_f32(sansampPosition_);
+        break;
+
+    case CircuitKind::SansampCapture:
+        sansampCapture_ = nx_sansamp_classic_capture_create_f32(nullptr);
+        if (sansampCapture_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, sansampCapture_, setup.componentValues);
+        updatePotTaper(sansampCapture_, nx_sansamp_classic_capture_get_p1_pot_f32, nx_sansamp_classic_capture_set_p1_pot_f32, setup.potTaper);
+        nx_sansamp_classic_capture_set_opamp_model_f32(sansampCapture_, setup.model);
+        nx_sansamp_classic_capture_set_p1_control_f32(sansampCapture_, clampControl(setup.gainControl));
+        nx_sansamp_classic_capture_prepare_f32(sansampCapture_, setup.sampleRateHz);
+        nx_sansamp_classic_capture_reset_f32(sansampCapture_);
+        break;
+
+    case CircuitKind::SansampOutput:
+        sansampOutput_ = nx_sansamp_classic_output_create_f32(nullptr);
+        if (sansampOutput_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, sansampOutput_, setup.componentValues);
+        updatePotTaper(sansampOutput_, nx_sansamp_classic_output_get_p1_pot_f32, nx_sansamp_classic_output_set_p1_pot_f32, setup.potTaper);
+        nx_sansamp_classic_output_set_p1_control_f32(sansampOutput_, clampControl(setup.gainControl));
+        nx_sansamp_classic_output_prepare_f32(sansampOutput_, setup.sampleRateHz);
+        nx_sansamp_classic_output_reset_f32(sansampOutput_);
+        break;
+
     case CircuitKind::Ds1Opamp:
     default:
         ds1Opamp_ = nx_ds1_opamp_create_f32(nullptr);
@@ -609,6 +783,61 @@ bool SineWavePreviewEngine::resetStates() noexcept
         if (diodeClipper_ == nullptr)
             return false;
         nx_diode_clipper_reset_f32(diodeClipper_);
+        return true;
+    case CircuitKind::RatOpamp:
+        if (ratOpamp_ == nullptr)
+            return false;
+        nx_rat_opamp_reset_f32(ratOpamp_);
+        return true;
+    case CircuitKind::RatClipper:
+        if (ratClipper_ == nullptr)
+            return false;
+        nx_rat_clipper_reset_f32(ratClipper_);
+        return true;
+    case CircuitKind::JfetFollower:
+        if (jfetFollower_ == nullptr)
+            return false;
+        nx_jfet_follower_reset_f32(jfetFollower_);
+        return true;
+    case CircuitKind::SansampPreEq:
+        if (sansampPreEq_ == nullptr)
+            return false;
+        nx_sansamp_classic_pre_eq_reset_f32(sansampPreEq_);
+        return true;
+    case CircuitKind::SansampPreamp:
+        if (sansampPreamp_ == nullptr)
+            return false;
+        nx_sansamp_classic_preamp_reset_f32(sansampPreamp_);
+        return true;
+    case CircuitKind::SansampGainCtrl:
+        if (sansampGainCtrl_ == nullptr)
+            return false;
+        nx_sansamp_classic_gain_ctrl_reset_f32(sansampGainCtrl_);
+        return true;
+    case CircuitKind::SansampPostamp:
+        if (sansampPostamp_ == nullptr)
+            return false;
+        nx_sansamp_classic_postamp_reset_f32(sansampPostamp_);
+        return true;
+    case CircuitKind::SansampSpk:
+        if (sansampSpk_ == nullptr)
+            return false;
+        nx_sansamp_classic_spk_reset_f32(sansampSpk_);
+        return true;
+    case CircuitKind::SansampPosition:
+        if (sansampPosition_ == nullptr)
+            return false;
+        nx_sansamp_classic_position_reset_f32(sansampPosition_);
+        return true;
+    case CircuitKind::SansampCapture:
+        if (sansampCapture_ == nullptr)
+            return false;
+        nx_sansamp_classic_capture_reset_f32(sansampCapture_);
+        return true;
+    case CircuitKind::SansampOutput:
+        if (sansampOutput_ == nullptr)
+            return false;
+        nx_sansamp_classic_output_reset_f32(sansampOutput_);
         return true;
     case CircuitKind::Ds1Opamp:
         if (ds1Opamp_ == nullptr)
@@ -751,6 +980,72 @@ bool SineWavePreviewEngine::runHotProcess(const float* input,
         if (diodeClipper_ == nullptr)
             return false;
         nx_diode_clipper_process_f32(diodeClipper_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::RatOpamp:
+        if (ratOpamp_ == nullptr)
+            return false;
+        nx_rat_opamp_process_f32(ratOpamp_, input, output, totalSamples);
+        vccOut = nx_rat_opamp_get_vcc_f32(ratOpamp_);
+        return true;
+    case CircuitKind::RatClipper:
+        if (ratClipper_ == nullptr)
+            return false;
+        nx_rat_clipper_process_f32(ratClipper_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::JfetFollower:
+        if (jfetFollower_ == nullptr)
+            return false;
+        nx_jfet_follower_process_f32(jfetFollower_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::SansampPreEq:
+        if (sansampPreEq_ == nullptr)
+            return false;
+        nx_sansamp_classic_pre_eq_process_f32(sansampPreEq_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::SansampPreamp:
+        if (sansampPreamp_ == nullptr)
+            return false;
+        nx_sansamp_classic_preamp_process_f32(sansampPreamp_, input, output, totalSamples);
+        vccOut = nx_sansamp_classic_preamp_get_vcc_f32(sansampPreamp_);
+        return true;
+    case CircuitKind::SansampGainCtrl:
+        if (sansampGainCtrl_ == nullptr)
+            return false;
+        nx_sansamp_classic_gain_ctrl_process_f32(sansampGainCtrl_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::SansampPostamp:
+        if (sansampPostamp_ == nullptr)
+            return false;
+        nx_sansamp_classic_postamp_process_f32(sansampPostamp_, input, output, totalSamples);
+        vccOut = nx_sansamp_classic_postamp_get_vcc_f32(sansampPostamp_);
+        return true;
+    case CircuitKind::SansampSpk:
+        if (sansampSpk_ == nullptr)
+            return false;
+        nx_sansamp_classic_spk_process_f32(sansampSpk_, input, output, totalSamples);
+        vccOut = nx_sansamp_classic_spk_get_vcc_f32(sansampSpk_);
+        return true;
+    case CircuitKind::SansampPosition:
+        if (sansampPosition_ == nullptr)
+            return false;
+        nx_sansamp_classic_position_process_f32(sansampPosition_, input, output, totalSamples);
+        vccOut = nx_sansamp_classic_position_get_vcc_f32(sansampPosition_);
+        return true;
+    case CircuitKind::SansampCapture:
+        if (sansampCapture_ == nullptr)
+            return false;
+        nx_sansamp_classic_capture_process_f32(sansampCapture_, input, output, totalSamples);
+        vccOut = nx_sansamp_classic_capture_get_vcc_f32(sansampCapture_);
+        return true;
+    case CircuitKind::SansampOutput:
+        if (sansampOutput_ == nullptr)
+            return false;
+        nx_sansamp_classic_output_process_f32(sansampOutput_, input, output, totalSamples);
         vccOut = kFallbackPreviewVcc;
         return true;
     case CircuitKind::Ds1Opamp:

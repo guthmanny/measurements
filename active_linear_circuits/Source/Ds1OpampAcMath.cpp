@@ -30,6 +30,7 @@ namespace ds1_ac
             DevOpamp = 1u << 0,
             DevDiode = 1u << 1,
             DevBjt = 1u << 2,
+            DevJfet = 1u << 3,
         };
 
         struct StageInfo
@@ -116,6 +117,39 @@ namespace ds1_ac
             {CircuitKind::DiodeClipper, "clipper", "diode_clipper", "Diode Clipper",
              "nx_diode_clipper_process_f32", "assets/schematics/core/nonlinear_circuits/diode_clipper.svg",
              "Level", nullptr, nullptr, DevDiode, false, false, 0.05},
+            {CircuitKind::RatOpamp, "opamp", "rat_opamp", "Opamp",
+             "nx_rat_opamp_process_f32", "assets/schematics/core/linear_circuits/rat_opamp.svg",
+             "Distortion", nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::RatClipper, "clipper", "rat_clipper", "Clipper",
+             "nx_rat_clipper_process_f32", "assets/schematics/core/nonlinear_circuits/rat_clipper.svg",
+             "Filter", nullptr, nullptr, DevDiode, false, false, 0.05},
+            {CircuitKind::JfetFollower, "buffer", "jfet_follower", "JFET Follower",
+             "nx_jfet_follower_process_f32", "assets/schematics/core/nonlinear_circuits/jfet_follower.svg",
+             nullptr, nullptr, nullptr, DevJfet, false, false, 0.01},
+            {CircuitKind::SansampPreEq, "pre_eq", "sansamp_classic_pre_eq", "Pre EQ",
+             "nx_sansamp_classic_pre_eq_process_f32", "assets/schematics/core/linear_circuits/sansamp_classic_pre_eq.svg",
+             nullptr, nullptr, nullptr, DevNone, true, false, 1.0},
+            {CircuitKind::SansampPreamp, "preamp", "sansamp_classic_preamp", "Preamp",
+             "nx_sansamp_classic_preamp_process_f32", "assets/schematics/core/linear_circuits/sansamp_classic_preamp.svg",
+             "Gain", nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::SansampGainCtrl, "gain_ctrl", "sansamp_classic_gain_ctrl", "Gain Ctrl",
+             "nx_sansamp_classic_gain_ctrl_process_f32", "assets/schematics/core/linear_circuits/sansamp_classic_gain_ctrl.svg",
+             "Gain", nullptr, nullptr, DevNone, true, false, 1.0},
+            {CircuitKind::SansampPostamp, "postamp", "sansamp_classic_postamp", "Postamp",
+             "nx_sansamp_classic_postamp_process_f32", "assets/schematics/core/linear_circuits/sansamp_classic_postamp.svg",
+             nullptr, nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::SansampSpk, "spk", "sansamp_classic_spk", "Speaker",
+             "nx_sansamp_classic_spk_process_f32", "assets/schematics/core/linear_circuits/sansamp_classic_spk.svg",
+             nullptr, nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::SansampPosition, "position", "sansamp_classic_position", "Position",
+             "nx_sansamp_classic_position_process_f32", "assets/schematics/core/linear_circuits/sansamp_classic_position.svg",
+             nullptr, nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::SansampCapture, "capture", "sansamp_classic_capture", "Capture",
+             "nx_sansamp_classic_capture_process_f32", "assets/schematics/core/linear_circuits/sansamp_classic_capture.svg",
+             "Capture", nullptr, nullptr, DevOpamp, true, false, 1.0},
+            {CircuitKind::SansampOutput, "output", "sansamp_classic_output", "Output",
+             "nx_sansamp_classic_output_process_f32", "assets/schematics/core/linear_circuits/sansamp_classic_output.svg",
+             "Level", nullptr, nullptr, DevNone, true, false, 1.0},
         };
 
         struct PedalStage
@@ -192,6 +226,23 @@ namespace ds1_ac
             {CircuitKind::GuvnorClipper, "clipper", "Clipper"},
             {CircuitKind::GuvnorLevel, "level", "Level"},
         };
+        constexpr PedalStage kRatPedalStages[] = {
+            {CircuitKind::RatOpamp, "opamp", "Opamp"},
+            {CircuitKind::RatClipper, "clipper", "Clipper"},
+            {CircuitKind::JfetFollower, "buffer", "JFET Follower"},
+            {CircuitKind::RcLevel, "level", "Level"},
+        };
+        constexpr PedalStage kSansampClassicPedalStages[] = {
+            {CircuitKind::BjtFollower, "bjt_follower", "BJT Follower"},
+            {CircuitKind::SansampPreEq, "pre_eq", "Pre EQ"},
+            {CircuitKind::SansampPreamp, "preamp", "Preamp"},
+            {CircuitKind::SansampGainCtrl, "gain_ctrl", "Gain Ctrl"},
+            {CircuitKind::SansampPostamp, "postamp", "Postamp"},
+            {CircuitKind::SansampSpk, "spk", "Speaker"},
+            {CircuitKind::SansampPosition, "position", "Position"},
+            {CircuitKind::SansampCapture, "capture", "Capture"},
+            {CircuitKind::SansampOutput, "output", "Output"},
+        };
 
         constexpr PedalInfo kPedals[] = {
             {PedalKind::Ds1, "ds1", "Boss DS-1",
@@ -221,6 +272,12 @@ namespace ds1_ac
             {PedalKind::Guvnor, "guvnor", "Guv'nor",
              "assets/schematics/extensions/white_box/pedals/guvnor.svg",
              kGuvnorPedalStages, static_cast<int>(std::size(kGuvnorPedalStages))},
+            {PedalKind::Rat, "rat", "Pro Co RAT",
+             "assets/schematics/extensions/white_box/pedals/rat.svg",
+             kRatPedalStages, static_cast<int>(std::size(kRatPedalStages))},
+            {PedalKind::SansampClassic, "sansamp_classic", "SansAmp Classic",
+             "assets/schematics/extensions/white_box/pedals/sansamp_classic.svg",
+             kSansampClassicPedalStages, static_cast<int>(std::size(kSansampClassicPedalStages))},
         };
 
         const StageInfo& stageInfo(CircuitKind circuit) noexcept
@@ -397,9 +454,9 @@ namespace ds1_ac
         return stageInfo(circuit).cheapAc;
     }
 
-    bool circuitUsesJfetModel(CircuitKind) noexcept
+    bool circuitUsesJfetModel(CircuitKind circuit) noexcept
     {
-        return false;
+        return (stageInfo(circuit).devices & DevJfet) != 0;
     }
 
     bool circuitHasPrimaryControl(CircuitKind circuit) noexcept
@@ -450,6 +507,17 @@ namespace ds1_ac
         case CircuitKind::GuvnorClipper:
         case CircuitKind::GuvnorLevel:
         case CircuitKind::DiodeClipper:
+        case CircuitKind::RatOpamp:
+        case CircuitKind::RatClipper:
+        case CircuitKind::JfetFollower:
+        case CircuitKind::SansampPreEq:
+        case CircuitKind::SansampPreamp:
+        case CircuitKind::SansampGainCtrl:
+        case CircuitKind::SansampPostamp:
+        case CircuitKind::SansampSpk:
+        case CircuitKind::SansampPosition:
+        case CircuitKind::SansampCapture:
+        case CircuitKind::SansampOutput:
             return NX_POT_TAPER_LINEAR;
         }
 
@@ -864,7 +932,8 @@ namespace ds1_ac
 
     nx_jfet_n_model_e defaultJfetModel(CircuitKind circuit) noexcept
     {
-        juce::ignoreUnused(circuit);
+        if (circuit == CircuitKind::JfetFollower)
+            return NX_JFET_J201;
         return NX_JFET_2N5457;
     }
 
@@ -1051,6 +1120,60 @@ namespace ds1_ac
         return NX_JFET_2N5457;
     }
 
+    bool isSwitchOverlayKey(const juce::String& overlayKey) noexcept
+    {
+        return overlayKey.startsWithIgnoreCase("SWITCH_");
+    }
+
+    juce::String switchCanonicalName(const juce::String& overlayKey)
+    {
+        auto name = overlayKey;
+        if (name.startsWithIgnoreCase("SWITCH_"))
+            name = name.substring(7);
+        else if (name.startsWithIgnoreCase("SWITCH:"))
+            name = name.substring(7);
+
+        name = name.trim();
+        if (name.equalsIgnoreCase("SW2"))
+            return "SW1";
+        return name.toUpperCase();
+    }
+
+    namespace
+    {
+        bool isPreEqRotarySwitch(const juce::String& canonicalName) noexcept
+        {
+            return canonicalName.equalsIgnoreCase("SW1");
+        }
+    } // namespace
+
+    void populateSwitchCombo(juce::ComboBox& combo, const juce::String& overlayKey)
+    {
+        combo.clear(juce::dontSendNotification);
+        if (isPreEqRotarySwitch(switchCanonicalName(overlayKey)))
+        {
+            combo.addItem("Lead", 1);
+            combo.addItem("Normal", 2);
+            combo.addItem("Bass", 3);
+            return;
+        }
+
+        combo.addItem("Off", 1);
+        combo.addItem("On", 2);
+    }
+
+    int switchComboId(const juce::String& overlayKey, uint8_t position) noexcept
+    {
+        const int throws = isPreEqRotarySwitch(switchCanonicalName(overlayKey)) ? 3 : 2;
+        return juce::jlimit(1, throws, static_cast<int>(position) + 1);
+    }
+
+    uint8_t switchPositionFromComboId(const juce::String& overlayKey, int comboId) noexcept
+    {
+        const int throws = isPreEqRotarySwitch(switchCanonicalName(overlayKey)) ? 3 : 2;
+        return static_cast<uint8_t>(juce::jlimit(0, throws - 1, comboId - 1));
+    }
+
     juce::String formatFrequencyTick(float log10Hz) noexcept
     {
         const double hz = std::pow(10.0, static_cast<double>(log10Hz));
@@ -1151,8 +1274,6 @@ namespace ds1_ac
                                        double tertiaryControl,
                                        nx_pot_taper_e potTaper)
         {
-            juce::ignoreUnused(jfetModel);
-
             juce::String title = circuitStageMenuLabel(circuit);
 
             if (circuitUsesOpampModel(circuit))
@@ -1161,6 +1282,8 @@ namespace ds1_ac
                 title += "  |  " + juce::String(diodeModelDisplayName(diodeModel));
             else if (circuitUsesBjtModel(circuit))
                 title += "  |  " + juce::String(bjtModelDisplayName(bjtModel));
+            else if (circuitUsesJfetModel(circuit))
+                title += "  |  " + juce::String(jfetModelDisplayName(jfetModel));
 
             if (circuitHasPrimaryControl(circuit))
                 title += "  |  " + juce::String(controlParameterName(circuit)) + " " + juce::String(control, 2)
@@ -1591,6 +1714,156 @@ namespace ds1_ac
                              sampleRateHz, freqs, magDb, phaseDeg);
         }
 
+        void runRatOpampAcSweep(nx_rat_opamp_f32_t* opamp,
+                                nx_opamp_model_e model,
+                                nx_pot_taper_e potTaper,
+                                double control,
+                                double sampleRateHz,
+                                const std::vector<double>& freqs,
+                                std::vector<double>& magDb,
+                                std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(opamp, nx_rat_opamp_get_distortion_pot_f32, nx_rat_opamp_set_distortion_pot_f32, potTaper);
+            nx_rat_opamp_set_opamp_model_f32(opamp, model);
+            nx_rat_opamp_set_distortion_control_f32(opamp, clampControl(control));
+            runConfigAcSweep(opamp, nx_rat_opamp_get_config_f32, nx_rat_opamp_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runRatClipperAcSweep(nx_rat_clipper_f32_t* clipper,
+                                  nx_diode_model_t diodeModel,
+                                  nx_pot_taper_e potTaper,
+                                  double control,
+                                  double sampleRateHz,
+                                  const std::vector<double>& freqs,
+                                  std::vector<double>& magDb,
+                                  std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(clipper, nx_rat_clipper_get_filter_pot_f32, nx_rat_clipper_set_filter_pot_f32, potTaper);
+            nx_rat_clipper_set_diode_model_f32(clipper, diodeModel);
+            nx_rat_clipper_set_filter_control_f32(clipper, clampControl(control));
+            runConfigAcSweep(clipper, nx_rat_clipper_get_config_f32, nx_rat_clipper_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runJfetFollowerAcSweep(nx_jfet_follower_f32_t* follower,
+                                    nx_jfet_n_model_e jfetModel,
+                                    double sampleRateHz,
+                                    const std::vector<double>& freqs,
+                                    std::vector<double>& magDb,
+                                    std::vector<double>& phaseDeg)
+        {
+            nx_jfet_follower_set_jfet_model_f32(follower, jfetModel);
+            runConfigAcSweep(follower, nx_jfet_follower_get_config_f32, nx_jfet_follower_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runSansampPreEqAcSweep(nx_sansamp_classic_pre_eq_f32_t* stage,
+                                    double sampleRateHz,
+                                    const std::vector<double>& freqs,
+                                    std::vector<double>& magDb,
+                                    std::vector<double>& phaseDeg)
+        {
+            runConfigAcSweep(stage, nx_sansamp_classic_pre_eq_get_config_f32, nx_sansamp_classic_pre_eq_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runSansampPreampAcSweep(nx_sansamp_classic_preamp_f32_t* preamp,
+                                     nx_opamp_model_e model,
+                                     nx_pot_taper_e potTaper,
+                                     double control,
+                                     double sampleRateHz,
+                                     const std::vector<double>& freqs,
+                                     std::vector<double>& magDb,
+                                     std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(preamp, nx_sansamp_classic_preamp_get_p1_pot_f32, nx_sansamp_classic_preamp_set_p1_pot_f32, potTaper);
+            nx_sansamp_classic_preamp_set_opamp_model_f32(preamp, model);
+            nx_sansamp_classic_preamp_set_p1_control_f32(preamp, clampControl(control));
+            runConfigAcSweep(preamp, nx_sansamp_classic_preamp_get_config_f32, nx_sansamp_classic_preamp_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runSansampGainCtrlAcSweep(nx_sansamp_classic_gain_ctrl_f32_t* stage,
+                                       nx_pot_taper_e potTaper,
+                                       double control,
+                                       double sampleRateHz,
+                                       const std::vector<double>& freqs,
+                                       std::vector<double>& magDb,
+                                       std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(stage, nx_sansamp_classic_gain_ctrl_get_p1_pot_f32, nx_sansamp_classic_gain_ctrl_set_p1_pot_f32, potTaper);
+            nx_sansamp_classic_gain_ctrl_set_p1_control_f32(stage, clampControl(control));
+            runConfigAcSweep(stage, nx_sansamp_classic_gain_ctrl_get_config_f32, nx_sansamp_classic_gain_ctrl_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runSansampPostampAcSweep(nx_sansamp_classic_postamp_f32_t* stage,
+                                      nx_opamp_model_e model,
+                                      double sampleRateHz,
+                                      const std::vector<double>& freqs,
+                                      std::vector<double>& magDb,
+                                      std::vector<double>& phaseDeg)
+        {
+            nx_sansamp_classic_postamp_set_opamp_model_f32(stage, model);
+            runConfigAcSweep(stage, nx_sansamp_classic_postamp_get_config_f32, nx_sansamp_classic_postamp_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runSansampSpkAcSweep(nx_sansamp_classic_spk_f32_t* stage,
+                                  nx_opamp_model_e model,
+                                  double sampleRateHz,
+                                  const std::vector<double>& freqs,
+                                  std::vector<double>& magDb,
+                                  std::vector<double>& phaseDeg)
+        {
+            nx_sansamp_classic_spk_set_opamp_model_f32(stage, model);
+            runConfigAcSweep(stage, nx_sansamp_classic_spk_get_config_f32, nx_sansamp_classic_spk_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runSansampPositionAcSweep(nx_sansamp_classic_position_f32_t* stage,
+                                       nx_opamp_model_e model,
+                                       double sampleRateHz,
+                                       const std::vector<double>& freqs,
+                                       std::vector<double>& magDb,
+                                       std::vector<double>& phaseDeg)
+        {
+            nx_sansamp_classic_position_set_opamp_model_f32(stage, model);
+            runConfigAcSweep(stage, nx_sansamp_classic_position_get_config_f32, nx_sansamp_classic_position_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runSansampCaptureAcSweep(nx_sansamp_classic_capture_f32_t* stage,
+                                      nx_opamp_model_e model,
+                                      nx_pot_taper_e potTaper,
+                                      double control,
+                                      double sampleRateHz,
+                                      const std::vector<double>& freqs,
+                                      std::vector<double>& magDb,
+                                      std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(stage, nx_sansamp_classic_capture_get_p1_pot_f32, nx_sansamp_classic_capture_set_p1_pot_f32, potTaper);
+            nx_sansamp_classic_capture_set_opamp_model_f32(stage, model);
+            nx_sansamp_classic_capture_set_p1_control_f32(stage, clampControl(control));
+            runConfigAcSweep(stage, nx_sansamp_classic_capture_get_config_f32, nx_sansamp_classic_capture_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
+        void runSansampOutputAcSweep(nx_sansamp_classic_output_f32_t* stage,
+                                     nx_pot_taper_e potTaper,
+                                     double control,
+                                     double sampleRateHz,
+                                     const std::vector<double>& freqs,
+                                     std::vector<double>& magDb,
+                                     std::vector<double>& phaseDeg)
+        {
+            updatePotTaper(stage, nx_sansamp_classic_output_get_p1_pot_f32, nx_sansamp_classic_output_set_p1_pot_f32, potTaper);
+            nx_sansamp_classic_output_set_p1_control_f32(stage, clampControl(control));
+            runConfigAcSweep(stage, nx_sansamp_classic_output_get_config_f32, nx_sansamp_classic_output_ac_static_f32,
+                             sampleRateHz, freqs, magDb, phaseDeg);
+        }
+
         AxisRange makeFrequencyAxis(float logMin, float logMax)
         {
             AxisRange range;
@@ -1660,8 +1933,6 @@ namespace ds1_ac
                                          float& maxMag,
                                          const SchematicComponentValues* componentValues)
         {
-            juce::ignoreUnused(jfetModel);
-
             switch (circuit)
             {
             case CircuitKind::Ds1Clipper:
@@ -1894,6 +2165,128 @@ namespace ds1_ac
                 nx_diode_clipper_destroy_f32(clipper, nullptr);
                 break;
             }
+            case CircuitKind::RatOpamp:
+            {
+                auto* opamp = createCircuitInstance<nx_rat_opamp_f32_t>(nx_rat_opamp_create_f32, circuit, componentValues);
+                if (opamp == nullptr)
+                    return;
+                runRatOpampAcSweep(opamp, model, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runRatOpampAcSweep(opamp, model, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_rat_opamp_destroy_f32(opamp, nullptr);
+                break;
+            }
+            case CircuitKind::RatClipper:
+            {
+                auto* clipper = createCircuitInstance<nx_rat_clipper_f32_t>(nx_rat_clipper_create_f32, circuit, componentValues);
+                if (clipper == nullptr)
+                    return;
+                runRatClipperAcSweep(clipper, diodeModel, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runRatClipperAcSweep(clipper, diodeModel, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_rat_clipper_destroy_f32(clipper, nullptr);
+                break;
+            }
+            case CircuitKind::JfetFollower:
+            {
+                auto* follower = createCircuitInstance<nx_jfet_follower_f32_t>(nx_jfet_follower_create_f32, circuit, componentValues);
+                if (follower == nullptr)
+                    return;
+                runJfetFollowerAcSweep(follower, jfetModel, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_jfet_follower_destroy_f32(follower, nullptr);
+                break;
+            }
+            case CircuitKind::SansampPreEq:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_pre_eq_f32_t>(nx_sansamp_classic_pre_eq_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return;
+                runSansampPreEqAcSweep(stage, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_sansamp_classic_pre_eq_destroy_f32(stage, nullptr);
+                break;
+            }
+            case CircuitKind::SansampPreamp:
+            {
+                auto* preamp = createCircuitInstance<nx_sansamp_classic_preamp_f32_t>(nx_sansamp_classic_preamp_create_f32, circuit, componentValues);
+                if (preamp == nullptr)
+                    return;
+                runSansampPreampAcSweep(preamp, model, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runSansampPreampAcSweep(preamp, model, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_sansamp_classic_preamp_destroy_f32(preamp, nullptr);
+                break;
+            }
+            case CircuitKind::SansampGainCtrl:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_gain_ctrl_f32_t>(nx_sansamp_classic_gain_ctrl_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return;
+                runSansampGainCtrlAcSweep(stage, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runSansampGainCtrlAcSweep(stage, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_sansamp_classic_gain_ctrl_destroy_f32(stage, nullptr);
+                break;
+            }
+            case CircuitKind::SansampPostamp:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_postamp_f32_t>(nx_sansamp_classic_postamp_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return;
+                runSansampPostampAcSweep(stage, model, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_sansamp_classic_postamp_destroy_f32(stage, nullptr);
+                break;
+            }
+            case CircuitKind::SansampSpk:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_spk_f32_t>(nx_sansamp_classic_spk_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return;
+                runSansampSpkAcSweep(stage, model, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_sansamp_classic_spk_destroy_f32(stage, nullptr);
+                break;
+            }
+            case CircuitKind::SansampPosition:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_position_f32_t>(nx_sansamp_classic_position_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return;
+                runSansampPositionAcSweep(stage, model, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_sansamp_classic_position_destroy_f32(stage, nullptr);
+                break;
+            }
+            case CircuitKind::SansampCapture:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_capture_f32_t>(nx_sansamp_classic_capture_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return;
+                runSansampCaptureAcSweep(stage, model, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runSansampCaptureAcSweep(stage, model, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_sansamp_classic_capture_destroy_f32(stage, nullptr);
+                break;
+            }
+            case CircuitKind::SansampOutput:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_output_f32_t>(nx_sansamp_classic_output_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return;
+                runSansampOutputAcSweep(stage, potTaper, 0.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                runSansampOutputAcSweep(stage, potTaper, 1.0, sampleRateHz, freqs, magDb, phaseDeg);
+                accumulateMagnitudeExtents(magDb, minMag, maxMag);
+                nx_sansamp_classic_output_destroy_f32(stage, nullptr);
+                break;
+            }
             case CircuitKind::Ds1Opamp:
             default:
             {
@@ -1925,8 +2318,6 @@ namespace ds1_ac
                                 std::vector<double>& phaseDeg,
                                 const SchematicComponentValues* componentValues)
         {
-            juce::ignoreUnused(jfetModel);
-
             switch (circuit)
             {
             case CircuitKind::Ds1Clipper:
@@ -2133,6 +2524,105 @@ namespace ds1_ac
                     return false;
                 runDiodeClipperAcSweep(clipper, diodeModel, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
                 nx_diode_clipper_destroy_f32(clipper, nullptr);
+                return true;
+            }
+            case CircuitKind::RatOpamp:
+            {
+                auto* opamp = createCircuitInstance<nx_rat_opamp_f32_t>(nx_rat_opamp_create_f32, circuit, componentValues);
+                if (opamp == nullptr)
+                    return false;
+                runRatOpampAcSweep(opamp, model, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_rat_opamp_destroy_f32(opamp, nullptr);
+                return true;
+            }
+            case CircuitKind::RatClipper:
+            {
+                auto* clipper = createCircuitInstance<nx_rat_clipper_f32_t>(nx_rat_clipper_create_f32, circuit, componentValues);
+                if (clipper == nullptr)
+                    return false;
+                runRatClipperAcSweep(clipper, diodeModel, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_rat_clipper_destroy_f32(clipper, nullptr);
+                return true;
+            }
+            case CircuitKind::JfetFollower:
+            {
+                auto* follower = createCircuitInstance<nx_jfet_follower_f32_t>(nx_jfet_follower_create_f32, circuit, componentValues);
+                if (follower == nullptr)
+                    return false;
+                runJfetFollowerAcSweep(follower, jfetModel, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_jfet_follower_destroy_f32(follower, nullptr);
+                return true;
+            }
+            case CircuitKind::SansampPreEq:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_pre_eq_f32_t>(nx_sansamp_classic_pre_eq_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return false;
+                runSansampPreEqAcSweep(stage, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_pre_eq_destroy_f32(stage, nullptr);
+                return true;
+            }
+            case CircuitKind::SansampPreamp:
+            {
+                auto* preamp = createCircuitInstance<nx_sansamp_classic_preamp_f32_t>(nx_sansamp_classic_preamp_create_f32, circuit, componentValues);
+                if (preamp == nullptr)
+                    return false;
+                runSansampPreampAcSweep(preamp, model, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_preamp_destroy_f32(preamp, nullptr);
+                return true;
+            }
+            case CircuitKind::SansampGainCtrl:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_gain_ctrl_f32_t>(nx_sansamp_classic_gain_ctrl_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return false;
+                runSansampGainCtrlAcSweep(stage, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_gain_ctrl_destroy_f32(stage, nullptr);
+                return true;
+            }
+            case CircuitKind::SansampPostamp:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_postamp_f32_t>(nx_sansamp_classic_postamp_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return false;
+                runSansampPostampAcSweep(stage, model, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_postamp_destroy_f32(stage, nullptr);
+                return true;
+            }
+            case CircuitKind::SansampSpk:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_spk_f32_t>(nx_sansamp_classic_spk_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return false;
+                runSansampSpkAcSweep(stage, model, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_spk_destroy_f32(stage, nullptr);
+                return true;
+            }
+            case CircuitKind::SansampPosition:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_position_f32_t>(nx_sansamp_classic_position_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return false;
+                runSansampPositionAcSweep(stage, model, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_position_destroy_f32(stage, nullptr);
+                return true;
+            }
+            case CircuitKind::SansampCapture:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_capture_f32_t>(nx_sansamp_classic_capture_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return false;
+                runSansampCaptureAcSweep(stage, model, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_capture_destroy_f32(stage, nullptr);
+                return true;
+            }
+            case CircuitKind::SansampOutput:
+            {
+                auto* stage = createCircuitInstance<nx_sansamp_classic_output_f32_t>(nx_sansamp_classic_output_create_f32, circuit, componentValues);
+                if (stage == nullptr)
+                    return false;
+                runSansampOutputAcSweep(stage, potTaper, gainControl, sampleRateHz, freqs, magDb, phaseDeg);
+                nx_sansamp_classic_output_destroy_f32(stage, nullptr);
                 return true;
             }
             case CircuitKind::Ds1Opamp:

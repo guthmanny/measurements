@@ -17,7 +17,16 @@
 #include "nudsp/linear_circuits/guvnor_postamp_f32.h"
 #include "nudsp/linear_circuits/guvnor_preamp_f32.h"
 #include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
+#include "nudsp/linear_circuits/rat_opamp_f32.h"
 #include "nudsp/linear_circuits/rc_level_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_capture_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_gain_ctrl_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_output_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_position_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_postamp_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_pre_eq_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_preamp_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_spk_f32.h"
 #include "nudsp/linear_circuits/sd1_tone_f32.h"
 #include "nudsp/linear_circuits/ts9_tone_f32.h"
 #include "nudsp/nonlinear_circuits/ac_booster_drive_f32.h"
@@ -27,8 +36,10 @@
 #include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/guvnor_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/jfet_follower_f32.h"
 #include "nudsp/nonlinear_circuits/klon_centaur_f32.h"
 #include "nudsp/nonlinear_circuits/od1_drive_f32.h"
+#include "nudsp/nonlinear_circuits/rat_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/rc_booster_drive1_f32.h"
 #include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
 
@@ -52,7 +63,9 @@ namespace ds1_ac
         DistortionPlus,
         Ts9,
         Klon,
-        Guvnor
+        Guvnor,
+        Rat,
+        SansampClassic
     };
 
     enum class CircuitKind
@@ -78,10 +91,21 @@ namespace ds1_ac
         GuvnorPostamp,
         GuvnorClipper,
         GuvnorLevel,
-        DiodeClipper
+        DiodeClipper,
+        RatOpamp,
+        RatClipper,
+        JfetFollower,
+        SansampPreEq,
+        SansampPreamp,
+        SansampGainCtrl,
+        SansampPostamp,
+        SansampSpk,
+        SansampPosition,
+        SansampCapture,
+        SansampOutput
     };
 
-    constexpr int kCircuitCount = static_cast<int>(CircuitKind::DiodeClipper) + 1;
+    constexpr int kCircuitCount = static_cast<int>(CircuitKind::SansampOutput) + 1;
 
     enum class PlotKind
     {
@@ -204,6 +228,11 @@ namespace ds1_ac
     void populateJfetModelCombo(juce::ComboBox& combo);
     /** Default JFET model encoded in schematic JFET overlays (hex id or label text). */
     nx_jfet_n_model_e defaultJfetModelFromSvgView(const atom::SvgView& view);
+    bool isSwitchOverlayKey(const juce::String& overlayKey) noexcept;
+    juce::String switchCanonicalName(const juce::String& overlayKey);
+    void populateSwitchCombo(juce::ComboBox& combo, const juce::String& overlayKey);
+    int switchComboId(const juce::String& overlayKey, uint8_t position) noexcept;
+    uint8_t switchPositionFromComboId(const juce::String& overlayKey, int comboId) noexcept;
     juce::String formatFrequencyTick(float log10Hz) noexcept;
     juce::String formatMagnitudeTick(float magDb) noexcept;
     juce::String formatPhaseTick(float phaseDeg) noexcept;

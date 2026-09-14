@@ -35,6 +35,8 @@ namespace
         {"Klon", ds1_ac::PedalKind::Klon},
         {"Distortion+", ds1_ac::PedalKind::DistortionPlus},
         {"Guv'nor", ds1_ac::PedalKind::Guvnor},
+        {"RAT", ds1_ac::PedalKind::Rat},
+        {"SansAmp Classic", ds1_ac::PedalKind::SansampClassic},
     };
 
     int circuitIndex(ds1_ac::CircuitKind circuit) noexcept
@@ -61,7 +63,7 @@ MainComponent::MainComponent()
     titleLabel.setFont(juce::Font(28.0f, juce::Font::bold));
     titleLabel.setJustificationType(juce::Justification::centredLeft);
 
-    subtitleLabel.setText("ds1 / ts9 / sd1 / od1 / ac booster / rc booster / klon / distortion+ / guvnor",
+    subtitleLabel.setText("ds1 / ts9 / sd1 / od1 / ac booster / rc booster / klon / distortion+ / guvnor / rat / sansamp classic",
                           juce::dontSendNotification);
     subtitleLabel.setJustificationType(juce::Justification::centredLeft);
     subtitleLabel.setInterceptsMouseClicks(false, false);

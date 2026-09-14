@@ -116,8 +116,14 @@ void LittleHostProcessor::parameterChanged (const juce::String& parameterID, flo
 
 void LittleHostProcessor::queuePluginReprepare (int pluginIndex)
 {
-    pendingPluginIndex_ = catalog_.empty() ? 0
-                                          : juce::jlimit (0, (int) catalog_.size() - 1, pluginIndex);
+    const int next = catalog_.empty() ? 0
+                                     : juce::jlimit (0, (int) catalog_.size() - 1, pluginIndex);
+    // ComboBoxAttachment fires on editor construct with the already-prepared plugin.
+    // Recreating it on the first processBlock drops the load-time quality prepare.
+    if (getKbussEngine().isReady() && next == pendingPluginIndex_)
+        return;
+
+    pendingPluginIndex_ = next;
     pluginPreparePending_.store (true);
 }
 
@@ -132,6 +138,7 @@ void LittleHostProcessor::reprepareSelectedPlugin()
     resetMiddleProcessorParamDefaults();
     updateEffectParameters();
     applyEffectTopologyBypassOverrides();
+    reapplyMiddleProcessingQuality();
     bumpMiddleProcessorGeneration();
 }
 

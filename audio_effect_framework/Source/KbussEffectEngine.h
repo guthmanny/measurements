@@ -38,8 +38,10 @@ public:
     /** Push domain value to a processor parameter (uses kbuss reflection). */
     void setParamDomain (kbuss::ObjectId processorId, std::string_view paramId, float domainValue);
 
-    /** Push normalized 0..1 directly (for discrete choice parameters). */
-    void setParamNormalized (kbuss::ObjectId processorId, std::string_view paramId, float normalized);
+    /** Push normalized 0..1 directly (for discrete choice parameters).
+        When force is true, skip the "already at this value" short-circuit. */
+    void setParamNormalized (kbuss::ObjectId processorId, std::string_view paramId, float normalized,
+                             bool force = false);
 
     [[nodiscard]] const kbuss::ParameterDescriptor* paramDescriptor (
         kbuss::ObjectId processorId, std::string_view paramId) const;

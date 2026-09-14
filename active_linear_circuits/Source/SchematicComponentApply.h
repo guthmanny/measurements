@@ -16,9 +16,11 @@ struct OperatorDeviceModels
     nx_opamp_model_e opamp{NX_OPAMP_BA728};
     nx_diode_model_t diode{NX_DIODE_1N4148};
     nx_bjt_npn_model_e bjt{NX_BJT_2N3904};
+    nx_jfet_n_model_e jfet{NX_JFET_2N5457};
     bool hasOpamp{false};
     bool hasDiode{false};
     bool hasBjt{false};
+    bool hasJfet{false};
 };
 
 /** Read default R/C/V/pot values from a freshly created operator instance. */

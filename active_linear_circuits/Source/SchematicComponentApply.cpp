@@ -8,7 +8,16 @@
 #include "nudsp/linear_circuits/guvnor_preamp_f32.h"
 #include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
 #include "nudsp/linear_circuits/od1_post_f32.h"
+#include "nudsp/linear_circuits/rat_opamp_f32.h"
 #include "nudsp/linear_circuits/rc_level_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_capture_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_gain_ctrl_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_output_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_position_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_postamp_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_pre_eq_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_preamp_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_spk_f32.h"
 #include "nudsp/linear_circuits/sd1_tone_f32.h"
 #include "nudsp/linear_circuits/ts9_tone_f32.h"
 #include "nudsp/nonlinear_circuits/ac_booster_drive_f32.h"
@@ -18,8 +27,10 @@
 #include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/guvnor_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/jfet_follower_f32.h"
 #include "nudsp/nonlinear_circuits/klon_centaur_f32.h"
 #include "nudsp/nonlinear_circuits/od1_drive_f32.h"
+#include "nudsp/nonlinear_circuits/rat_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/rc_booster_drive1_f32.h"
 #include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
 
@@ -79,6 +90,16 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
         static constexpr const char* names[] = {"P1", "DISTORTION"};
         applyPotValue(cfg.distortion, "DISTORTION", names, 2);
     }
+    if constexpr (requires { cfg.filter.pot_params.value; })
+    {
+        static constexpr const char* names[] = {"P1", "FILTER"};
+        applyPotValue(cfg.filter, "FILTER", names, 2);
+    }
+    if constexpr (requires { cfg.p1.pot_params.value; })
+    {
+        static constexpr const char* names[] = {"P1"};
+        applyPotValue(cfg.p1, "P1", names, 1);
+    }
     if constexpr (requires { cfg.tone.pot_params.value; })
     {
         static constexpr const char* names[] = {"P1", "RT", "Rt", "TONE"};
@@ -131,6 +152,18 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
         set(&Config::R8, "R8");
     if constexpr (requires { cfg.R9; })
         set(&Config::R9, "R9");
+    if constexpr (requires { cfg.Rsh; })
+        set(&Config::Rsh, "RSH");
+    if constexpr (requires { cfg.Rs; })
+        set(&Config::Rs, "RS");
+    if constexpr (requires { cfg.Rp1; })
+        set(&Config::Rp1, "RP1");
+    if constexpr (requires { cfg.Rgu; })
+        set(&Config::Rgu, "RGU");
+    if constexpr (requires { cfg.Rgd; })
+        set(&Config::Rgd, "RGD");
+    if constexpr (requires { cfg.Rp; })
+        set(&Config::Rp, "RP");
 
     if constexpr (requires { cfg.C1; })
         set(&Config::C1, "C1");
@@ -143,7 +176,10 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
     if constexpr (requires { cfg.C5; })
         set(&Config::C5, "C5");
     if constexpr (requires { cfg.C6; })
+    {
         set(&Config::C6, "C6");
+        set(&Config::C6, "CF");
+    }
     if constexpr (requires { cfg.C7; })
         set(&Config::C7, "C7");
     if constexpr (requires { cfg.C8; })
@@ -163,6 +199,41 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
     }
     if constexpr (requires { cfg.vce_sat; })
         set(&Config::vce_sat, "VCE_SAT");
+    if constexpr (requires { cfg.vd; })
+        set(&Config::vd, "VD");
+    if constexpr (requires { cfg.Aol; })
+        set(&Config::Aol, "AOL");
+    if constexpr (requires { cfg.Fu; })
+        set(&Config::Fu, "FU");
+
+    auto applySwitch = [&](auto& sw, const char* name)
+    {
+        if (key.equalsIgnoreCase(name) || key.equalsIgnoreCase(juce::String("SWITCH_") + name))
+            sw.position = static_cast<uint8_t>(juce::jlimit(0, 255, juce::roundToInt(value)));
+    };
+
+    if constexpr (requires { cfg.sw1.position; })
+    {
+        applySwitch(cfg.sw1, "SW1");
+        if (key.equalsIgnoreCase("SW2") || key.equalsIgnoreCase("SWITCH_SW2"))
+            cfg.sw1.position = static_cast<uint8_t>(juce::jlimit(0, 255, juce::roundToInt(value)));
+    }
+    if constexpr (requires { cfg.sw_clean.position; })
+        applySwitch(cfg.sw_clean, "SW_CLEAN");
+    if constexpr (requires { cfg.sw_mb1.position; })
+        applySwitch(cfg.sw_mb1, "SW_MB1");
+    if constexpr (requires { cfg.sw_mb2.position; })
+        applySwitch(cfg.sw_mb2, "SW_MB2");
+    if constexpr (requires { cfg.sw_bright.position; })
+        applySwitch(cfg.sw_bright, "SW_BRIGHT");
+    if constexpr (requires { cfg.sw_low_drive.position; })
+        applySwitch(cfg.sw_low_drive, "SW_LOW_DRIVE");
+    if constexpr (requires { cfg.sw_vintage.position; })
+        applySwitch(cfg.sw_vintage, "SW_VINTAGE");
+    if constexpr (requires { cfg.sw_speaker_edge.position; })
+        applySwitch(cfg.sw_speaker_edge, "SW_SPEAKER_EDGE");
+    if constexpr (requires { cfg.sw_close_miking.position; })
+        applySwitch(cfg.sw_close_miking, "SW_CLOSE_MIKING");
 }
 
 template<typename Config>
@@ -186,6 +257,10 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
         putPot(cfg.drive, "P1");
     if constexpr (requires { cfg.distortion.pot_params.value; })
         putPot(cfg.distortion, "P1");
+    if constexpr (requires { cfg.filter.pot_params.value; })
+        putPot(cfg.filter, "P1");
+    if constexpr (requires { cfg.p1.pot_params.value; })
+        putPot(cfg.p1, "P1");
     if constexpr (requires { cfg.tone.pot_params.value; })
         putPot(cfg.tone, "P1");
     if constexpr (requires { cfg.level.pot_params.value; })
@@ -220,6 +295,18 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
         put("R8", cfg.R8);
     if constexpr (requires { cfg.R9; })
         put("R9", cfg.R9);
+    if constexpr (requires { cfg.Rsh; })
+        put("RSH", cfg.Rsh);
+    if constexpr (requires { cfg.Rs; })
+        put("RS", cfg.Rs);
+    if constexpr (requires { cfg.Rp1; })
+        put("RP1", cfg.Rp1);
+    if constexpr (requires { cfg.Rgu; })
+        put("RGU", cfg.Rgu);
+    if constexpr (requires { cfg.Rgd; })
+        put("RGD", cfg.Rgd);
+    if constexpr (requires { cfg.Rp; })
+        put("RP", cfg.Rp);
 
     if constexpr (requires { cfg.C1; })
         put("C1", cfg.C1);
@@ -232,7 +319,10 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
     if constexpr (requires { cfg.C5; })
         put("C5", cfg.C5);
     if constexpr (requires { cfg.C6; })
+    {
         put("C6", cfg.C6);
+        put("CF", cfg.C6);
+    }
     if constexpr (requires { cfg.C7; })
         put("C7", cfg.C7);
     if constexpr (requires { cfg.C8; })
@@ -252,6 +342,30 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
     }
     if constexpr (requires { cfg.vce_sat; })
         put("VCE_SAT", cfg.vce_sat);
+    if constexpr (requires { cfg.vd; })
+        put("VD", cfg.vd);
+    if constexpr (requires { cfg.Aol; })
+        put("AOL", cfg.Aol);
+    if constexpr (requires { cfg.Fu; })
+        put("FU", cfg.Fu);
+    if constexpr (requires { cfg.sw1.position; })
+        put("SW1", static_cast<double>(cfg.sw1.position));
+    if constexpr (requires { cfg.sw_clean.position; })
+        put("SW_CLEAN", static_cast<double>(cfg.sw_clean.position));
+    if constexpr (requires { cfg.sw_mb1.position; })
+        put("SW_MB1", static_cast<double>(cfg.sw_mb1.position));
+    if constexpr (requires { cfg.sw_mb2.position; })
+        put("SW_MB2", static_cast<double>(cfg.sw_mb2.position));
+    if constexpr (requires { cfg.sw_bright.position; })
+        put("SW_BRIGHT", static_cast<double>(cfg.sw_bright.position));
+    if constexpr (requires { cfg.sw_low_drive.position; })
+        put("SW_LOW_DRIVE", static_cast<double>(cfg.sw_low_drive.position));
+    if constexpr (requires { cfg.sw_vintage.position; })
+        put("SW_VINTAGE", static_cast<double>(cfg.sw_vintage.position));
+    if constexpr (requires { cfg.sw_speaker_edge.position; })
+        put("SW_SPEAKER_EDGE", static_cast<double>(cfg.sw_speaker_edge.position));
+    if constexpr (requires { cfg.sw_close_miking.position; })
+        put("SW_CLOSE_MIKING", static_cast<double>(cfg.sw_close_miking.position));
 
     if (models == nullptr)
         return;
@@ -270,6 +384,11 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
     {
         models->hasBjt = true;
         models->bjt = cfg.bjt;
+    }
+    if constexpr (requires { cfg.jfet; })
+    {
+        models->hasJfet = true;
+        models->jfet = cfg.jfet;
     }
 }
 
@@ -473,6 +592,72 @@ void readOperatorState(CircuitKind circuit,
                     nx_guvnor_level_f32_t,
                     nx_guvnor_level_config_t,
                     nx_guvnor_level_get_config_f32);
+        READ_CONFIG(CircuitKind::RatOpamp,
+                    nx_rat_opamp_create_f32,
+                    nx_rat_opamp_destroy_f32,
+                    nx_rat_opamp_f32_t,
+                    nx_rat_opamp_config_t,
+                    nx_rat_opamp_get_config_f32);
+        READ_CONFIG(CircuitKind::RatClipper,
+                    nx_rat_clipper_create_f32,
+                    nx_rat_clipper_destroy_f32,
+                    nx_rat_clipper_f32_t,
+                    nx_rat_clipper_config_t,
+                    nx_rat_clipper_get_config_f32);
+        READ_CONFIG(CircuitKind::JfetFollower,
+                    nx_jfet_follower_create_f32,
+                    nx_jfet_follower_destroy_f32,
+                    nx_jfet_follower_f32_t,
+                    nx_jfet_follower_config_t,
+                    nx_jfet_follower_get_config_f32);
+        READ_CONFIG(CircuitKind::SansampPreEq,
+                    nx_sansamp_classic_pre_eq_create_f32,
+                    nx_sansamp_classic_pre_eq_destroy_f32,
+                    nx_sansamp_classic_pre_eq_f32_t,
+                    nx_sansamp_classic_pre_eq_config_t,
+                    nx_sansamp_classic_pre_eq_get_config_f32);
+        READ_CONFIG(CircuitKind::SansampPreamp,
+                    nx_sansamp_classic_preamp_create_f32,
+                    nx_sansamp_classic_preamp_destroy_f32,
+                    nx_sansamp_classic_preamp_f32_t,
+                    nx_sansamp_classic_preamp_config_t,
+                    nx_sansamp_classic_preamp_get_config_f32);
+        READ_CONFIG(CircuitKind::SansampGainCtrl,
+                    nx_sansamp_classic_gain_ctrl_create_f32,
+                    nx_sansamp_classic_gain_ctrl_destroy_f32,
+                    nx_sansamp_classic_gain_ctrl_f32_t,
+                    nx_sansamp_classic_gain_ctrl_config_t,
+                    nx_sansamp_classic_gain_ctrl_get_config_f32);
+        READ_CONFIG(CircuitKind::SansampPostamp,
+                    nx_sansamp_classic_postamp_create_f32,
+                    nx_sansamp_classic_postamp_destroy_f32,
+                    nx_sansamp_classic_postamp_f32_t,
+                    nx_sansamp_classic_postamp_config_t,
+                    nx_sansamp_classic_postamp_get_config_f32);
+        READ_CONFIG(CircuitKind::SansampSpk,
+                    nx_sansamp_classic_spk_create_f32,
+                    nx_sansamp_classic_spk_destroy_f32,
+                    nx_sansamp_classic_spk_f32_t,
+                    nx_sansamp_classic_spk_config_t,
+                    nx_sansamp_classic_spk_get_config_f32);
+        READ_CONFIG(CircuitKind::SansampPosition,
+                    nx_sansamp_classic_position_create_f32,
+                    nx_sansamp_classic_position_destroy_f32,
+                    nx_sansamp_classic_position_f32_t,
+                    nx_sansamp_classic_position_config_t,
+                    nx_sansamp_classic_position_get_config_f32);
+        READ_CONFIG(CircuitKind::SansampCapture,
+                    nx_sansamp_classic_capture_create_f32,
+                    nx_sansamp_classic_capture_destroy_f32,
+                    nx_sansamp_classic_capture_f32_t,
+                    nx_sansamp_classic_capture_config_t,
+                    nx_sansamp_classic_capture_get_config_f32);
+        READ_CONFIG(CircuitKind::SansampOutput,
+                    nx_sansamp_classic_output_create_f32,
+                    nx_sansamp_classic_output_destroy_f32,
+                    nx_sansamp_classic_output_f32_t,
+                    nx_sansamp_classic_output_config_t,
+                    nx_sansamp_classic_output_get_config_f32);
     default:
         break;
     }
@@ -623,6 +808,72 @@ void applySchematicComponentValues(CircuitKind circuit,
                      nx_guvnor_level_config_t,
                      nx_guvnor_level_get_config_f32,
                      nx_guvnor_level_set_config_f32);
+        APPLY_CONFIG(CircuitKind::RatOpamp,
+                     instance,
+                     nx_rat_opamp_f32_t,
+                     nx_rat_opamp_config_t,
+                     nx_rat_opamp_get_config_f32,
+                     nx_rat_opamp_set_config_f32);
+        APPLY_CONFIG(CircuitKind::RatClipper,
+                     instance,
+                     nx_rat_clipper_f32_t,
+                     nx_rat_clipper_config_t,
+                     nx_rat_clipper_get_config_f32,
+                     nx_rat_clipper_set_config_f32);
+        APPLY_CONFIG(CircuitKind::JfetFollower,
+                     instance,
+                     nx_jfet_follower_f32_t,
+                     nx_jfet_follower_config_t,
+                     nx_jfet_follower_get_config_f32,
+                     nx_jfet_follower_set_config_f32);
+        APPLY_CONFIG(CircuitKind::SansampPreEq,
+                     instance,
+                     nx_sansamp_classic_pre_eq_f32_t,
+                     nx_sansamp_classic_pre_eq_config_t,
+                     nx_sansamp_classic_pre_eq_get_config_f32,
+                     nx_sansamp_classic_pre_eq_set_config_f32);
+        APPLY_CONFIG(CircuitKind::SansampPreamp,
+                     instance,
+                     nx_sansamp_classic_preamp_f32_t,
+                     nx_sansamp_classic_preamp_config_t,
+                     nx_sansamp_classic_preamp_get_config_f32,
+                     nx_sansamp_classic_preamp_set_config_f32);
+        APPLY_CONFIG(CircuitKind::SansampGainCtrl,
+                     instance,
+                     nx_sansamp_classic_gain_ctrl_f32_t,
+                     nx_sansamp_classic_gain_ctrl_config_t,
+                     nx_sansamp_classic_gain_ctrl_get_config_f32,
+                     nx_sansamp_classic_gain_ctrl_set_config_f32);
+        APPLY_CONFIG(CircuitKind::SansampPostamp,
+                     instance,
+                     nx_sansamp_classic_postamp_f32_t,
+                     nx_sansamp_classic_postamp_config_t,
+                     nx_sansamp_classic_postamp_get_config_f32,
+                     nx_sansamp_classic_postamp_set_config_f32);
+        APPLY_CONFIG(CircuitKind::SansampSpk,
+                     instance,
+                     nx_sansamp_classic_spk_f32_t,
+                     nx_sansamp_classic_spk_config_t,
+                     nx_sansamp_classic_spk_get_config_f32,
+                     nx_sansamp_classic_spk_set_config_f32);
+        APPLY_CONFIG(CircuitKind::SansampPosition,
+                     instance,
+                     nx_sansamp_classic_position_f32_t,
+                     nx_sansamp_classic_position_config_t,
+                     nx_sansamp_classic_position_get_config_f32,
+                     nx_sansamp_classic_position_set_config_f32);
+        APPLY_CONFIG(CircuitKind::SansampCapture,
+                     instance,
+                     nx_sansamp_classic_capture_f32_t,
+                     nx_sansamp_classic_capture_config_t,
+                     nx_sansamp_classic_capture_get_config_f32,
+                     nx_sansamp_classic_capture_set_config_f32);
+        APPLY_CONFIG(CircuitKind::SansampOutput,
+                     instance,
+                     nx_sansamp_classic_output_f32_t,
+                     nx_sansamp_classic_output_config_t,
+                     nx_sansamp_classic_output_get_config_f32,
+                     nx_sansamp_classic_output_set_config_f32);
     default:
         break;
     }

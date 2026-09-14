@@ -8,7 +8,8 @@ include(AudioEffectFramework)
 set(NUDSP_NL_TABLE_PROFILE "balanced" CACHE STRING "NuDSP NL LUT bake: none|full|balanced|tiny" FORCE)
 set_property(CACHE NUDSP_NL_TABLE_PROFILE PROPERTY STRINGS none full balanced tiny)
 set(NUDSP_NL_TABLE_RATES "96000" CACHE STRING "NuDSP baked NL table sample rates" FORCE)
-set(NUDSP_NL_TABLE_MODULES "ds1" CACHE STRING "NuDSP NL bake module groups" FORCE)
+set(NUDSP_NL_TABLE_MODULES "ds1;guvnor;klon;ts9;od1;ac_booster;rc_booster;rat;sansamp"
+    CACHE STRING "NuDSP NL bake module groups" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
 set(BUILD_SSMEL_ENGINE OFF CACHE BOOL "" FORCE)
@@ -52,7 +53,7 @@ target_compile_definitions(LittleHost PRIVATE
     LITTLE_HOST_PLUGIN_DIR="${LITTLE_HOST_PLUGIN_DIR}")
 
 set(_little_host_dynamic_deps dynamic_ds1)
-foreach(_stem IN ITEMS ts9 klon distortion_plus guvnor sd1 od1 ac_booster rc_booster odr1 sansamp_classic gain)
+foreach(_stem IN ITEMS ts9 klon distortion_plus guvnor sd1 od1 ac_booster rc_booster rat odr1 sansamp_classic gain)
     if(TARGET dynamic_${_stem})
         list(APPEND _little_host_dynamic_deps dynamic_${_stem})
     endif()

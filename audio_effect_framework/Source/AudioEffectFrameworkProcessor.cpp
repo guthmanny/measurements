@@ -59,7 +59,7 @@ AudioEffectFrameworkProcessor::AudioEffectFrameworkProcessor()
                              "Meter Display Range",
                              {"20 dB", "40 dB", "60 dB", "80 dB", "100 dB", "120 dB"},
                              3),
-      paramProcessingQuality(parameters, "Processing Quality", {"STANDARD", "DELUXE", "ULTRA"}, 0),
+      paramProcessingQuality(parameters, "Processing Quality", {"STANDARD", "DELUXE", "ULTRA"}, 1),
       paramUpsamplerMode(parameters,
                          "Upsampler Mode",
                          {"Zero-Order Hold", "Zero Insert", "Linear", "Quadratic", "Cubic"},
@@ -263,7 +263,7 @@ void AudioEffectFrameworkProcessor::updateEffectParameters()
   pushMiddleProcessorParamDomains();
 }
 
-void AudioEffectFrameworkProcessor::syncMiddleProcessingQuality()
+void AudioEffectFrameworkProcessor::syncMiddleProcessingQuality(int choice)
 {
   ensureEffectEngine();
 
@@ -278,8 +278,39 @@ void AudioEffectFrameworkProcessor::syncMiddleProcessingQuality()
     juce::AudioProcessor& processor;
   } suspend (*this);
 
-  applyProcessingQualityFromParameters();
+  if (choice >= 0)
+  {
+    const int clamped = aef::composite_quality::clampChoice (choice);
+    if (auto* param = parameters.valueTreeState.getParameter (paramProcessingQuality.paramID))
+      param->setValueNotifyingHost (param->convertTo0to1 ((float) clamped));
 
+    if (! getMinibussEngine().applyMiddleProcessingQuality (clamped))
+    {
+      if (const auto* meta = findDynamicMiddleParam ("quality"))
+      {
+        if (auto* proc = getMinibussEngine().getMiddleProcessor())
+          (void) proc->set_parameter (meta->index,
+                                      aef::composite_quality::choiceToNormalized (clamped));
+      }
+    }
+  }
+  else
+  {
+    applyProcessingQualityFromParameters();
+  }
+
+  reprepareMiddleProcessorAfterQuality();
+}
+
+void AudioEffectFrameworkProcessor::reapplyMiddleProcessingQuality()
+{
+  ensureEffectEngine();
+  applyProcessingQualityFromParameters();
+  reprepareMiddleProcessorAfterQuality();
+}
+
+void AudioEffectFrameworkProcessor::reprepareMiddleProcessorAfterQuality()
+{
   if (auto* proc = getMinibussEngine().getMiddleProcessor())
   {
     const float sr = currentSampleRate > 0.0 ? (float) currentSampleRate : 48000.f;
@@ -980,6 +1011,16 @@ void AudioEffectFrameworkProcessor::setMiddleParamDomain(const juce::String& par
   const auto key = paramId.toStdString();
   const auto* desc = proc->parameter(key);
   const auto topLevelIds = aef::kbuss_param_ui::collectTopLevelParamIds(proc->parameters());
+
+  // Discrete choice params (Pre EQ Lead/Normal/Bass) must hit DSP on the UI
+  // click. Waiting for the next audio block + set_config can drop the first
+  // write; host then thinks the value already matches and never retries.
+  if (desc != nullptr && aef::kbuss_param_ui::hasChoiceLabels(*desc))
+  {
+    getMinibussEngine().setParamDomain(middleId, key, domainValue);
+    return;
+  }
+
   if (desc != nullptr && aef::kbuss_param_ui::isUserFacingParam(*desc, topLevelIds))
     return;
 

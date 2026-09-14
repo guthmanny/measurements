@@ -67,6 +67,16 @@ void EffectUserParamsPanel::addParamRow(const kbuss::ParameterDescriptor& desc)
         };
         control = std::move(toggle);
     }
+    else if (aef::kbuss_param_ui::hasChoiceLabels(desc))
+    {
+        auto combo = std::make_unique<atom::ComboBox>(paramId);
+        aef::kbuss_param_ui::configureKbussChoiceCombo(
+            *combo, desc, juce::roundToInt(initial));
+        combo->onChange = [this, paramId, raw = combo.get()]() {
+            processor_.setMiddleParamDomain(paramId, static_cast<float>(raw->getSelectedId() - 1));
+        };
+        control = std::move(combo);
+    }
     else
     {
         auto slider = std::make_unique<atom::Slider>();
@@ -100,26 +110,41 @@ void EffectUserParamsPanel::addMetaParamRow(const aef::dynamic_plugin_params::Me
     if (middle.get_parameter(meta.index, normalized) == kbuss::Status::Ok)
         initial = meta.minDomain + normalized * (meta.maxDomain - meta.minDomain);
 
-    auto slider = std::make_unique<atom::Slider>();
-    kbuss::ParameterDescriptor desc;
-    desc.id = meta.id.toStdString();
-    desc.label = meta.label.toStdString();
-    desc.min_domain = meta.minDomain;
-    desc.max_domain = meta.maxDomain;
-    desc.default_domain = meta.defaultDomain;
-    aef::kbuss_param_ui::configureKbussParamSlider(
-        *slider,
-        atomLookAndFeel_,
-        meta.minDomain,
-        meta.maxDomain,
-        aef::kbuss_param_ui::paramSliderInterval(desc),
-        aef::kbuss_param_ui::paramUnitSuffix(desc));
-    slider->setValue(initial, juce::dontSendNotification);
-    slider->onValueChange = [this, paramId, raw = slider.get()]() {
-        processor_.setMiddleParamDomain(paramId, static_cast<float>(raw->getValue()));
-    };
+    std::unique_ptr<juce::Component> control;
+    if (aef::kbuss_param_ui::isSwitchParam(paramId.toStdString(), meta.minDomain, meta.maxDomain))
+    {
+        auto toggle = std::make_unique<atom::ToggleButton>(paramId, juce::String());
+        toggle->setToggleState(initial >= 0.5f, juce::dontSendNotification);
+        toggle->setFontHeight(static_cast<float>(AtomLookAndFeel::getSystemUIFontHeight()));
+        toggle->onClick = [this, paramId, raw = toggle.get()]() {
+            processor_.setMiddleParamDomain(paramId, raw->getToggleState() ? 1.0f : 0.0f);
+        };
+        control = std::move(toggle);
+    }
+    else
+    {
+        auto slider = std::make_unique<atom::Slider>();
+        kbuss::ParameterDescriptor desc;
+        desc.id = meta.id.toStdString();
+        desc.label = meta.label.toStdString();
+        desc.min_domain = meta.minDomain;
+        desc.max_domain = meta.maxDomain;
+        desc.default_domain = meta.defaultDomain;
+        aef::kbuss_param_ui::configureKbussParamSlider(
+            *slider,
+            atomLookAndFeel_,
+            meta.minDomain,
+            meta.maxDomain,
+            aef::kbuss_param_ui::paramSliderInterval(desc),
+            aef::kbuss_param_ui::paramUnitSuffix(desc));
+        slider->setValue(initial, juce::dontSendNotification);
+        slider->onValueChange = [this, paramId, raw = slider.get()]() {
+            processor_.setMiddleParamDomain(paramId, static_cast<float>(raw->getValue()));
+        };
+        control = std::move(slider);
+    }
 
-    auto row = std::make_unique<ParamRow>(labelText, std::move(slider));
+    auto row = std::make_unique<ParamRow>(labelText, std::move(control));
     addAndMakeVisible(row.get());
     rowComponents_.add(row.release());
 }

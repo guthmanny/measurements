@@ -105,6 +105,25 @@ template <typename ParamRange>
     return " " + juce::String(desc.unit);
 }
 
+/** Switch / position parameters exported as 0..1 domain floats. */
+[[nodiscard]] inline bool isSwitchParam(std::string_view id, float min_domain,
+                                        float max_domain) noexcept
+{
+    return id.ends_with(".position") && min_domain == 0.f && max_domain == 1.f;
+}
+
+[[nodiscard]] inline bool isSwitchParam(const kbuss::ParameterDescriptor& desc) noexcept
+{
+    if (desc.type == kbuss::ParameterType::Bool)
+        return true;
+    return isSwitchParam(desc.id, desc.min_domain, desc.max_domain);
+}
+
+[[nodiscard]] inline bool hasChoiceLabels(const kbuss::ParameterDescriptor& desc) noexcept
+{
+    return ! desc.choices.empty();
+}
+
 [[nodiscard]] inline double paramSliderInterval(const kbuss::ParameterDescriptor& desc) noexcept
 {
     if (desc.type == kbuss::ParameterType::Int)

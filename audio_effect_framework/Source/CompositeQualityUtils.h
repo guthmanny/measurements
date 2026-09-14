@@ -40,7 +40,7 @@ inline constexpr const char* kMiddleQualityParamId = "quality";
     if (engine.paramDescriptor (middleId, kMiddleQualityParamId) == nullptr)
         return false;
 
-    engine.setParamNormalized (middleId, kMiddleQualityParamId, choiceToNormalized (choice));
+    engine.setParamNormalized (middleId, kMiddleQualityParamId, choiceToNormalized (choice), true);
     return true;
 }
 

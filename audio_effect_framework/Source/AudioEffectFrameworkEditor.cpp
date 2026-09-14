@@ -166,11 +166,11 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
       if (param == nullptr)
         return;
       const int id = footerBar.getQualityComboBox().getSelectedId();
-      const float choice = (float) juce::jlimit (0, 2, id - 1);
+      const int choice = juce::jlimit (0, 2, id - 1);
       param->beginChangeGesture();
-      param->setValueNotifyingHost (param->convertTo0to1 (choice));
+      param->setValueNotifyingHost (param->convertTo0to1 ((float) choice));
       param->endChangeGesture();
-      processor.syncMiddleProcessingQuality();
+      processor.syncMiddleProcessingQuality (choice);
     };
   }
 

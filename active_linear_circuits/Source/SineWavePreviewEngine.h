@@ -13,7 +13,16 @@
 #include "nudsp/linear_circuits/guvnor_preamp_f32.h"
 #include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
 #include "nudsp/linear_circuits/od1_post_f32.h"
+#include "nudsp/linear_circuits/rat_opamp_f32.h"
 #include "nudsp/linear_circuits/rc_level_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_capture_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_gain_ctrl_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_output_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_position_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_postamp_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_pre_eq_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_preamp_f32.h"
+#include "nudsp/linear_circuits/sansamp_classic_spk_f32.h"
 #include "nudsp/linear_circuits/sd1_tone_f32.h"
 #include "nudsp/linear_circuits/ts9_tone_f32.h"
 #include "nudsp/nonlinear_circuits/ac_booster_drive_f32.h"
@@ -23,8 +32,10 @@
 #include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/guvnor_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/jfet_follower_f32.h"
 #include "nudsp/nonlinear_circuits/klon_centaur_f32.h"
 #include "nudsp/nonlinear_circuits/od1_drive_f32.h"
+#include "nudsp/nonlinear_circuits/rat_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/rc_booster_drive1_f32.h"
 #include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
 
@@ -95,6 +106,17 @@ private:
     nx_guvnor_clipper_f32_t* guvnorClipper_{nullptr};
     nx_guvnor_level_f32_t* guvnorLevel_{nullptr};
     nx_diode_clipper_f32_t* diodeClipper_{nullptr};
+    nx_rat_opamp_f32_t* ratOpamp_{nullptr};
+    nx_rat_clipper_f32_t* ratClipper_{nullptr};
+    nx_jfet_follower_f32_t* jfetFollower_{nullptr};
+    nx_sansamp_classic_pre_eq_f32_t* sansampPreEq_{nullptr};
+    nx_sansamp_classic_preamp_f32_t* sansampPreamp_{nullptr};
+    nx_sansamp_classic_gain_ctrl_f32_t* sansampGainCtrl_{nullptr};
+    nx_sansamp_classic_postamp_f32_t* sansampPostamp_{nullptr};
+    nx_sansamp_classic_spk_f32_t* sansampSpk_{nullptr};
+    nx_sansamp_classic_position_f32_t* sansampPosition_{nullptr};
+    nx_sansamp_classic_capture_f32_t* sansampCapture_{nullptr};
+    nx_sansamp_classic_output_f32_t* sansampOutput_{nullptr};
 };
 
 } // namespace ds1_ac

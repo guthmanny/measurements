@@ -99,7 +99,8 @@ void KbussEffectEngine::setParamDomain (kbuss::ObjectId processorId,
 
 void KbussEffectEngine::setParamNormalized (kbuss::ObjectId processorId,
                                                std::string_view paramId,
-                                               float normalized)
+                                               float normalized,
+                                               bool force)
 {
     auto* proc = processor (processorId);
     if (proc == nullptr)
@@ -110,10 +111,13 @@ void KbussEffectEngine::setParamNormalized (kbuss::ObjectId processorId,
         return;
 
     const float clamped = juce::jlimit (0.f, 1.f, normalized);
-    float current = 0.f;
-    if (proc->get_parameter (desc->index, current) == kbuss::Status::Ok
-        && std::abs (current - clamped) <= 1.0e-7f)
-        return;
+    if (! force)
+    {
+        float current = 0.f;
+        if (proc->get_parameter (desc->index, current) == kbuss::Status::Ok
+            && std::abs (current - clamped) <= 1.0e-7f)
+            return;
+    }
 
     (void) proc->set_parameter (desc->index, clamped);
 }

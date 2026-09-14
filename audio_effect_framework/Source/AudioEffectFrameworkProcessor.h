@@ -173,8 +173,9 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   [[nodiscard]] int middleProcessorGeneration() const noexcept { return middleProcessorGeneration_.load(); }
   /** Composite chain hash, Zin staging, and Vout staging for the middle processor (footer). */
   [[nodiscard]] juce::String getMiddleModelTelemetryText() const;
-  /** Apply footer QUALITY to the middle processor (offline / control thread — not processBlock). */
-  void syncMiddleProcessingQuality();
+  /** Apply footer QUALITY to the middle processor (offline / control thread — not processBlock).
+      Pass the combo choice 0/1/2 when known; omit to read the APVTS value. */
+  void syncMiddleProcessingQuality(int choice = -1);
 
   KbussEffectEngine& getKbussEngine() noexcept;
   [[nodiscard]] const KbussEffectEngine& getKbussEngine() const noexcept;
@@ -203,6 +204,10 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   /** Reload middle-processor param defaults into middleParamDomains_. */
   void resetMiddleProcessorParamDefaults();
 
+  /** Push footer QUALITY and re-prepare the middle processor. Safe on the audio
+      thread during a plugin swap (does not suspendProcessing). */
+  void reapplyMiddleProcessingQuality();
+
   /** Notify UI that middle processor layout changed. */
   void bumpMiddleProcessorGeneration() noexcept { middleProcessorGeneration_.fetch_add(1); }
 
@@ -213,6 +218,7 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
   /** Host wrapper stays at 1×; composite quality is pushed to the middle processor when supported. */
   void applyResamplingModesFromParameters();
   void applyProcessingQualityFromParameters();
+  void reprepareMiddleProcessorAfterQuality();
   void ensureScratchBuffers(int numChannels, int numSamples);
   void mixToMonoBuffer(const AudioSampleBuffer& buffer, int numChannels, int numSamples);
   void pushTunerMono(const AudioSampleBuffer& buffer, int numChannels, int numSamples);

@@ -221,6 +221,17 @@ void ParamsSettingsPanel::rebuildFromMiddleProcessor()
                 };
                 controlRaw = toggle;
             }
+            else if (aef::kbuss_param_ui::hasChoiceLabels(*desc))
+            {
+                auto* combo = new atom::ComboBox(paramId);
+                paramControls_.add(combo);
+                aef::kbuss_param_ui::configureKbussChoiceCombo(
+                    *combo, *desc, juce::roundToInt(initial));
+                combo->onChange = [this, paramId, combo]() {
+                    processor_.setMiddleParamDomain(paramId, static_cast<float>(combo->getSelectedId() - 1));
+                };
+                controlRaw = combo;
+            }
             else
             {
                 auto* slider = new atom::Slider();

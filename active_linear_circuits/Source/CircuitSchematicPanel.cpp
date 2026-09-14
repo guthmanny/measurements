@@ -3,6 +3,7 @@
 #include "SchematicComponentApply.h"
 #include "SchematicSvgAdapter.h"
 
+#include <optional>
 #include <string_view>
 
 namespace
@@ -126,6 +127,21 @@ void loadSvgIntoView(atom::SvgView& view, const juce::File& file, juce::String& 
     if (view.getSvgNaturalBounds().isEmpty())
         status = "Failed to parse SVG: " + file.getFileName();
 }
+
+std::optional<double> findComponentValue(const ds1_ac::SchematicComponentValues& values, const juce::String& name)
+{
+    auto it = values.values.find(name);
+    if (it != values.values.end())
+        return it->second;
+
+    for (const auto& entry : values.values)
+    {
+        if (entry.first.equalsIgnoreCase(name))
+            return entry.second;
+    }
+
+    return std::nullopt;
+}
 } // namespace
 
 CircuitSchematicPanel::CircuitSchematicPanel()
@@ -150,6 +166,8 @@ CircuitSchematicPanel::CircuitSchematicPanel()
             ds1_ac::populateBjtModelCombo(combo);
         else if (key.startsWithIgnoreCase("JFET_"))
             ds1_ac::populateJfetModelCombo(combo);
+        else if (ds1_ac::isSwitchOverlayKey(key))
+            ds1_ac::populateSwitchCombo(combo, key);
     };
     svgView.onOverlaySelectionChanged = [this](const juce::String& key, int selectedId)
     {
@@ -161,6 +179,8 @@ CircuitSchematicPanel::CircuitSchematicPanel()
             handleBjtOverlaySelection(key, selectedId);
         else if (key.startsWithIgnoreCase("JFET_"))
             handleJfetOverlaySelection(key, selectedId);
+        else if (ds1_ac::isSwitchOverlayKey(key))
+            handleSwitchOverlaySelection(key, selectedId);
     };
     svgView.onOverlayTextChanged = [this](const juce::String& key, const juce::String& text)
     {
@@ -411,11 +431,46 @@ void CircuitSchematicPanel::handleJfetOverlaySelection(const juce::String& overl
         onJfetModelChanged(model);
 }
 
+void CircuitSchematicPanel::handleSwitchOverlaySelection(const juce::String& overlayKey, int selectedId)
+{
+    if (! ds1_ac::isSwitchOverlayKey(overlayKey))
+        return;
+
+    const auto canonical = ds1_ac::switchCanonicalName(overlayKey);
+    const auto position = ds1_ac::switchPositionFromComboId(overlayKey, selectedId);
+    const auto previous = findComponentValue(componentValues_, canonical);
+    if (previous && juce::roundToInt(*previous) == static_cast<int>(position))
+        return;
+
+    componentValues_.values[canonical] = static_cast<double>(position);
+    syncSwitchOverlaySelectors();
+    notifyComponentValuesChanged();
+}
+
+void CircuitSchematicPanel::syncSwitchOverlaySelectors()
+{
+    const auto keys = svgView.findOverlayKeysWithPrefix("SWITCH_");
+    if (keys.isEmpty())
+        return;
+
+    for (const auto& key : keys)
+    {
+        const auto canonical = ds1_ac::switchCanonicalName(key);
+        const auto stored = findComponentValue(componentValues_, canonical);
+        const auto fallback = canonical.equalsIgnoreCase("SW1") ? 1 : 0;
+        const auto position = static_cast<uint8_t>(stored ? juce::jlimit(0, 255, juce::roundToInt(*stored))
+                                                         : fallback);
+        svgView.setOverlaySelectedId(key, ds1_ac::switchComboId(key, position));
+    }
+
+    svgView.resized();
+}
+
 void CircuitSchematicPanel::handleOverlayTextChange(const juce::String& overlayKey, const juce::String& text)
 {
     if (overlayKey.startsWithIgnoreCase("OPAMP_") || overlayKey.startsWithIgnoreCase("DIODE_")
         || overlayKey.startsWithIgnoreCase("BJT_NPN_") || overlayKey.startsWithIgnoreCase("BJT_PNP_")
-        || overlayKey.startsWithIgnoreCase("JFET_"))
+        || overlayKey.startsWithIgnoreCase("JFET_") || ds1_ac::isSwitchOverlayKey(overlayKey))
         return;
 
     const auto parsed = ds1_ac::SchematicComponentValues::parseLabelText(text);
@@ -448,7 +503,7 @@ void CircuitSchematicPanel::applyOperatorValuesToOverlays()
     {
         if (key.startsWithIgnoreCase("OPAMP_") || key.startsWithIgnoreCase("DIODE_")
             || key.startsWithIgnoreCase("BJT_NPN_") || key.startsWithIgnoreCase("BJT_PNP_")
-            || key.startsWithIgnoreCase("JFET_"))
+            || key.startsWithIgnoreCase("JFET_") || ds1_ac::isSwitchOverlayKey(key))
             continue;
 
         auto component = key;
@@ -498,6 +553,8 @@ void CircuitSchematicPanel::applyOperatorValuesToOverlays()
         diodeModel_ = models.diode;
     if (models.hasBjt)
         bjtModel_ = models.bjt;
+    if (models.hasJfet)
+        jfetModel_ = models.jfet;
 }
 
 void CircuitSchematicPanel::updateInternalToggleVisibility()
@@ -594,10 +651,13 @@ void CircuitSchematicPanel::reloadSvg()
             onDiodeModelChanged(diodeModel_);
         if (onBjtModelChanged && ds1_ac::circuitUsesBjtModel(circuitKind_))
             onBjtModelChanged(bjtModel_);
+        if (onJfetModelChanged && ds1_ac::circuitUsesJfetModel(circuitKind_))
+            onJfetModelChanged(jfetModel_);
         syncOpampOverlaySelectors();
         syncDiodeOverlaySelectors();
         syncBjtOverlaySelectors();
         syncJfetOverlaySelectors();
+        syncSwitchOverlaySelectors();
     }
 
     notifyComponentValuesChanged();

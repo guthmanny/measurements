@@ -59,6 +59,8 @@ private:
     void handleDiodeOverlaySelection(const juce::String& overlayKey, int selectedId);
     void handleBjtOverlaySelection(const juce::String& overlayKey, int selectedId);
     void handleJfetOverlaySelection(const juce::String& overlayKey, int selectedId);
+    void handleSwitchOverlaySelection(const juce::String& overlayKey, int selectedId);
+    void syncSwitchOverlaySelectors();
     void handleOverlayTextChange(const juce::String& overlayKey, const juce::String& text);
     void notifyComponentValuesChanged();
     void applyOperatorValuesToOverlays();
