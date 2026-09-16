@@ -8,7 +8,8 @@
 
 /** Generic .kbplug host — scan a plugins directory and load the selected effect at runtime. */
 class LittleHostProcessor final : public AudioEffectFrameworkProcessor,
-                                  private juce::AudioProcessorValueTreeState::Listener
+                                  private juce::AudioProcessorValueTreeState::Listener,
+                                  private juce::AsyncUpdater
 {
 public:
     static constexpr const char* kPluginChoiceParamId = "dynamic_plugin";
@@ -22,7 +23,6 @@ public:
     bool acceptsMidi() const override;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-    void processBlock (juce::AudioSampleBuffer& buffer, juce::MidiBuffer& midiMessages) override;
 
     [[nodiscard]] const DynamicPluginCatalog& pluginCatalog() const noexcept { return catalog_; }
     [[nodiscard]] int currentPluginIndex() const;
@@ -37,7 +37,9 @@ private:
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
     void queuePluginReprepare (int pluginIndex);
+    void handleAsyncUpdate() override;
     void reprepareSelectedPlugin();
+    void applyHostSideMiddleConfig();
 
     DynamicPluginCatalog catalog_;
     std::atomic<bool> pluginPreparePending_{false};

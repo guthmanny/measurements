@@ -64,7 +64,11 @@ void applyLinearChartStyle(atom::CurveControl::Style& style)
 
 std::vector<float> buildPeriodTicks()
 {
-    return {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+    std::vector<float> ticks;
+    ticks.reserve(static_cast<size_t>(ds1_ac::kMaxPreviewPeriods + 1));
+    for (int i = 0; i <= ds1_ac::kMaxPreviewPeriods; ++i)
+        ticks.push_back(static_cast<float>(i));
+    return ticks;
 }
 
 std::vector<float> buildSupplyVoltageTicks(float vccHalf, bool groundReferenced)
@@ -126,7 +130,7 @@ void configureSineWaveCurve(atom::CurveControl& curve, const ds1_ac::SineWavePre
     yAxis.formatTick = [](float amp) { return ds1_ac::formatWaveformTick(amp); };
 
     curve.setTitle(preview.title);
-    curve.setXLabel("Period");
+    curve.setXLabel("Periods");
     curve.setYLabel("Output");
     curve.setShowXLabel(true);
     curve.setShowYLabel(true);
@@ -202,6 +206,42 @@ void layoutPhaseRow(juce::Rectangle<int> area,
 }
 }  // namespace
 
+juce::Colour Ds1OpampAcPanel::curveFreezeSlotColour(int index)
+{
+    static constexpr uint32_t kColours[kCurveFreezeSlotCount] = {
+        0xFFFF6B6B, 0xFF4ECDC4, 0xFFFFB020, 0xFF9B59FF, 0xFF2ECC71};
+    return juce::Colour(kColours[static_cast<size_t>(juce::jlimit(0, kCurveFreezeSlotCount - 1, index))]);
+}
+
+void Ds1OpampAcPanel::CurveFreezeColourSlot::setSlotColour(juce::Colour colour)
+{
+    slotColour_ = colour;
+    repaint();
+}
+
+void Ds1OpampAcPanel::CurveFreezeColourSlot::setActive(bool active)
+{
+    active_ = active;
+    repaint();
+}
+
+void Ds1OpampAcPanel::CurveFreezeColourSlot::paint(juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat().reduced(1.0f);
+    g.setColour(slotColour_.withAlpha(active_ ? 1.0f : 0.28f));
+    g.fillRoundedRectangle(bounds, 3.0f);
+    g.setColour(active_ ? slotColour_.brighter(0.25f) : slotColour_.withAlpha(0.65f));
+    g.drawRoundedRectangle(bounds, 3.0f, active_ ? 2.0f : 1.0f);
+}
+
+void Ds1OpampAcPanel::CurveFreezeColourSlot::mouseDown(const juce::MouseEvent& e)
+{
+    juce::ignoreUnused(e);
+    setActive(!active_);
+    if (onToggle)
+        onToggle(active_);
+}
+
 Ds1OpampAcPanel::Ds1OpampAcPanel()
 {
     setOpaque(true);
@@ -213,6 +253,14 @@ Ds1OpampAcPanel::Ds1OpampAcPanel()
     addAndMakeVisible(magnitudeCurve);
     addChildComponent(phaseCurve);
     addChildComponent(sineWaveCurve);
+
+    for (int i = 0; i < kCurveFreezeSlotCount; ++i)
+    {
+        auto& button = curveFreezeButtons_[static_cast<size_t>(i)];
+        button.setSlotColour(curveFreezeSlotColour(i));
+        button.onToggle = [this, i](bool active) { toggleCurveFreezeSlot(i, active); };
+        addAndMakeVisible(button);
+    }
 
     sweep_.freqMinHz = ds1_ac::kDefaultFreqMinHz;
     sweep_.freqMaxHz = ds1_ac::kDefaultFreqMaxHz;
@@ -246,6 +294,10 @@ void Ds1OpampAcPanel::setCircuitKind(ds1_ac::CircuitKind circuitKind)
     hasFixedMagnitudeAxis_ = false;
     lastResponse_ = {};
     lastSinePreview_ = {};
+    curveFreezeSlots_.fill(CurveFreezeSlotState{});
+    for (auto& button : curveFreezeButtons_)
+        button.setActive(false);
+    syncCurveFreezeOverlays();
     if (previewEngine_ != nullptr)
         previewEngine_->invalidate();
     refreshCurveViews();
@@ -687,6 +739,79 @@ void Ds1OpampAcPanel::refreshCurveViews()
 
     if (showSinePreview && !lastSinePreview_.outputCurve.empty())
         configureSineWaveCurve(sineWaveCurve, lastSinePreview_);
+
+    syncCurveFreezeOverlays();
+    layoutCurveFreezeButtons();
+}
+
+atom::CurveControl* Ds1OpampAcPanel::curveControlForFreeze()
+{
+    if (plotKind_ == ds1_ac::PlotKind::Phase)
+        return &phaseCurve;
+    return &magnitudeCurve;
+}
+
+std::vector<std::pair<float, float>> Ds1OpampAcPanel::currentCurvePointsForFreeze() const
+{
+    if (plotKind_ == ds1_ac::PlotKind::Phase)
+        return lastResponse_.phaseCurve;
+    return lastResponse_.magnitudeCurve;
+}
+
+void Ds1OpampAcPanel::toggleCurveFreezeSlot(int index, bool active)
+{
+    if (index < 0 || index >= kCurveFreezeSlotCount)
+        return;
+
+    auto& slot = curveFreezeSlots_[static_cast<size_t>(index)];
+    slot.active = active;
+    slot.points = active ? currentCurvePointsForFreeze() : std::vector<std::pair<float, float>>{};
+    syncCurveFreezeOverlays();
+}
+
+void Ds1OpampAcPanel::syncCurveFreezeOverlays()
+{
+    magnitudeCurve.clearFrozenCurves();
+    phaseCurve.clearFrozenCurves();
+
+    if (auto* curve = curveControlForFreeze())
+    {
+        std::array<atom::CurveControl::FrozenCurve, atom::CurveControl::kMaxFrozenCurves> overlays{};
+        for (size_t i = 0; i < overlays.size(); ++i)
+        {
+            overlays[i].active = curveFreezeSlots_[i].active;
+            overlays[i].colour = curveFreezeSlotColour(static_cast<int>(i));
+            overlays[i].points = curveFreezeSlots_[i].points;
+        }
+        curve->setFrozenCurves(overlays);
+    }
+}
+
+void Ds1OpampAcPanel::layoutCurveFreezeButtons()
+{
+    auto* target = curveControlForFreeze();
+    const bool showButtons = target != nullptr && target->isVisible();
+    for (auto& button : curveFreezeButtons_)
+        button.setVisible(showButtons);
+
+    if (!showButtons || target == nullptr)
+        return;
+
+    const auto anchor = target->getBounds();
+    constexpr int slotSize = 18;
+    constexpr int gap = 4;
+    constexpr int margin = 6;
+    int x = anchor.getRight() - margin - slotSize;
+    const int y = anchor.getY() + margin;
+
+    for (int i = kCurveFreezeSlotCount - 1; i >= 0; --i)
+    {
+        curveFreezeButtons_[static_cast<size_t>(i)].setBounds(x, y, slotSize, slotSize);
+        x -= slotSize + gap;
+    }
+
+    for (int i = 0; i < kCurveFreezeSlotCount; ++i)
+        curveFreezeButtons_[static_cast<size_t>(i)].toFront(false);
 }
 
 void Ds1OpampAcPanel::applyRebuildResult(RebuildResult&& result)
@@ -747,6 +872,7 @@ void Ds1OpampAcPanel::resized()
         area.removeFromTop(8);
         layoutPhaseRow(area, sineWaveCurve, phaseCurve);
         alignBottomRowWithMagnitude(magnitudeCurve, sineWaveCurve, phaseCurve);
+        layoutCurveFreezeButtons();
         return;
     }
 
@@ -754,8 +880,10 @@ void Ds1OpampAcPanel::resized()
     {
         layoutPhaseRow(area, sineWaveCurve, phaseCurve);
         alignCurveControlFrames(sineWaveCurve, phaseCurve);
+        layoutCurveFreezeButtons();
         return;
     }
 
     magnitudeCurve.setBounds(area);
+    layoutCurveFreezeButtons();
 }

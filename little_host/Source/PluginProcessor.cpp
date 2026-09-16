@@ -68,6 +68,7 @@ LittleHostProcessor::LittleHostProcessor()
 
 LittleHostProcessor::~LittleHostProcessor()
 {
+    cancelPendingUpdate();
     parameters.valueTreeState.removeParameterListener (kPluginChoiceParamId, this);
 }
 
@@ -125,6 +126,58 @@ void LittleHostProcessor::queuePluginReprepare (int pluginIndex)
 
     pendingPluginIndex_ = next;
     pluginPreparePending_.store (true);
+    triggerAsyncUpdate();
+}
+
+void LittleHostProcessor::handleAsyncUpdate()
+{
+    // prepareToPlay has not run yet; it re-triggers us once the rate is known.
+    if (lastSampleRate_ <= 0.0 || lastBlockSize_ <= 0)
+        return;
+
+    if (! pluginPreparePending_.exchange (false))
+        return;
+
+    auto* dynamicEngine = dynamic_cast<DynamicMiddleProcessorEffectEngine*> (&getKbussEngine());
+    if (dynamicEngine == nullptr)
+        return;
+
+    const auto sampleRate = (float) lastSampleRate_;
+    const auto blockSize = (std::uint32_t) juce::jmax (1, lastBlockSize_);
+
+    dynamicEngine->setSelectedPluginIndex (pendingPluginIndex_);
+
+    // Build and settle the new pedal while the old one is still the live middle, so the
+    // audio callback never sees the ~15 ms of construction.
+    auto swap = dynamicEngine->buildSelectedPlugin (sampleRate, blockSize);
+
+    if (swap.valid())
+    {
+        {
+            const juce::ScopedLock audioLock (getCallbackLock());
+            if (dynamicEngine->spliceMiddleProcessor (swap))
+                applyHostSideMiddleConfig();
+        }
+
+        dynamicEngine->releaseSwappedMiddleProcessor (swap);
+    }
+    else
+    {
+        // Rate or block size changed: the whole chain has to be rebuilt, which cannot be
+        // done behind the old instance. Suspend so it is silence rather than a missed deadline.
+        suspendProcessing (true);
+        reprepareSelectedPlugin();
+        suspendProcessing (false);
+    }
+}
+
+void LittleHostProcessor::applyHostSideMiddleConfig()
+{
+    resetMiddleProcessorParamDefaults();
+    updateEffectParameters();
+    applyEffectTopologyBypassOverrides();
+    reapplyMiddleProcessingQuality();
+    bumpMiddleProcessorGeneration();
 }
 
 void LittleHostProcessor::reprepareSelectedPlugin()
@@ -135,11 +188,7 @@ void LittleHostProcessor::reprepareSelectedPlugin()
 
     dynamicEngine->setSelectedPluginIndex (pendingPluginIndex_);
     dynamicEngine->reprepare ((float) lastSampleRate_, (std::uint32_t) juce::jmax (1, lastBlockSize_));
-    resetMiddleProcessorParamDefaults();
-    updateEffectParameters();
-    applyEffectTopologyBypassOverrides();
-    reapplyMiddleProcessingQuality();
-    bumpMiddleProcessorGeneration();
+    applyHostSideMiddleConfig();
 }
 
 void LittleHostProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -152,14 +201,10 @@ void LittleHostProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
     if (! getKbussEngine().isReady())
         juce::Logger::writeToLog ("LittleHost: kbuss engine failed to prepare — check plugins/ directory");
-}
 
-void LittleHostProcessor::processBlock (juce::AudioSampleBuffer& buffer, juce::MidiBuffer& midiMessages)
-{
-    if (pluginPreparePending_.exchange (false))
-        reprepareSelectedPlugin();
-
-    AudioEffectFrameworkProcessor::processBlock (buffer, midiMessages);
+    // A selection queued before the rate was known could not be serviced yet.
+    if (pluginPreparePending_.load())
+        triggerAsyncUpdate();
 }
 
 AudioProcessorEditor* LittleHostProcessor::createEditor()

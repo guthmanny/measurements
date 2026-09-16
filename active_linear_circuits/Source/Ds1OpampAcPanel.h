@@ -86,6 +86,40 @@ private:
     void refreshCurveViews();
     void paintBusyOverlay(juce::Graphics& g);
     void waitForWorkers();
+    void layoutCurveFreezeButtons();
+    void syncCurveFreezeOverlays();
+    void toggleCurveFreezeSlot(int index, bool active);
+    atom::CurveControl* curveControlForFreeze();
+    std::vector<std::pair<float, float>> currentCurvePointsForFreeze() const;
+    static juce::Colour curveFreezeSlotColour(int index);
+
+    class CurveFreezeColourSlot final : public juce::Component
+    {
+    public:
+        std::function<void(bool)> onToggle;
+
+        void setSlotColour(juce::Colour colour);
+        void setActive(bool active);
+        bool isActive() const noexcept { return active_; }
+
+        void paint(juce::Graphics& g) override;
+        void mouseDown(const juce::MouseEvent& e) override;
+
+    private:
+        juce::Colour slotColour_{juce::Colours::grey};
+        bool active_{false};
+    };
+
+    static constexpr int kCurveFreezeSlotCount = atom::CurveControl::kMaxFrozenCurves;
+
+    struct CurveFreezeSlotState
+    {
+        bool active{false};
+        std::vector<std::pair<float, float>> points;
+    };
+
+    std::array<CurveFreezeSlotState, kCurveFreezeSlotCount> curveFreezeSlots_{};
+    std::array<CurveFreezeColourSlot, kCurveFreezeSlotCount> curveFreezeButtons_{};
 
     ds1_ac::AcResponse lastResponse_;
     ds1_ac::SineWavePreview lastSinePreview_;

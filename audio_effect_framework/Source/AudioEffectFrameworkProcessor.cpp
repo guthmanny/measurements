@@ -298,15 +298,12 @@ void AudioEffectFrameworkProcessor::syncMiddleProcessingQuality(int choice)
   {
     applyProcessingQualityFromParameters();
   }
-
-  reprepareMiddleProcessorAfterQuality();
 }
 
 void AudioEffectFrameworkProcessor::reapplyMiddleProcessingQuality()
 {
   ensureEffectEngine();
   applyProcessingQualityFromParameters();
-  reprepareMiddleProcessorAfterQuality();
 }
 
 void AudioEffectFrameworkProcessor::reprepareMiddleProcessorAfterQuality()

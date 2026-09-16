@@ -94,8 +94,40 @@ protected:
 
     [[nodiscard]] kbuss::AudioEngine* engine() noexcept { return engine_.get(); }
     [[nodiscard]] kbuss::ObjectId trackId() const noexcept { return trackId_; }
+    [[nodiscard]] float preparedSampleRate() const noexcept { return preparedSampleRate_; }
+    [[nodiscard]] std::uint32_t preparedMaxBlockSize() const noexcept { return preparedMaxBlockSize_; }
 
     void addPluginFormat (std::unique_ptr<kbuss::PluginFormat> format);
+
+    /** Swap the middle slot on an existing chain (Gain→Gate→OS→middle→OS→Level).
+        Returns false if the graph is not ready or insertion fails (caller may full reprepare). */
+    bool replaceMiddleProcessor (const kbuss::PluginDescription& desc, std::string_view instanceName);
+
+public:
+    /** In-flight middle swap. Instantiating and settling a white-box pedal costs ~15 ms,
+        which is more than ten 64-sample blocks, so the swap is split: buildMiddleProcessor()
+        does that work while the old middle keeps processing, spliceMiddleProcessor() only
+        relinks the track, and releaseSwappedMiddleProcessor() frees the old instance once
+        the audio thread can no longer reach it. */
+    struct MiddleSwap
+    {
+        kbuss::ObjectId newId = kbuss::kInvalidObjectId;
+        kbuss::ObjectId oldId = kbuss::kInvalidObjectId;
+
+        [[nodiscard]] bool valid() const noexcept { return newId != kbuss::kInvalidObjectId; }
+    };
+
+    /** Phase 1 — safe to call while the audio thread is processing the current middle. */
+    [[nodiscard]] MiddleSwap buildMiddleProcessor (const kbuss::PluginDescription& desc,
+                                                  std::string_view instanceName);
+
+    /** Phase 2 — must run with processing suspended; only relinks the track. */
+    bool spliceMiddleProcessor (const MiddleSwap& swap);
+
+    /** Phase 3 — call after resuming; destroys the replaced instance. */
+    void releaseSwappedMiddleProcessor (MiddleSwap& swap);
+
+protected:
 
     /** Override in plugin-specific engines to insert processors between upsampler and downsampler. */
     virtual bool installMiddleProcessors (const ProcessorCreateFn& create);

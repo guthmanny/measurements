@@ -23,26 +23,74 @@ void DynamicMiddleProcessorEffectEngine::setSelectedPluginIndex (int index) noex
 
 void DynamicMiddleProcessorEffectEngine::reprepare (float sampleRate, std::uint32_t maxBlockSize)
 {
+    maxBlockSize = juce::jmax (std::uint32_t (1), maxBlockSize);
+
+    if (! resolveSelectedMiddleDesc())
+    {
+        release();
+        return;
+    }
+
+    if (isReady() && engine() != nullptr
+        && std::abs (sampleRate - preparedSampleRate()) <= 0.5f
+        && maxBlockSize <= preparedMaxBlockSize())
+    {
+        if (replaceMiddleProcessor (middleDesc_, "dynamic_fx"))
+        {
+            juce::Logger::writeToLog ("DynamicMiddleProcessorEffectEngine: swapped middle to "
+                                      + juce::String (middleDesc_.name)
+                                      + " ("
+                                      + juce::String (middleDesc_.uid)
+                                      + ")");
+            return;
+        }
+    }
+
     release();
     prepare (sampleRate, maxBlockSize);
+}
+
+KbussEffectEngine::MiddleSwap
+DynamicMiddleProcessorEffectEngine::buildSelectedPlugin (float sampleRate, std::uint32_t maxBlockSize)
+{
+    maxBlockSize = juce::jmax (std::uint32_t (1), maxBlockSize);
+
+    if (! resolveSelectedMiddleDesc())
+        return {};
+
+    const bool canSwapInPlace = isReady() && engine() != nullptr
+                                && std::abs (sampleRate - preparedSampleRate()) <= 0.5f
+                                && maxBlockSize <= preparedMaxBlockSize();
+    if (! canSwapInPlace)
+        return {};
+
+    return buildMiddleProcessor (middleDesc_, "dynamic_fx");
+}
+
+bool DynamicMiddleProcessorEffectEngine::resolveSelectedMiddleDesc() noexcept
+{
+    hasMiddleDesc_ = false;
+    middleDesc_ = {};
+
+    const auto* selected = catalog_.entry ((std::size_t) selectedIndex_);
+    if (selected == nullptr)
+        return false;
+
+    middleDesc_ = *selected;
+    hasMiddleDesc_ = true;
+    return true;
 }
 
 void DynamicMiddleProcessorEffectEngine::registerPluginFormats()
 {
     KbussEffectEngine::registerPluginFormats();
 
-    hasMiddleDesc_ = false;
-    middleDesc_ = {};
-
-    const auto* selected = catalog_.entry ((std::size_t) selectedIndex_);
-    if (selected == nullptr)
+    if (! resolveSelectedMiddleDesc())
         return;
 
     moduleLoader_ = std::make_shared<kbuss::ModuleLoader>();
     addPluginFormat (std::make_unique<kbuss::DynamicPluginFormat> (moduleLoader_));
 
-    middleDesc_ = *selected;
-    hasMiddleDesc_ = true;
     juce::Logger::writeToLog ("DynamicMiddleProcessorEffectEngine: selected "
                               + juce::String (middleDesc_.name)
                               + " ("

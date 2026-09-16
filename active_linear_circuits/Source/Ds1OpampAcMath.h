@@ -162,6 +162,7 @@ namespace ds1_ac
     constexpr double kDefaultPreviewFreqHz = 1000.0;
     constexpr double kPreviewAmpMin = 1.0e-6;
     constexpr double kPreviewAmpMax = 2.0;
+    constexpr int kMaxPreviewPeriods = 5;
 
     double defaultPreviewAmplitude(CircuitKind circuit) noexcept;
 

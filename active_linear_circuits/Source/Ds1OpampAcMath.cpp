@@ -1186,9 +1186,13 @@ namespace ds1_ac
         return juce::String(phaseDeg, 0) + juce::String(juce::CharPointer_UTF8("\xc2\xb0"));
     }
 
-    juce::String formatPeriodTick(float normalizedPeriod) noexcept
+    juce::String formatPeriodTick(float periodPosition) noexcept
     {
-        const int degrees = juce::roundToInt(normalizedPeriod * 360.0f);
+        const float withinPeriod = periodPosition - std::floor(periodPosition);
+        const int degrees = juce::roundToInt(withinPeriod * 360.0f);
+        if (degrees == 0 && periodPosition > 0.0f)
+            return juce::String(juce::roundToInt(periodPosition)) + "T";
+
         return juce::String(degrees) + juce::String(juce::CharPointer_UTF8("\xc2\xb0"));
     }
 
@@ -2817,10 +2821,11 @@ namespace ds1_ac
         juce::ignoreUnused(gainControl);
         const int periodSamples =
             juce::jmax(8, static_cast<int>(std::llround(safe.sampleRateHz / clampedFreq)));
-        std::vector<float> input(static_cast<size_t>(periodSamples));
-        std::vector<float> output(static_cast<size_t>(periodSamples));
+        const int totalSamples = periodSamples * kMaxPreviewPeriods;
+        std::vector<float> input(static_cast<size_t>(totalSamples));
+        std::vector<float> output(static_cast<size_t>(totalSamples));
 
-        for (int i = 0; i < periodSamples; ++i)
+        for (int i = 0; i < totalSamples; ++i)
         {
             const double phase = juce::MathConstants<double>::twoPi * static_cast<double>(i)
                                  / static_cast<double>(periodSamples);
@@ -2844,7 +2849,7 @@ namespace ds1_ac
         if (! engine.runProcess(setup,
                                 input.data(),
                                 output.data(),
-                                static_cast<size_t>(periodSamples),
+                                static_cast<size_t>(totalSamples),
                                 vcc))
         {
             return preview;
@@ -2870,12 +2875,13 @@ namespace ds1_ac
         for (int i = 0; i < kPreviewDisplayPoints; ++i)
         {
             const float t = static_cast<float>(i) / static_cast<float>(kPreviewDisplayPoints - 1);
-            const float srcIndex = t * static_cast<float>(periodSamples - 1);
-            preview.outputCurve.emplace_back(t, lerpWaveSample(output, srcIndex));
+            const float srcIndex = t * static_cast<float>(totalSamples - 1);
+            const float periodX = t * static_cast<float>(kMaxPreviewPeriods);
+            preview.outputCurve.emplace_back(periodX, lerpWaveSample(output, srcIndex));
         }
 
         preview.axis.minX = 0.0f;
-        preview.axis.maxX = 1.0f;
+        preview.axis.maxX = static_cast<float>(kMaxPreviewPeriods);
 
         return preview;
     }

@@ -162,6 +162,116 @@ void KbussEffectEngine::reprepareTrack()
     engine_->prepare (preparedSampleRate_, preparedMaxBlockSize_);
 }
 
+bool KbussEffectEngine::replaceMiddleProcessor (const kbuss::PluginDescription& desc,
+                                                std::string_view instanceName)
+{
+    if (! ready_ || engine_ == nullptr || trackId_ == kbuss::kInvalidObjectId)
+        return false;
+
+    if (downsamplerId_ == kbuss::kInvalidObjectId)
+        return false;
+
+    const auto oldMiddleId = middleProcessorId_;
+    if (oldMiddleId != kbuss::kInvalidObjectId)
+    {
+        if (engine_->remove_plugin_from_track (oldMiddleId, trackId_) != kbuss::Status::Ok)
+            return false;
+
+        if (! engine_->processors().remove_processor (oldMiddleId))
+            return false;
+    }
+
+    middleProcessorId_ = kbuss::kInvalidObjectId;
+    middleProcessorProc_ = nullptr;
+
+    auto [createSt, newId] = engine_->create_processor (desc, std::string (instanceName));
+    if (createSt != kbuss::Status::Ok || newId == kbuss::kInvalidObjectId)
+        return false;
+
+    if (engine_->add_plugin_to_track (newId, trackId_, downsamplerId_) != kbuss::Status::Ok)
+    {
+        (void) engine_->processors().remove_processor (newId);
+        return false;
+    }
+
+    middleProcessorId_ = newId;
+    cacheProcessorPointers();
+
+    if (middleProcessorProc_ == nullptr)
+        return false;
+
+    if (bypassAll_)
+        sendProcessorBypass (middleProcessorId_, true);
+
+    engine_->prepare (preparedSampleRate_, preparedMaxBlockSize_);
+    return true;
+}
+
+KbussEffectEngine::MiddleSwap
+KbussEffectEngine::buildMiddleProcessor (const kbuss::PluginDescription& desc,
+                                        std::string_view instanceName)
+{
+    MiddleSwap swap;
+
+    if (! ready_ || engine_ == nullptr || trackId_ == kbuss::kInvalidObjectId
+        || downsamplerId_ == kbuss::kInvalidObjectId)
+        return swap;
+
+    auto [createSt, newId] = engine_->create_processor (desc, std::string (instanceName));
+    if (createSt != kbuss::Status::Ok || newId == kbuss::kInvalidObjectId)
+        return swap;
+
+    const auto proc = engine_->processors().processor (newId);
+    if (proc == nullptr)
+    {
+        (void) engine_->processors().remove_processor (newId);
+        return swap;
+    }
+
+    // Match the stage rate Track::prepare hands a processor sitting after the upsampler,
+    // so the engine prepare inside spliceMiddleProcessor() has nothing left to do.
+    const auto factor = (std::uint32_t) juce::jmax (1, oversampleFactor_);
+    proc->prepare (preparedSampleRate_ * (float) factor, preparedMaxBlockSize_ * factor);
+    proc->reset();
+
+    swap.newId = newId;
+    swap.oldId = middleProcessorId_;
+    return swap;
+}
+
+bool KbussEffectEngine::spliceMiddleProcessor (const MiddleSwap& swap)
+{
+    if (! swap.valid() || ! ready_ || engine_ == nullptr || trackId_ == kbuss::kInvalidObjectId)
+        return false;
+
+    if (swap.oldId != kbuss::kInvalidObjectId
+        && engine_->remove_plugin_from_track (swap.oldId, trackId_) != kbuss::Status::Ok)
+        return false;
+
+    if (engine_->add_plugin_to_track (swap.newId, trackId_, downsamplerId_) != kbuss::Status::Ok)
+        return false;
+
+    middleProcessorId_ = swap.newId;
+    cacheProcessorPointers();
+
+    if (middleProcessorProc_ == nullptr)
+        return false;
+
+    if (bypassAll_)
+        sendProcessorBypass (middleProcessorId_, true);
+
+    engine_->prepare (preparedSampleRate_, preparedMaxBlockSize_);
+    return true;
+}
+
+void KbussEffectEngine::releaseSwappedMiddleProcessor (MiddleSwap& swap)
+{
+    if (engine_ != nullptr && swap.oldId != kbuss::kInvalidObjectId)
+        (void) engine_->processors().remove_processor (swap.oldId);
+
+    swap = {};
+}
+
 bool KbussEffectEngine::applyMiddleProcessingQuality (int choice)
 {
     return aef::composite_quality::applyToMiddle (*this, choice);
