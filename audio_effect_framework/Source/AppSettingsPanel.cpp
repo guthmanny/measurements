@@ -123,7 +123,7 @@ void AppSettingsPanel::rebuildNav()
     addItem ("Noise Gate", Page::NoiseGate);
     addItem ("Peak Display", Page::PeakDisplay);
     addItem ("Calibration", Page::Calibration);
-    addItem ("Topology", Page::Topology);
+    addItem ("Signal Flow", Page::Topology);
     addItem ("Modeling", Page::Modeling);
     addItem ("Params Settings", Page::Params);
 }

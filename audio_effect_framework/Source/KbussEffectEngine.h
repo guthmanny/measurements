@@ -65,6 +65,9 @@ public:
 
     [[nodiscard]] virtual std::string_view dynamicMiddlePluginUid() const { return {}; }
 
+    /** atomtheme-gfx-packs key for the current middle plugin (empty if unknown). */
+    [[nodiscard]] virtual std::string dynamicMiddleGfxKey() const;
+
     [[nodiscard]] int oversampleFactor() const noexcept { return oversampleFactor_; }
 
     void process (std::span<const float* const> inputs,

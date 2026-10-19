@@ -135,8 +135,10 @@ void configureSineWaveCurve(atom::CurveControl& curve, const ds1_ac::SineWavePre
     curve.setShowXLabel(true);
     curve.setShowYLabel(true);
     curve.setDataAxes(xAxis, yAxis);
-    curve.setCustomAxisTicks(buildPeriodTicks(),
-                             buildSupplyVoltageTicks(preview.vccHalf, preview.groundReferenced));
+    const auto yTicks = preview.yTicks.empty()
+                            ? buildSupplyVoltageTicks(preview.vccHalf, preview.groundReferenced)
+                            : preview.yTicks;
+    curve.setCustomAxisTicks(buildPeriodTicks(), yTicks);
     curve.setCustomCurve(preview.outputCurve);
     curve.clearSecondaryCustomCurve();
 }
@@ -582,10 +584,9 @@ void Ds1OpampAcPanel::launchPreviewJob(RebuildParams params)
         {
             if (safe == nullptr)
                 return;
-            if (result.generation != safe->rebuildGeneration_.load(std::memory_order_acquire))
-                return;
-
-            safe->applyRebuildResult(std::move(result));
+            if (result.generation == safe->rebuildGeneration_.load(std::memory_order_acquire))
+                safe->applyRebuildResult(std::move(result));
+            safe->continueRebuildIfNeeded();
         });
     });
 }
@@ -615,16 +616,35 @@ void Ds1OpampAcPanel::launchAcJob(RebuildParams params)
         {
             if (safe == nullptr)
                 return;
-            if (result.generation != safe->rebuildGeneration_.load(std::memory_order_acquire))
-                return;
-
-            safe->applyRebuildResult(std::move(result));
+            if (result.generation == safe->rebuildGeneration_.load(std::memory_order_acquire))
+                safe->applyRebuildResult(std::move(result));
+            safe->continueRebuildIfNeeded();
         });
     });
 }
 
+void Ds1OpampAcPanel::continueRebuildIfNeeded()
+{
+    if (outstandingWorkers_.load(std::memory_order_acquire) > 0 || ! rebuildFollowUp_)
+        return;
+
+    rebuildFollowUp_ = false;
+    launchIsolatedStageJobs();
+}
+
 void Ds1OpampAcPanel::launchIsolatedStageJobs()
 {
+    if (outstandingWorkers_.load(std::memory_order_acquire) > 0)
+    {
+        rebuildFollowUp_ = true;
+        if (! ds1_ac::circuitAcSweepIsCheap(circuitKind_))
+        {
+            busy_ = true;
+            repaint();
+        }
+        return;
+    }
+
     auto params = buildRebuildParams();
     if (! ds1_ac::circuitAcSweepIsCheap(params.circuitKind))
     {

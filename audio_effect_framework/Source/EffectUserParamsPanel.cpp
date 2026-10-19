@@ -2,6 +2,7 @@
 
 #include "AudioEffectFrameworkProcessor.h"
 #include "DynamicPluginParamMetadata.h"
+#include "GfxPedalPanel.h"
 #include "KbussParamSliderUtils.h"
 
 namespace
@@ -40,13 +41,91 @@ EffectUserParamsPanel::EffectUserParamsPanel(AudioEffectFrameworkProcessor& proc
                                              AtomLookAndFeel& lookAndFeel)
     : processor_(processor), atomLookAndFeel_(lookAndFeel)
 {
+    setOpaque(false);
+}
+
+EffectUserParamsPanel::~EffectUserParamsPanel()
+{
+    detachGraphic();
+    gfxByPack_.clear();
+}
+
+bool EffectUserParamsPanel::usingReadyGraphicPanel() const noexcept
+{
+    return gfxPanel_ != nullptr && gfxPanel_->isFaceReady();
+}
+
+void EffectUserParamsPanel::detachGraphic()
+{
+    if (gfxPanel_ == nullptr)
+        return;
+    removeChildComponent(gfxPanel_);
+    gfxPanel_ = nullptr;
+}
+
+void EffectUserParamsPanel::publishGraphicGeometry()
+{
+    if (gfxPanel_ == nullptr || ! gfxPanel_->isFaceReady())
+        return;
+
+    preferredWidth_ = gfxPanel_->preferredWidth();
+    preferredHeight_ = gfxPanel_->preferredHeight();
+    setVisible(preferredHeight_ > 0);
+    resized();
+    if (onGeometryChanged)
+        onGeometryChanged();
+    gfxPanel_->setVisible(true);
+}
+
+void EffectUserParamsPanel::attachGraphic(GfxPedalPanel& panel)
+{
+    gfxPanel_ = &panel;
+    panel.onPreferredSizeChanged = [this]
+    {
+        publishGraphicGeometry();
+    };
+    panel.refreshFromProcessor();
+    addChildComponent(panel);
+    panel.setVisible(false);
+    // Wait for fitToArtwork() so the window never opens at the raw canvas
+    // size and then snaps back. Cached packs are ready immediately.
+    if (panel.isFaceReady())
+        publishGraphicGeometry();
 }
 
 void EffectUserParamsPanel::clearRows()
 {
+    detachGraphic();
     rowComponents_.clear();
     removeAllChildren();
+    preferredWidth_ = 0;
     preferredHeight_ = kMinHeight;
+}
+
+bool EffectUserParamsPanel::tryLoadGraphicPanel()
+{
+    const auto packDir = resolveGfxPackDirectory(processor_);
+    if (! packDir.isDirectory())
+        return false;
+
+    const auto key = packDir.getFullPathName();
+    if (auto it = gfxByPack_.find(key); it != gfxByPack_.end() && it->second != nullptr)
+    {
+        // Re-read panel.json so layout tweaks apply on switch-back.
+        if (! it->second->load(packDir))
+            return false;
+        attachGraphic(*it->second);
+        return true;
+    }
+
+    auto panel = std::make_unique<GfxPedalPanel>(processor_, atomLookAndFeel_);
+    if (! panel->load(packDir))
+        return false;
+
+    auto* raw = panel.get();
+    gfxByPack_[key] = std::move(panel);
+    attachGraphic(*raw);
+    return true;
 }
 
 void EffectUserParamsPanel::addParamRow(const kbuss::ParameterDescriptor& desc)
@@ -149,12 +228,41 @@ void EffectUserParamsPanel::addMetaParamRow(const aef::dynamic_plugin_params::Me
     rowComponents_.add(row.release());
 }
 
+void EffectUserParamsPanel::syncGraphicState()
+{
+    if (gfxPanel_ != nullptr)
+        gfxPanel_->syncBypassIndicator();
+}
+
 void EffectUserParamsPanel::rebuildFromMiddleProcessor()
 {
-    clearRows();
-
     if (! processor_.getKbussEngine().isReady())
+    {
+        clearRows();
         return;
+    }
+
+    const auto packDir = resolveGfxPackDirectory(processor_);
+    if (gfxPanel_ != nullptr && packDir.isDirectory() && gfxPanel_->isLoadedFrom(packDir))
+    {
+        gfxPanel_->syncBypassIndicator();
+        preferredWidth_ = gfxPanel_->preferredWidth();
+        preferredHeight_ = gfxPanel_->preferredHeight();
+        if (onGeometryChanged)
+            onGeometryChanged();
+        gfxPanel_->setVisible(gfxPanel_->isFaceReady());
+        return;
+    }
+
+    detachGraphic();
+    rowComponents_.clear();
+    removeAllChildren();
+
+    if (tryLoadGraphicPanel())
+        return;
+
+    preferredWidth_ = 0;
+    preferredHeight_ = kMinHeight;
 
     auto* middle = processor_.getKbussEngine().getMiddleProcessor();
     if (middle == nullptr)
@@ -168,6 +276,8 @@ void EffectUserParamsPanel::rebuildFromMiddleProcessor()
         {
             if (aef::kbuss_param_ui::isFooterQualityParam(desc.id))
                 continue;
+            if (processor_.isInsideViewParam(juce::String(desc.id)))
+                continue;
             if (aef::kbuss_param_ui::isUserFacingParam(desc, topLevelIds))
                 addParamRow(desc);
         }
@@ -180,6 +290,8 @@ void EffectUserParamsPanel::rebuildFromMiddleProcessor()
             for (const auto& meta : dynamicParams)
             {
                 if (aef::kbuss_param_ui::isFooterQualityParam(meta.id.toStdString()))
+                    continue;
+                if (processor_.isInsideViewParam(meta.id))
                     continue;
                 addMetaParamRow(meta, *middle);
             }
@@ -237,6 +349,12 @@ void EffectUserParamsPanel::rebuildIndexedParams(kbuss::Processor& middle)
 
 void EffectUserParamsPanel::resized()
 {
+    if (gfxPanel_ != nullptr)
+    {
+        gfxPanel_->setBounds(getLocalBounds());
+        return;
+    }
+
     auto area = getLocalBounds().reduced(kPanelPadding);
     for (auto* row : rowComponents_)
         row->setBounds(area.removeFromTop(kRowHeight));

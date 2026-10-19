@@ -82,6 +82,7 @@ private:
     void launchIsolatedStageJobs();
     void launchAcJob(RebuildParams params);
     void launchPreviewJob(RebuildParams params);
+    void continueRebuildIfNeeded();
     void applyRebuildResult(RebuildResult&& result);
     void refreshCurveViews();
     void paintBusyOverlay(juce::Graphics& g);
@@ -162,6 +163,7 @@ private:
     std::atomic<int> outstandingWorkers_{0};
     int rebuildBatchDepth_{0};
     bool rebuildQueuedDuringBatch_{false};
+    bool rebuildFollowUp_{false};
     bool busy_{false};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Ds1OpampAcPanel)

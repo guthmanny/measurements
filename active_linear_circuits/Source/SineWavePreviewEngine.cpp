@@ -119,6 +119,106 @@ void SineWavePreviewEngine::destroyInstance() noexcept
         nx_od1_drive_destroy_f32(od1Drive_, nullptr);
         od1Drive_ = nullptr;
     }
+    if (odr1Drive_ != nullptr)
+    {
+        nx_odr1_drive_destroy_f32(odr1Drive_, nullptr);
+        odr1Drive_ = nullptr;
+    }
+    if (odr1Clipper_ != nullptr)
+    {
+        nx_odr1_clipper_destroy_f32(odr1Clipper_, nullptr);
+        odr1Clipper_ = nullptr;
+    }
+    if (odr1Tone_ != nullptr)
+    {
+        nx_odr1_tone_destroy_f32(odr1Tone_, nullptr);
+        odr1Tone_ = nullptr;
+    }
+    if (odr1Postamp_ != nullptr)
+    {
+        nx_odr1_postamp_destroy_f32(odr1Postamp_, nullptr);
+        odr1Postamp_ = nullptr;
+    }
+    if (beodPreamp_ != nullptr)
+    {
+        nx_beod_preamp_destroy_f32(beodPreamp_, nullptr);
+        beodPreamp_ = nullptr;
+    }
+    if (beodTight_ != nullptr)
+    {
+        nx_beod_tight_destroy_f32(beodTight_, nullptr);
+        beodTight_ = nullptr;
+    }
+    if (dirtyShirleyTight_ != nullptr)
+    {
+        nx_dirty_shirley_tight_destroy_f32(dirtyShirleyTight_, nullptr);
+        dirtyShirleyTight_ = nullptr;
+    }
+    if (fa1Buffer_ != nullptr)
+    {
+        nx_fa1_buffer_destroy_f32(fa1Buffer_, nullptr);
+        fa1Buffer_ = nullptr;
+    }
+    if (fa1Volume_ != nullptr)
+    {
+        nx_fa1_volume_destroy_f32(fa1Volume_, nullptr);
+        fa1Volume_ = nullptr;
+    }
+    if (fa1Eq_ != nullptr)
+    {
+        nx_fa1_eq_destroy_f32(fa1Eq_, nullptr);
+        fa1Eq_ = nullptr;
+    }
+    if (badMonkeyLow_ != nullptr)
+    {
+        nx_bad_monkey_low_destroy_f32(badMonkeyLow_, nullptr);
+        badMonkeyLow_ = nullptr;
+    }
+    if (otaComp_ != nullptr)
+    {
+        nx_ota_comp_destroy_f32(otaComp_, nullptr);
+        otaComp_ = nullptr;
+    }
+    if (dirtyShirleyMid_ != nullptr)
+    {
+        nx_dirty_shirley_mid_destroy_f32(dirtyShirleyMid_, nullptr);
+        dirtyShirleyMid_ = nullptr;
+    }
+    if (dirtyShirley_ != nullptr)
+    {
+        nx_dirty_shirley_destroy_f32(dirtyShirley_, nullptr);
+        dirtyShirley_ = nullptr;
+    }
+    if (beodPregain_ != nullptr)
+    {
+        nx_beod_pregain_destroy_f32(beodPregain_, nullptr);
+        beodPregain_ = nullptr;
+    }
+    if (beodPostgain_ != nullptr)
+    {
+        nx_beod_postgain_destroy_f32(beodPostgain_, nullptr);
+        beodPostgain_ = nullptr;
+    }
+    if (beodTrim_ != nullptr)
+    {
+        nx_beod_trim_destroy_f32(beodTrim_, nullptr);
+        beodTrim_ = nullptr;
+    }
+    if (beodClipper_ != nullptr)
+    {
+        nx_beod_clipper_destroy_f32(beodClipper_, nullptr);
+        beodClipper_ = nullptr;
+    }
+    if (beodBass_ != nullptr)
+    {
+        nx_beod_bass_destroy_f32(beodBass_, nullptr);
+        beodBass_ = nullptr;
+    }
+    if (opBuffer_ != nullptr)
+    {
+        nx_op_buffer_destroy_f32(opBuffer_, nullptr);
+        opBuffer_ = nullptr;
+    }
     if (sd1Tone_ != nullptr)
     {
         nx_sd1_tone_destroy_f32(sd1Tone_, nullptr);
@@ -193,6 +293,21 @@ void SineWavePreviewEngine::destroyInstance() noexcept
     {
         nx_guvnor_level_destroy_f32(guvnorLevel_, nullptr);
         guvnorLevel_ = nullptr;
+    }
+    if (crunchboxPreamp_ != nullptr)
+    {
+        nx_crunchbox_preamp_destroy_f32(crunchboxPreamp_, nullptr);
+        crunchboxPreamp_ = nullptr;
+    }
+    if (crunchboxClipper_ != nullptr)
+    {
+        nx_crunchbox_clipper_destroy_f32(crunchboxClipper_, nullptr);
+        crunchboxClipper_ = nullptr;
+    }
+    if (crunchboxClipperPresence_ != nullptr)
+    {
+        nx_crunchbox_clipper_presence_destroy_f32(crunchboxClipperPresence_, nullptr);
+        crunchboxClipperPresence_ = nullptr;
     }
     if (diodeClipper_ != nullptr)
     {
@@ -523,6 +638,52 @@ bool SineWavePreviewEngine::ensureStructuralReady(const SinePreviewSetupParams& 
         nx_guvnor_level_reset_f32(guvnorLevel_);
         break;
 
+    case CircuitKind::CrunchboxPreamp:
+        crunchboxPreamp_ = nx_crunchbox_preamp_create_f32(nullptr);
+        if (crunchboxPreamp_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, crunchboxPreamp_, setup.componentValues);
+        updatePotTaper(crunchboxPreamp_, nx_crunchbox_preamp_get_gain_pot_f32, nx_crunchbox_preamp_set_gain_pot_f32,
+                       setup.potTaper);
+        nx_crunchbox_preamp_set_opamp_model_f32(crunchboxPreamp_, setup.model);
+        nx_crunchbox_preamp_set_gain_control_f32(crunchboxPreamp_, clampControl(setup.gainControl));
+        nx_crunchbox_preamp_prepare_f32(crunchboxPreamp_, setup.sampleRateHz);
+        nx_crunchbox_preamp_reset_f32(crunchboxPreamp_);
+        break;
+
+    case CircuitKind::CrunchboxClipper:
+        crunchboxClipper_ = nx_crunchbox_clipper_create_f32(nullptr);
+        if (crunchboxClipper_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, crunchboxClipper_, setup.componentValues);
+        updatePotTaper(crunchboxClipper_, nx_crunchbox_clipper_get_tone_pot_f32, nx_crunchbox_clipper_set_tone_pot_f32,
+                       setup.potTaper);
+        updatePotTaper(crunchboxClipper_, nx_crunchbox_clipper_get_level_pot_f32, nx_crunchbox_clipper_set_level_pot_f32,
+                       setup.potTaper);
+        nx_crunchbox_clipper_set_diode_model_f32(crunchboxClipper_, setup.diodeModel);
+        nx_crunchbox_clipper_set_tone_control_f32(crunchboxClipper_, clampControl(setup.gainControl));
+        nx_crunchbox_clipper_set_level_control_f32(crunchboxClipper_, clampControl(setup.secondaryControl));
+        nx_crunchbox_clipper_prepare_f32(crunchboxClipper_, setup.sampleRateHz);
+        nx_crunchbox_clipper_reset_f32(crunchboxClipper_);
+        break;
+
+    case CircuitKind::CrunchboxClipperPresence:
+        crunchboxClipperPresence_ = nx_crunchbox_clipper_presence_create_f32(nullptr);
+        if (crunchboxClipperPresence_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, crunchboxClipperPresence_, setup.componentValues);
+        updatePotTaper(crunchboxClipperPresence_, nx_crunchbox_clipper_presence_get_tone_pot_f32,
+                       nx_crunchbox_clipper_presence_set_tone_pot_f32, setup.potTaper);
+        updatePotTaper(crunchboxClipperPresence_, nx_crunchbox_clipper_presence_get_presence_pot_f32,
+                       nx_crunchbox_clipper_presence_set_presence_pot_f32, setup.potTaper);
+        nx_crunchbox_clipper_presence_set_diode_model_f32(crunchboxClipperPresence_, setup.diodeModel);
+        nx_crunchbox_clipper_presence_set_tone_control_f32(crunchboxClipperPresence_, clampControl(setup.gainControl));
+        nx_crunchbox_clipper_presence_set_presence_control_f32(crunchboxClipperPresence_,
+                                                               clampControl(setup.secondaryControl));
+        nx_crunchbox_clipper_presence_prepare_f32(crunchboxClipperPresence_, setup.sampleRateHz);
+        nx_crunchbox_clipper_presence_reset_f32(crunchboxClipperPresence_);
+        break;
+
     case CircuitKind::DiodeClipper:
         diodeClipper_ = nx_diode_clipper_create_f32(nullptr);
         if (diodeClipper_ == nullptr)
@@ -654,6 +815,263 @@ bool SineWavePreviewEngine::ensureStructuralReady(const SinePreviewSetupParams& 
         nx_sansamp_classic_output_reset_f32(sansampOutput_);
         break;
 
+    case CircuitKind::Odr1Drive:
+        odr1Drive_ = nx_odr1_drive_create_f32(nullptr);
+        if (odr1Drive_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, odr1Drive_, setup.componentValues);
+        updatePotTaper(odr1Drive_, nx_odr1_drive_get_drive_pot_f32, nx_odr1_drive_set_drive_pot_f32, setup.potTaper);
+        nx_odr1_drive_set_opamp_model_f32(odr1Drive_, setup.model);
+        nx_odr1_drive_set_diode_model_f32(odr1Drive_, setup.diodeModel);
+        nx_odr1_drive_set_drive_control_f32(odr1Drive_, clampControl(setup.gainControl));
+        nx_odr1_drive_prepare_f32(odr1Drive_, setup.sampleRateHz);
+        nx_odr1_drive_reset_f32(odr1Drive_);
+        break;
+
+    case CircuitKind::Odr1Clipper:
+        odr1Clipper_ = nx_odr1_clipper_create_f32(nullptr);
+        if (odr1Clipper_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, odr1Clipper_, setup.componentValues);
+        nx_odr1_clipper_set_diode_model_f32(odr1Clipper_, setup.diodeModel);
+        nx_odr1_clipper_prepare_f32(odr1Clipper_, setup.sampleRateHz);
+        nx_odr1_clipper_reset_f32(odr1Clipper_);
+        break;
+
+    case CircuitKind::Odr1Tone:
+        odr1Tone_ = nx_odr1_tone_create_f32(nullptr);
+        if (odr1Tone_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, odr1Tone_, setup.componentValues);
+        updatePotTaper(odr1Tone_, nx_odr1_tone_get_tone_pot_f32, nx_odr1_tone_set_tone_pot_f32, setup.potTaper);
+        nx_odr1_tone_set_opamp_model_f32(odr1Tone_, setup.model);
+        nx_odr1_tone_set_tone_control_f32(odr1Tone_, clampControl(setup.gainControl));
+        nx_odr1_tone_prepare_f32(odr1Tone_, setup.sampleRateHz);
+        nx_odr1_tone_reset_f32(odr1Tone_);
+        break;
+
+    case CircuitKind::Odr1Postamp:
+        odr1Postamp_ = nx_odr1_postamp_create_f32(nullptr);
+        if (odr1Postamp_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, odr1Postamp_, setup.componentValues);
+        nx_odr1_postamp_set_opamp_model_f32(odr1Postamp_, setup.model);
+        nx_odr1_postamp_prepare_f32(odr1Postamp_, setup.sampleRateHz);
+        nx_odr1_postamp_reset_f32(odr1Postamp_);
+        break;
+
+    case CircuitKind::BeodPreamp:
+        beodPreamp_ = nx_beod_preamp_create_f32(nullptr);
+        if (beodPreamp_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, beodPreamp_, setup.componentValues);
+        nx_beod_preamp_set_opamp_model_f32(beodPreamp_, setup.model);
+        nx_beod_preamp_prepare_f32(beodPreamp_, setup.sampleRateHz);
+        nx_beod_preamp_reset_f32(beodPreamp_);
+        break;
+
+    case CircuitKind::BeodTight:
+        beodTight_ = nx_beod_tight_create_f32(nullptr);
+        if (beodTight_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, beodTight_, setup.componentValues);
+        updatePotTaper(beodTight_, nx_beod_tight_get_tight_pot_f32, nx_beod_tight_set_tight_pot_f32, setup.potTaper);
+        nx_beod_tight_set_tight_control_f32(beodTight_, clampControl(setup.gainControl));
+        nx_beod_tight_prepare_f32(beodTight_, setup.sampleRateHz);
+        nx_beod_tight_reset_f32(beodTight_);
+        break;
+
+    case CircuitKind::BeodPregain:
+        beodPregain_ = nx_beod_pregain_create_f32(nullptr);
+        if (beodPregain_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, beodPregain_, setup.componentValues);
+        updatePotTaper(beodPregain_, nx_beod_pregain_get_gain_pot_f32, nx_beod_pregain_set_gain_pot_f32, setup.potTaper);
+        nx_beod_pregain_set_opamp_model_f32(beodPregain_, setup.model);
+        nx_beod_pregain_set_diode_model_f32(beodPregain_, setup.diodeModel);
+        nx_beod_pregain_set_gain_control_f32(beodPregain_, clampControl(setup.gainControl));
+        nx_beod_pregain_prepare_f32(beodPregain_, setup.sampleRateHz);
+        nx_beod_pregain_reset_f32(beodPregain_);
+        break;
+
+    case CircuitKind::BeodPostgain:
+        beodPostgain_ = nx_beod_postgain_create_f32(nullptr);
+        if (beodPostgain_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, beodPostgain_, setup.componentValues);
+        nx_beod_postgain_set_opamp_model_f32(beodPostgain_, setup.model);
+        nx_beod_postgain_set_diode_model_f32(beodPostgain_, setup.diodeModel);
+        nx_beod_postgain_prepare_f32(beodPostgain_, setup.sampleRateHz);
+        nx_beod_postgain_reset_f32(beodPostgain_);
+        break;
+
+    case CircuitKind::BeodTrim:
+        beodTrim_ = nx_beod_trim_create_f32(nullptr);
+        if (beodTrim_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, beodTrim_, setup.componentValues);
+        updatePotTaper(beodTrim_, nx_beod_trim_get_trim_pot_f32, nx_beod_trim_set_trim_pot_f32, setup.potTaper);
+        nx_beod_trim_set_opamp_model_f32(beodTrim_, setup.model);
+        nx_beod_trim_set_trim_control_f32(beodTrim_, clampControl(setup.gainControl));
+        nx_beod_trim_prepare_f32(beodTrim_, setup.sampleRateHz);
+        nx_beod_trim_reset_f32(beodTrim_);
+        break;
+
+    case CircuitKind::BeodClipper:
+        beodClipper_ = nx_beod_clipper_create_f32(nullptr);
+        if (beodClipper_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, beodClipper_, setup.componentValues);
+        updatePotTaper(beodClipper_, nx_beod_clipper_get_presence_pot_f32, nx_beod_clipper_set_presence_pot_f32,
+                       NX_POT_TAPER_C);
+        updatePotTaper(beodClipper_, nx_beod_clipper_get_treble_pot_f32, nx_beod_clipper_set_treble_pot_f32,
+                       NX_POT_TAPER_LINEAR);
+        nx_beod_clipper_set_diode_model_f32(beodClipper_, setup.diodeModel);
+        nx_beod_clipper_set_presence_control_f32(beodClipper_, clampControl(setup.gainControl));
+        nx_beod_clipper_set_treble_control_f32(beodClipper_, clampControl(setup.secondaryControl));
+        nx_beod_clipper_prepare_f32(beodClipper_, setup.sampleRateHz);
+        nx_beod_clipper_reset_f32(beodClipper_);
+        break;
+
+    case CircuitKind::BeodBass:
+        beodBass_ = nx_beod_bass_create_f32(nullptr);
+        if (beodBass_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, beodBass_, setup.componentValues);
+        updatePotTaper(beodBass_, nx_beod_bass_get_bass_pot_f32, nx_beod_bass_set_bass_pot_f32, NX_POT_TAPER_C);
+        nx_beod_bass_set_opamp_model_f32(beodBass_, setup.model);
+        nx_beod_bass_set_bass_control_f32(beodBass_, clampControl(setup.gainControl));
+        nx_beod_bass_prepare_f32(beodBass_, setup.sampleRateHz);
+        nx_beod_bass_tick_f32(beodBass_, 64);
+        nx_beod_bass_reset_f32(beodBass_);
+        break;
+
+    case CircuitKind::OpBuffer:
+        opBuffer_ = nx_op_buffer_create_f32(nullptr);
+        if (opBuffer_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, opBuffer_, setup.componentValues);
+        nx_op_buffer_set_opamp_model_f32(opBuffer_, setup.model);
+        nx_op_buffer_prepare_f32(opBuffer_, setup.sampleRateHz);
+        nx_op_buffer_reset_f32(opBuffer_);
+        break;
+
+    case CircuitKind::DirtyShirleyTight:
+        dirtyShirleyTight_ = nx_dirty_shirley_tight_create_f32(nullptr);
+        if (dirtyShirleyTight_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, dirtyShirleyTight_, setup.componentValues);
+        nx_dirty_shirley_tight_prepare_f32(dirtyShirleyTight_, setup.sampleRateHz);
+        nx_dirty_shirley_tight_reset_f32(dirtyShirleyTight_);
+        break;
+
+    case CircuitKind::Fa1Buffer:
+        fa1Buffer_ = nx_fa1_buffer_create_f32(nullptr);
+        if (fa1Buffer_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, fa1Buffer_, setup.componentValues);
+        nx_fa1_buffer_set_jfet_model_f32(fa1Buffer_, setup.jfetModel);
+        nx_fa1_buffer_prepare_f32(fa1Buffer_, setup.sampleRateHz);
+        nx_fa1_buffer_tick_f32(fa1Buffer_, 64);
+        nx_fa1_buffer_reset_f32(fa1Buffer_);
+        break;
+
+    case CircuitKind::Fa1Volume:
+        fa1Volume_ = nx_fa1_volume_create_f32(nullptr);
+        if (fa1Volume_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, fa1Volume_, setup.componentValues);
+        updatePotTaper(fa1Volume_, nx_fa1_volume_get_volume_pot_f32, nx_fa1_volume_set_volume_pot_f32, setup.potTaper);
+        nx_fa1_volume_set_opamp_model_f32(fa1Volume_, setup.model);
+        nx_fa1_volume_set_volume_control_f32(fa1Volume_, clampControl(setup.gainControl));
+        nx_fa1_volume_prepare_f32(fa1Volume_, setup.sampleRateHz);
+        nx_fa1_volume_tick_f32(fa1Volume_, 64);
+        nx_fa1_volume_reset_f32(fa1Volume_);
+        break;
+
+    case CircuitKind::Fa1Eq:
+        fa1Eq_ = nx_fa1_eq_create_f32(nullptr);
+        if (fa1Eq_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, fa1Eq_, setup.componentValues);
+        updatePotTaper(fa1Eq_, nx_fa1_eq_get_bass_pot_f32, nx_fa1_eq_set_bass_pot_f32, setup.potTaper);
+        updatePotTaper(fa1Eq_, nx_fa1_eq_get_treble_pot_f32, nx_fa1_eq_set_treble_pot_f32, setup.potTaper);
+        nx_fa1_eq_set_opamp_model_f32(fa1Eq_, setup.model);
+        nx_fa1_eq_set_bass_control_f32(fa1Eq_, clampControl(setup.gainControl));
+        nx_fa1_eq_set_treble_control_f32(fa1Eq_, clampControl(setup.secondaryControl));
+        nx_fa1_eq_prepare_f32(fa1Eq_, setup.sampleRateHz);
+        nx_fa1_eq_tick_f32(fa1Eq_, 64);
+        nx_fa1_eq_reset_f32(fa1Eq_);
+        break;
+
+    case CircuitKind::BadMonkeyLow:
+        badMonkeyLow_ = nx_bad_monkey_low_create_f32(nullptr);
+        if (badMonkeyLow_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, badMonkeyLow_, setup.componentValues);
+        updatePotTaper(badMonkeyLow_, nx_bad_monkey_low_get_low_pot_f32, nx_bad_monkey_low_set_low_pot_f32,
+                       setup.potTaper);
+        nx_bad_monkey_low_set_opamp_model_f32(badMonkeyLow_, setup.model);
+        nx_bad_monkey_low_set_bjt_model_f32(badMonkeyLow_, setup.bjtModel);
+        nx_bad_monkey_low_set_low_control_f32(badMonkeyLow_, clampControl(setup.gainControl));
+        nx_bad_monkey_low_prepare_f32(badMonkeyLow_, setup.sampleRateHz);
+        nx_bad_monkey_low_tick_f32(badMonkeyLow_, 64);
+        nx_bad_monkey_low_reset_f32(badMonkeyLow_);
+        break;
+
+    case CircuitKind::DynaCompCore:
+        otaComp_ = nx_ota_comp_create_f32(nullptr);
+        if (otaComp_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, otaComp_, setup.componentValues);
+        updatePotTaper(otaComp_, nx_ota_comp_get_sensitivity_pot_f32, nx_ota_comp_set_sensitivity_pot_f32,
+                       setup.potTaper);
+        nx_ota_comp_set_diode_model_f32(otaComp_, setup.diodeModel);
+        nx_ota_comp_set_bjt_model_f32(otaComp_, setup.bjtModel);
+        nx_ota_comp_set_ota_model_f32(otaComp_, NX_OTA_CA3080);
+        nx_ota_comp_set_sensitivity_control_f32(otaComp_, clampControl(setup.gainControl));
+        nx_ota_comp_prepare_f32(otaComp_, setup.sampleRateHz);
+        nx_ota_comp_tick_f32(otaComp_, 64);
+        nx_ota_comp_reset_f32(otaComp_);
+        break;
+
+    case CircuitKind::DirtyShirleyMid:
+        dirtyShirleyMid_ = nx_dirty_shirley_mid_create_f32(nullptr);
+        if (dirtyShirleyMid_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, dirtyShirleyMid_, setup.componentValues);
+        updatePotTaper(dirtyShirleyMid_, nx_dirty_shirley_mid_get_level_pot_f32, nx_dirty_shirley_mid_set_level_pot_f32,
+                       NX_POT_TAPER_A30);
+        updatePotTaper(dirtyShirleyMid_, nx_dirty_shirley_mid_get_mid_pot_f32, nx_dirty_shirley_mid_set_mid_pot_f32,
+                       NX_POT_TAPER_C);
+        nx_dirty_shirley_mid_set_opamp_model_f32(dirtyShirleyMid_, setup.model);
+        nx_dirty_shirley_mid_set_level_control_f32(dirtyShirleyMid_, clampControl(setup.gainControl));
+        nx_dirty_shirley_mid_set_mid_control_f32(dirtyShirleyMid_, clampControl(setup.secondaryControl));
+        nx_dirty_shirley_mid_prepare_f32(dirtyShirleyMid_, setup.sampleRateHz);
+        nx_dirty_shirley_mid_tick_f32(dirtyShirleyMid_, 64);
+        nx_dirty_shirley_mid_reset_f32(dirtyShirleyMid_);
+        break;
+
+    case CircuitKind::DirtyShirleyComposite:
+        dirtyShirley_ = nx_dirty_shirley_create_f32(nullptr);
+        if (dirtyShirley_ == nullptr)
+            return false;
+        applySchematicValues(setup.circuit, dirtyShirley_, setup.componentValues);
+        updatePotTaper(dirtyShirley_, nx_dirty_shirley_get_gain_pot_f32, nx_dirty_shirley_set_gain_pot_f32,
+                       NX_POT_TAPER_A30);
+        updatePotTaper(dirtyShirley_, nx_dirty_shirley_get_level_pot_f32, nx_dirty_shirley_set_level_pot_f32,
+                       NX_POT_TAPER_A30);
+        updatePotTaper(dirtyShirley_, nx_dirty_shirley_get_mid_pot_f32, nx_dirty_shirley_set_mid_pot_f32, NX_POT_TAPER_C);
+        nx_dirty_shirley_set_opamp_model_f32(dirtyShirley_, setup.model);
+        nx_dirty_shirley_set_gain_control_f32(dirtyShirley_, clampControl(setup.gainControl));
+        nx_dirty_shirley_set_level_control_f32(dirtyShirley_, clampControl(setup.secondaryControl));
+        nx_dirty_shirley_set_mid_control_f32(dirtyShirley_, clampControl(setup.tertiaryControl));
+        if (nx_dirty_shirley_prepare_f32(dirtyShirley_, setup.sampleRateHz) != NX_SUCCESS)
+            return false;
+        nx_dirty_shirley_tick_f32(dirtyShirley_, 64);
+        nx_dirty_shirley_reset_f32(dirtyShirley_);
+        break;
+
     case CircuitKind::Ds1Opamp:
     default:
         ds1Opamp_ = nx_ds1_opamp_create_f32(nullptr);
@@ -703,6 +1121,106 @@ bool SineWavePreviewEngine::resetStates() noexcept
         if (od1Drive_ == nullptr)
             return false;
         nx_od1_drive_reset_f32(od1Drive_);
+        return true;
+    case CircuitKind::Odr1Drive:
+        if (odr1Drive_ == nullptr)
+            return false;
+        nx_odr1_drive_reset_f32(odr1Drive_);
+        return true;
+    case CircuitKind::Odr1Clipper:
+        if (odr1Clipper_ == nullptr)
+            return false;
+        nx_odr1_clipper_reset_f32(odr1Clipper_);
+        return true;
+    case CircuitKind::Odr1Tone:
+        if (odr1Tone_ == nullptr)
+            return false;
+        nx_odr1_tone_reset_f32(odr1Tone_);
+        return true;
+    case CircuitKind::Odr1Postamp:
+        if (odr1Postamp_ == nullptr)
+            return false;
+        nx_odr1_postamp_reset_f32(odr1Postamp_);
+        return true;
+    case CircuitKind::BeodPreamp:
+        if (beodPreamp_ == nullptr)
+            return false;
+        nx_beod_preamp_reset_f32(beodPreamp_);
+        return true;
+    case CircuitKind::BeodTight:
+        if (beodTight_ == nullptr)
+            return false;
+        nx_beod_tight_reset_f32(beodTight_);
+        return true;
+    case CircuitKind::BeodPregain:
+        if (beodPregain_ == nullptr)
+            return false;
+        nx_beod_pregain_reset_f32(beodPregain_);
+        return true;
+    case CircuitKind::BeodPostgain:
+        if (beodPostgain_ == nullptr)
+            return false;
+        nx_beod_postgain_reset_f32(beodPostgain_);
+        return true;
+    case CircuitKind::BeodTrim:
+        if (beodTrim_ == nullptr)
+            return false;
+        nx_beod_trim_reset_f32(beodTrim_);
+        return true;
+    case CircuitKind::BeodClipper:
+        if (beodClipper_ == nullptr)
+            return false;
+        nx_beod_clipper_reset_f32(beodClipper_);
+        return true;
+    case CircuitKind::BeodBass:
+        if (beodBass_ == nullptr)
+            return false;
+        nx_beod_bass_reset_f32(beodBass_);
+        return true;
+    case CircuitKind::OpBuffer:
+        if (opBuffer_ == nullptr)
+            return false;
+        nx_op_buffer_reset_f32(opBuffer_);
+        return true;
+    case CircuitKind::DirtyShirleyTight:
+        if (dirtyShirleyTight_ == nullptr)
+            return false;
+        nx_dirty_shirley_tight_reset_f32(dirtyShirleyTight_);
+        return true;
+    case CircuitKind::Fa1Buffer:
+        if (fa1Buffer_ == nullptr)
+            return false;
+        nx_fa1_buffer_reset_f32(fa1Buffer_);
+        return true;
+    case CircuitKind::Fa1Volume:
+        if (fa1Volume_ == nullptr)
+            return false;
+        nx_fa1_volume_reset_f32(fa1Volume_);
+        return true;
+    case CircuitKind::Fa1Eq:
+        if (fa1Eq_ == nullptr)
+            return false;
+        nx_fa1_eq_reset_f32(fa1Eq_);
+        return true;
+    case CircuitKind::BadMonkeyLow:
+        if (badMonkeyLow_ == nullptr)
+            return false;
+        nx_bad_monkey_low_reset_f32(badMonkeyLow_);
+        return true;
+    case CircuitKind::DynaCompCore:
+        if (otaComp_ == nullptr)
+            return false;
+        nx_ota_comp_reset_f32(otaComp_);
+        return true;
+    case CircuitKind::DirtyShirleyMid:
+        if (dirtyShirleyMid_ == nullptr)
+            return false;
+        nx_dirty_shirley_mid_reset_f32(dirtyShirleyMid_);
+        return true;
+    case CircuitKind::DirtyShirleyComposite:
+        if (dirtyShirley_ == nullptr)
+            return false;
+        nx_dirty_shirley_reset_f32(dirtyShirley_);
         return true;
     case CircuitKind::Sd1Tone:
         if (sd1Tone_ == nullptr)
@@ -778,6 +1296,21 @@ bool SineWavePreviewEngine::resetStates() noexcept
         if (guvnorLevel_ == nullptr)
             return false;
         nx_guvnor_level_reset_f32(guvnorLevel_);
+        return true;
+    case CircuitKind::CrunchboxPreamp:
+        if (crunchboxPreamp_ == nullptr)
+            return false;
+        nx_crunchbox_preamp_reset_f32(crunchboxPreamp_);
+        return true;
+    case CircuitKind::CrunchboxClipper:
+        if (crunchboxClipper_ == nullptr)
+            return false;
+        nx_crunchbox_clipper_reset_f32(crunchboxClipper_);
+        return true;
+    case CircuitKind::CrunchboxClipperPresence:
+        if (crunchboxClipperPresence_ == nullptr)
+            return false;
+        nx_crunchbox_clipper_presence_reset_f32(crunchboxClipperPresence_);
         return true;
     case CircuitKind::DiodeClipper:
         if (diodeClipper_ == nullptr)
@@ -886,6 +1419,127 @@ bool SineWavePreviewEngine::runHotProcess(const float* input,
         nx_od1_drive_process_f32(od1Drive_, input, output, totalSamples);
         vccOut = nx_od1_drive_get_vcc_f32(od1Drive_);
         return true;
+    case CircuitKind::Odr1Drive:
+        if (odr1Drive_ == nullptr)
+            return false;
+        nx_odr1_drive_process_f32(odr1Drive_, input, output, totalSamples);
+        vccOut = nx_odr1_drive_get_vcc_f32(odr1Drive_);
+        return true;
+    case CircuitKind::Odr1Clipper:
+        if (odr1Clipper_ == nullptr)
+            return false;
+        nx_odr1_clipper_process_f32(odr1Clipper_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::Odr1Tone:
+        if (odr1Tone_ == nullptr)
+            return false;
+        nx_odr1_tone_process_f32(odr1Tone_, input, output, totalSamples);
+        vccOut = nx_odr1_tone_get_vcc_f32(odr1Tone_);
+        return true;
+    case CircuitKind::Odr1Postamp:
+        if (odr1Postamp_ == nullptr)
+            return false;
+        nx_odr1_postamp_process_f32(odr1Postamp_, input, output, totalSamples);
+        vccOut = nx_odr1_postamp_get_vcc_f32(odr1Postamp_);
+        return true;
+    case CircuitKind::BeodPreamp:
+        if (beodPreamp_ == nullptr)
+            return false;
+        nx_beod_preamp_process_f32(beodPreamp_, input, output, totalSamples);
+        vccOut = nx_beod_preamp_get_vcc_f32(beodPreamp_);
+        return true;
+    case CircuitKind::BeodTight:
+        if (beodTight_ == nullptr)
+            return false;
+        nx_beod_tight_process_f32(beodTight_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::BeodPregain:
+        if (beodPregain_ == nullptr)
+            return false;
+        nx_beod_pregain_process_f32(beodPregain_, input, output, totalSamples);
+        vccOut = nx_beod_pregain_get_vcc_f32(beodPregain_);
+        return true;
+    case CircuitKind::BeodPostgain:
+        if (beodPostgain_ == nullptr)
+            return false;
+        nx_beod_postgain_process_f32(beodPostgain_, input, output, totalSamples);
+        vccOut = nx_beod_postgain_get_vcc_f32(beodPostgain_);
+        return true;
+    case CircuitKind::BeodTrim:
+        if (beodTrim_ == nullptr)
+            return false;
+        nx_beod_trim_process_f32(beodTrim_, input, output, totalSamples);
+        vccOut = nx_beod_trim_get_vcc_f32(beodTrim_);
+        return true;
+    case CircuitKind::BeodClipper:
+        if (beodClipper_ == nullptr)
+            return false;
+        nx_beod_clipper_process_f32(beodClipper_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::BeodBass:
+        if (beodBass_ == nullptr)
+            return false;
+        nx_beod_bass_process_f32(beodBass_, input, output, totalSamples);
+        vccOut = nx_beod_bass_get_vcc_f32(beodBass_);
+        return true;
+    case CircuitKind::OpBuffer:
+        if (opBuffer_ == nullptr)
+            return false;
+        nx_op_buffer_process_f32(opBuffer_, input, output, totalSamples);
+        vccOut = nx_op_buffer_get_vcc_f32(opBuffer_);
+        return true;
+    case CircuitKind::DirtyShirleyTight:
+        if (dirtyShirleyTight_ == nullptr)
+            return false;
+        nx_dirty_shirley_tight_process_f32(dirtyShirleyTight_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::Fa1Buffer:
+        if (fa1Buffer_ == nullptr)
+            return false;
+        nx_fa1_buffer_process_f32(fa1Buffer_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::Fa1Volume:
+        if (fa1Volume_ == nullptr)
+            return false;
+        nx_fa1_volume_process_f32(fa1Volume_, input, output, totalSamples);
+        vccOut = nx_fa1_volume_get_vcc_f32(fa1Volume_);
+        return true;
+    case CircuitKind::Fa1Eq:
+        if (fa1Eq_ == nullptr)
+            return false;
+        nx_fa1_eq_process_f32(fa1Eq_, input, output, totalSamples);
+        vccOut = nx_fa1_eq_get_vcc_f32(fa1Eq_);
+        return true;
+    case CircuitKind::BadMonkeyLow:
+        if (badMonkeyLow_ == nullptr)
+            return false;
+        nx_bad_monkey_low_process_f32(badMonkeyLow_, input, output, totalSamples);
+        vccOut = nx_bad_monkey_low_get_vcc_f32(badMonkeyLow_);
+        return true;
+    case CircuitKind::DynaCompCore:
+        if (otaComp_ == nullptr)
+            return false;
+        nx_ota_comp_process_f32(otaComp_, input, output, totalSamples);
+        vccOut = nx_ota_comp_get_vcc_f32(otaComp_);
+        return true;
+    case CircuitKind::DirtyShirleyMid:
+        if (dirtyShirleyMid_ == nullptr)
+            return false;
+        nx_dirty_shirley_mid_process_f32(dirtyShirleyMid_, input, output, totalSamples);
+        vccOut = nx_dirty_shirley_mid_get_vcc_f32(dirtyShirleyMid_);
+        return true;
+    case CircuitKind::DirtyShirleyComposite:
+        if (dirtyShirley_ == nullptr)
+            return false;
+        nx_dirty_shirley_tick_f32(dirtyShirley_, totalSamples);
+        nx_dirty_shirley_process_f32(dirtyShirley_, input, output, totalSamples);
+        vccOut = nx_dirty_shirley_get_vcc_f32(dirtyShirley_);
+        return true;
     case CircuitKind::Sd1Tone:
         if (sd1Tone_ == nullptr)
             return false;
@@ -974,6 +1628,24 @@ bool SineWavePreviewEngine::runHotProcess(const float* input,
         if (guvnorLevel_ == nullptr)
             return false;
         nx_guvnor_level_process_f32(guvnorLevel_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::CrunchboxPreamp:
+        if (crunchboxPreamp_ == nullptr)
+            return false;
+        nx_crunchbox_preamp_process_f32(crunchboxPreamp_, input, output, totalSamples);
+        vccOut = nx_crunchbox_preamp_get_vcc_f32(crunchboxPreamp_);
+        return true;
+    case CircuitKind::CrunchboxClipper:
+        if (crunchboxClipper_ == nullptr)
+            return false;
+        nx_crunchbox_clipper_process_f32(crunchboxClipper_, input, output, totalSamples);
+        vccOut = kFallbackPreviewVcc;
+        return true;
+    case CircuitKind::CrunchboxClipperPresence:
+        if (crunchboxClipperPresence_ == nullptr)
+            return false;
+        nx_crunchbox_clipper_presence_process_f32(crunchboxClipperPresence_, input, output, totalSamples);
         vccOut = kFallbackPreviewVcc;
         return true;
     case CircuitKind::DiodeClipper:

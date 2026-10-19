@@ -15,6 +15,7 @@
 #include "nudsp/linear_circuits/od1_post_f32.h"
 #include "nudsp/linear_circuits/guvnor_level_f32.h"
 #include "nudsp/linear_circuits/guvnor_postamp_f32.h"
+#include "nudsp/linear_circuits/crunchbox_preamp_f32.h"
 #include "nudsp/linear_circuits/guvnor_preamp_f32.h"
 #include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
 #include "nudsp/linear_circuits/rat_opamp_f32.h"
@@ -27,6 +28,22 @@
 #include "nudsp/linear_circuits/sansamp_classic_pre_eq_f32.h"
 #include "nudsp/linear_circuits/sansamp_classic_preamp_f32.h"
 #include "nudsp/linear_circuits/sansamp_classic_spk_f32.h"
+#include "nudsp/linear_circuits/beod_bass_f32.h"
+#include "nudsp/linear_circuits/beod_preamp_f32.h"
+#include "nudsp/linear_circuits/beod_tight_f32.h"
+#include "nudsp/linear_circuits/beod_trim_f32.h"
+#include "nudsp/linear_circuits/dirty_shirley_mid_f32.h"
+#include "nudsp/linear_circuits/dirty_shirley_tight_f32.h"
+#include "nudsp/linear_circuits/fa1_volume_f32.h"
+#include "nudsp/linear_circuits/fa1_eq_f32.h"
+#include "nudsp/linear_circuits/bad_monkey_low_f32.h"
+#include "nudsp/nonlinear_circuits/ota_comp_f32.h"
+#include "extensions/white_box/pedals/dirty_shirley_f32.h"
+#include "nudsp/nonlinear_circuits/beod_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/beod_postgain_f32.h"
+#include "nudsp/nonlinear_circuits/beod_pregain_f32.h"
+#include "nudsp/linear_circuits/odr1_postamp_f32.h"
+#include "nudsp/linear_circuits/odr1_tone_f32.h"
 #include "nudsp/linear_circuits/sd1_tone_f32.h"
 #include "nudsp/linear_circuits/ts9_tone_f32.h"
 #include "nudsp/nonlinear_circuits/ac_booster_drive_f32.h"
@@ -35,10 +52,14 @@
 #include "nudsp/nonlinear_circuits/bjt_follower_out_f32.h"
 #include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/crunchbox_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/crunchbox_clipper_presence_f32.h"
 #include "nudsp/nonlinear_circuits/guvnor_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/jfet_follower_f32.h"
 #include "nudsp/nonlinear_circuits/klon_centaur_f32.h"
 #include "nudsp/nonlinear_circuits/od1_drive_f32.h"
+#include "nudsp/nonlinear_circuits/odr1_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/odr1_drive_f32.h"
 #include "nudsp/nonlinear_circuits/rat_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/rc_booster_drive1_f32.h"
 #include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
@@ -64,8 +85,15 @@ namespace ds1_ac
         Ts9,
         Klon,
         Guvnor,
+        AngryCharlie,
+        CrunchBox,
         Rat,
-        SansampClassic
+        SansampClassic,
+        Odr1,
+        Beod,
+        DirtyShirley,
+        BadMonkey,
+        DynaComp
     };
 
     enum class CircuitKind
@@ -102,10 +130,33 @@ namespace ds1_ac
         SansampSpk,
         SansampPosition,
         SansampCapture,
-        SansampOutput
+        SansampOutput,
+        CrunchboxPreamp,
+        CrunchboxClipperPresence,
+        CrunchboxClipper,
+        Odr1Drive,
+        Odr1Clipper,
+        Odr1Tone,
+        Odr1Postamp,
+        BeodPreamp,
+        BeodTight,
+        BeodPregain,
+        BeodPostgain,
+        BeodTrim,
+        BeodClipper,
+        BeodBass,
+        OpBuffer,
+        DirtyShirleyTight,
+        DirtyShirleyMid,
+        DirtyShirleyComposite,
+        Fa1Buffer,
+        Fa1Volume,
+        Fa1Eq,
+        BadMonkeyLow,
+        DynaCompCore
     };
 
-    constexpr int kCircuitCount = static_cast<int>(CircuitKind::SansampOutput) + 1;
+    constexpr int kCircuitCount = static_cast<int>(CircuitKind::DynaCompCore) + 1;
 
     enum class PlotKind
     {
@@ -145,6 +196,7 @@ namespace ds1_ac
     {
         std::vector<std::pair<float, float>> outputCurve;
         AxisRange axis;
+        std::vector<float> yTicks;
         float vccHalf{4.5f};
         bool groundReferenced{false};
         juce::String title;
@@ -161,7 +213,7 @@ namespace ds1_ac
     constexpr double kPreviewFreqMaxHz = 10000.0;
     constexpr double kDefaultPreviewFreqHz = 1000.0;
     constexpr double kPreviewAmpMin = 1.0e-6;
-    constexpr double kPreviewAmpMax = 2.0;
+    constexpr double kPreviewAmpMax = 10.0;
     constexpr int kMaxPreviewPeriods = 5;
 
     double defaultPreviewAmplitude(CircuitKind circuit) noexcept;
@@ -206,6 +258,8 @@ namespace ds1_ac
     nx_opamp_model_e opampModelFromOverlayKey(const juce::String& overlayKey) noexcept;
     void populateOpampModelCombo(juce::ComboBox& combo);
     juce::String opampOverlayKeyForModel(nx_opamp_model_e model) noexcept;
+    /** Circuit-default op-amp when no schematic overlay is loaded (BEOD stages use TL072). */
+    nx_opamp_model_e defaultOpampModelForCircuit(CircuitKind circuit) noexcept;
     /** Default op-amp model encoded in schematic OPAMP overlays (hex id or label text). */
     nx_opamp_model_e defaultOpampModelFromSvgView(const atom::SvgView& view);
     const char *diodeModelDisplayName(nx_diode_model_t model) noexcept;
@@ -231,9 +285,9 @@ namespace ds1_ac
     nx_jfet_n_model_e defaultJfetModelFromSvgView(const atom::SvgView& view);
     bool isSwitchOverlayKey(const juce::String& overlayKey) noexcept;
     juce::String switchCanonicalName(const juce::String& overlayKey);
-    void populateSwitchCombo(juce::ComboBox& combo, const juce::String& overlayKey);
-    int switchComboId(const juce::String& overlayKey, uint8_t position) noexcept;
-    uint8_t switchPositionFromComboId(const juce::String& overlayKey, int comboId) noexcept;
+    void populateSwitchCombo(juce::ComboBox& combo, const juce::String& overlayKey, CircuitKind circuit);
+    int switchComboId(CircuitKind circuit, const juce::String& overlayKey, uint8_t position) noexcept;
+    uint8_t switchPositionFromComboId(CircuitKind circuit, const juce::String& overlayKey, int comboId) noexcept;
     juce::String formatFrequencyTick(float log10Hz) noexcept;
     juce::String formatMagnitudeTick(float magDb) noexcept;
     juce::String formatPhaseTick(float phaseDeg) noexcept;

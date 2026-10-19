@@ -53,12 +53,25 @@ add_library(audio_effect_framework STATIC
     Source/EffectTopologyChainComponent.cpp
     Source/EffectTopologyChainComponent.h
     Source/EffectTopologyModule.h
+    Source/MudspAssetPaths.h
+    Source/SchematicDeviceModels.cpp
+    Source/SchematicDeviceModels.h
+    Source/SchematicOverlayBind.cpp
+    Source/SchematicOverlayBind.h
+    Source/IrFileLoader.cpp
+    Source/IrFileLoader.h
+    Source/SignalFlowPanel.cpp
+    Source/SignalFlowPanel.h
+    Source/ZdcInsidePanel.cpp
+    Source/ZdcInsidePanel.h
     Source/TopologySettingsPanel.cpp
     Source/TopologySettingsPanel.h
     Source/OversamplingSettingsPanel.cpp
     Source/OversamplingSettingsPanel.h
     Source/EffectUserParamsPanel.cpp
     Source/EffectUserParamsPanel.h
+    Source/GfxPedalPanel.cpp
+    Source/GfxPedalPanel.h
     Source/ParamsSettingsPanel.cpp
     Source/ParamsSettingsPanel.h
     Source/CompositeQualityUtils.h
@@ -102,6 +115,14 @@ target_link_libraries(audio_effect_framework
 
 if(WIN32)
     target_compile_definitions(audio_effect_framework PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+endif()
+
+if(DEFINED GFX_PACKS_ROOT AND NOT GFX_PACKS_ROOT STREQUAL "")
+    target_compile_definitions(audio_effect_framework PRIVATE GFX_PACKS_ROOT="${GFX_PACKS_ROOT}")
+endif()
+
+if(DEFINED MUDSP_ROOT AND NOT MUDSP_ROOT STREQUAL "")
+    target_compile_definitions(audio_effect_framework PRIVATE MUDSP_ROOT="${MUDSP_ROOT}")
 endif()
 
 if(NOT MSVC)

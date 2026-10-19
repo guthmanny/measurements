@@ -30,6 +30,9 @@ EffectHeaderComponent::EffectHeaderComponent()
   btnSettings.setTooltip("Settings");
   btnTuner.setTooltip("Tuner");
   btnSpectrum.setTooltip("Spectrum");
+  btnInside.setTooltip("Open the effect signal-flow graph");
+  btnInside.setMode(atom::ToolButton::Mode::Momentary);
+  btnInside.setUseLookAndFeel(true);
 
   atom::TapCircle::TapConfig tapConfig;
   tapConfig.initialBpm = 30.0;
@@ -65,6 +68,7 @@ EffectHeaderComponent::EffectHeaderComponent()
   addItem(&btnSettings, {cogSize, cogSize, 6, 6});
   addItem(&btnTuner, {cogSize, cogSize, 6, 6});
   addItem(&btnSpectrum, {cogSize, cogSize, 6, 6});
+  addItem(&btnInside, {72, juce::jmin(knobSize, 32), 6, 6});
   addItem(&tapTempo, {tapWidth, tapSize, 6, 6});
 
   FlexRowItem spacer;

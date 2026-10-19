@@ -132,3 +132,12 @@ std::string_view DynamicMiddleProcessorEffectEngine::dynamicMiddlePluginUid() co
         return {};
     return middleDesc_.uid;
 }
+
+std::string DynamicMiddleProcessorEffectEngine::dynamicMiddleGfxKey() const
+{
+    if (! hasMiddleDesc_)
+        return KbussEffectEngine::dynamicMiddleGfxKey();
+    if (! middleDesc_.gfx_key.empty())
+        return middleDesc_.gfx_key;
+    return middleDesc_.composite_key;
+}

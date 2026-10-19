@@ -48,11 +48,16 @@ std::vector<std::string> pluginSearchDirs()
 void addPluginChoiceParameter (juce::AudioProcessorValueTreeState& apvts,
                                const juce::StringArray& pluginNames)
 {
+    int defaultIndex = 0;
+    const int ds1Index = pluginNames.indexOf ("DS-1 (Dynamic)");
+    if (ds1Index >= 0)
+        defaultIndex = ds1Index;
+
     apvts.createAndAddParameter (std::make_unique<juce::AudioParameterChoice> (
         juce::ParameterID { LittleHostProcessor::kPluginChoiceParamId, 1 },
         "Plugin",
         pluginNames,
-        0));
+        defaultIndex));
 }
 } // namespace
 
@@ -175,6 +180,7 @@ void LittleHostProcessor::applyHostSideMiddleConfig()
 {
     resetMiddleProcessorParamDefaults();
     updateEffectParameters();
+    clearEffectTopologyBypassOverrides();
     applyEffectTopologyBypassOverrides();
     reapplyMiddleProcessingQuality();
     bumpMiddleProcessorGeneration();

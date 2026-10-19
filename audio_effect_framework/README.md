@@ -51,6 +51,7 @@ aef_apply_plugin_target(MyEffect)
 - `AefAudioUtils` — parameter defaults, mono mix / stereo duplicate helpers
 - `AefStandaloneMain.cpp` — shared Standalone app (native title bar, JACK capture routing)
 - Header/Footer (QUALITY: STANDARD 2× / HIGH 4× / ULTRA 8×), Settings panels, Tuner, Spectrum, Calibration (Ki/Ko)
+- **Signal flow / schematics** — AtomTheme `atom::CircuitView` via `SignalFlowPanel`: operator graph (Stage/Full), per-stage SVG, composite schematic, overlay editing bound to the live kbuss middle processor. Header **Inside** opens the full-page view; Settings → **Signal Flow** embeds the same panel. Graph data comes from `kbuss::SignalFlowCatalog` + MuDSP assets (`MUDSP_ROOT` or sibling `../../MuDSP`).
 - `PluginParameter`, meter display, JACK routing helpers
 
 ## What stays in each plugin

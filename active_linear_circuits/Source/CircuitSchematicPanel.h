@@ -13,6 +13,7 @@ class CircuitSchematicPanel final : public juce::Component
 {
 public:
     CircuitSchematicPanel();
+    ~CircuitSchematicPanel() override;
 
     void setPedalKind(ds1_ac::PedalKind pedalKind);
     void setCircuitKind(ds1_ac::CircuitKind circuitKind);
@@ -44,24 +45,20 @@ public:
     void resized() override;
 
 private:
+    struct OverlayBinding final : atom::schematic::Binding
+    {
+        explicit OverlayBinding(CircuitSchematicPanel& ownerIn) : owner(ownerIn) {}
+
+        std::optional<atom::schematic::OverlayValue> read(const juce::String& overlayKey) override;
+        bool write(const juce::String& overlayKey, const atom::schematic::OverlayValue& value) override;
+        bool configureSelector(const juce::String& overlayKey, juce::ComboBox& combo) override;
+
+        CircuitSchematicPanel& owner;
+    };
+
     void reloadSvg();
     void updateInternalToggleVisibility();
     void syncSignalOutputDisplay();
-    void syncOpampModelFromSvg();
-    void syncOpampOverlaySelectors();
-    void syncDiodeModelFromSvg();
-    void syncDiodeOverlaySelectors();
-    void syncBjtModelFromSvg();
-    void syncBjtOverlaySelectors();
-    void syncJfetModelFromSvg();
-    void syncJfetOverlaySelectors();
-    void handleOpampOverlaySelection(const juce::String& overlayKey, int selectedId);
-    void handleDiodeOverlaySelection(const juce::String& overlayKey, int selectedId);
-    void handleBjtOverlaySelection(const juce::String& overlayKey, int selectedId);
-    void handleJfetOverlaySelection(const juce::String& overlayKey, int selectedId);
-    void handleSwitchOverlaySelection(const juce::String& overlayKey, int selectedId);
-    void syncSwitchOverlaySelectors();
-    void handleOverlayTextChange(const juce::String& overlayKey, const juce::String& text);
     void notifyComponentValuesChanged();
     void applyOperatorValuesToOverlays();
     int chromeHeight() const noexcept;
@@ -82,6 +79,8 @@ private:
     atom::Label signalOutputOtherLabel;
     atom::ToggleButton internalToggle { "internalToggle", "Internal" };
     atom::SvgView svgView;
+    atom::schematic::Controller controller_;
+    OverlayBinding overlayBinding { *this };
     bool showInternalSvg_ = false;
     schematic_assets::SignalOutputInfo signalOutputInfo_;
 

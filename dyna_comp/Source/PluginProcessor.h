@@ -4,12 +4,15 @@
 
 #include "AudioEffectFrameworkProcessor.h"
 #include "AudioEffectFrameworkEditor.h"
+#include "DynamicPluginCatalog.h"
 
-/** Boss CS-1 Dyna Comp — MuDSP white-box model via kbuss.
+/** Boss CS-1 Dyna Comp — kbuss dynamic white-box (.kbplug) via MuDSP ota_comp.
  *  Pedal knobs come from the middle processor (EffectUserParamsPanel). */
 class DynaCompAudioProcessor final : public AudioEffectFrameworkProcessor
 {
 public:
+    static constexpr const char* kDynamicUid = "com.kbuss.dynamic.dyna_comp";
+
     DynaCompAudioProcessor();
 
     AudioProcessorEditor* createEditor() override;
@@ -24,5 +27,8 @@ protected:
     bool bypassNoiseGateOnStartup() const override { return true; }
 
 private:
+    DynamicPluginCatalog catalog_;
+    int selectedPluginIndex_ = 0;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DynaCompAudioProcessor)
 };

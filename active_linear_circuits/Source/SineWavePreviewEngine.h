@@ -10,6 +10,7 @@
 #include "nudsp/linear_circuits/ds_plus_opamp_f32.h"
 #include "nudsp/linear_circuits/guvnor_level_f32.h"
 #include "nudsp/linear_circuits/guvnor_postamp_f32.h"
+#include "nudsp/linear_circuits/crunchbox_preamp_f32.h"
 #include "nudsp/linear_circuits/guvnor_preamp_f32.h"
 #include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
 #include "nudsp/linear_circuits/od1_post_f32.h"
@@ -31,10 +32,32 @@
 #include "nudsp/nonlinear_circuits/bjt_follower_out_f32.h"
 #include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/crunchbox_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/crunchbox_clipper_presence_f32.h"
 #include "nudsp/nonlinear_circuits/guvnor_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/jfet_follower_f32.h"
 #include "nudsp/nonlinear_circuits/klon_centaur_f32.h"
 #include "nudsp/nonlinear_circuits/od1_drive_f32.h"
+#include "nudsp/linear_circuits/beod_bass_f32.h"
+#include "nudsp/linear_circuits/beod_preamp_f32.h"
+#include "nudsp/linear_circuits/beod_tight_f32.h"
+#include "nudsp/linear_circuits/beod_trim_f32.h"
+#include "nudsp/linear_circuits/dirty_shirley_mid_f32.h"
+#include "nudsp/linear_circuits/dirty_shirley_tight_f32.h"
+#include "nudsp/linear_circuits/fa1_buffer_f32.h"
+#include "nudsp/linear_circuits/fa1_volume_f32.h"
+#include "nudsp/linear_circuits/fa1_eq_f32.h"
+#include "nudsp/linear_circuits/bad_monkey_low_f32.h"
+#include "nudsp/nonlinear_circuits/ota_comp_f32.h"
+#include "extensions/white_box/pedals/dirty_shirley_f32.h"
+#include "nudsp/nonlinear_circuits/beod_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/beod_postgain_f32.h"
+#include "nudsp/nonlinear_circuits/beod_pregain_f32.h"
+#include "nudsp/linear_circuits/odr1_postamp_f32.h"
+#include "nudsp/linear_circuits/op_buffer_f32.h"
+#include "nudsp/linear_circuits/odr1_tone_f32.h"
+#include "nudsp/nonlinear_circuits/odr1_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/odr1_drive_f32.h"
 #include "nudsp/nonlinear_circuits/rat_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/rc_booster_drive1_f32.h"
 #include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
@@ -90,6 +113,26 @@ private:
     nx_bjt_follower_out_f32_t* bjtFollowerOut_{nullptr};
     nx_bjt_common_emitter_f32_t* bjtCommonEmitter_{nullptr};
     nx_od1_drive_f32_t* od1Drive_{nullptr};
+    nx_odr1_drive_f32_t* odr1Drive_{nullptr};
+    nx_odr1_clipper_f32_t* odr1Clipper_{nullptr};
+    nx_odr1_tone_f32_t* odr1Tone_{nullptr};
+    nx_odr1_postamp_f32_t* odr1Postamp_{nullptr};
+    nx_beod_preamp_f32_t* beodPreamp_{nullptr};
+    nx_beod_tight_f32_t* beodTight_{nullptr};
+    nx_dirty_shirley_tight_f32_t* dirtyShirleyTight_{nullptr};
+    nx_fa1_buffer_f32_t* fa1Buffer_{nullptr};
+    nx_fa1_volume_f32_t* fa1Volume_{nullptr};
+    nx_fa1_eq_f32_t* fa1Eq_{nullptr};
+    nx_bad_monkey_low_f32_t* badMonkeyLow_{nullptr};
+    nx_ota_comp_f32_t* otaComp_{nullptr};
+    nx_dirty_shirley_mid_f32_t* dirtyShirleyMid_{nullptr};
+    nx_dirty_shirley_f32_t* dirtyShirley_{nullptr};
+    nx_beod_pregain_f32_t* beodPregain_{nullptr};
+    nx_beod_postgain_f32_t* beodPostgain_{nullptr};
+    nx_beod_trim_f32_t* beodTrim_{nullptr};
+    nx_beod_clipper_f32_t* beodClipper_{nullptr};
+    nx_beod_bass_f32_t* beodBass_{nullptr};
+    nx_op_buffer_f32_t* opBuffer_{nullptr};
     nx_sd1_tone_f32_t* sd1Tone_{nullptr};
     nx_rc_level_f32_t* rcLevel_{nullptr};
     nx_od1_post_f32_t* od1Post_{nullptr};
@@ -105,6 +148,9 @@ private:
     nx_guvnor_postamp_f32_t* guvnorPostamp_{nullptr};
     nx_guvnor_clipper_f32_t* guvnorClipper_{nullptr};
     nx_guvnor_level_f32_t* guvnorLevel_{nullptr};
+    nx_crunchbox_preamp_f32_t* crunchboxPreamp_{nullptr};
+    nx_crunchbox_clipper_f32_t* crunchboxClipper_{nullptr};
+    nx_crunchbox_clipper_presence_f32_t* crunchboxClipperPresence_{nullptr};
     nx_diode_clipper_f32_t* diodeClipper_{nullptr};
     nx_rat_opamp_f32_t* ratOpamp_{nullptr};
     nx_rat_clipper_f32_t* ratClipper_{nullptr};

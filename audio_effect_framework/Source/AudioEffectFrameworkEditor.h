@@ -10,6 +10,9 @@
 #include "SpectrumOverlayComponent.h"
 #include "TunerOverlayComponent.h"
 
+class SignalFlowPanel;
+class ZdcInsidePanel;
+
 #if JucePlugin_Build_Standalone
 #include "AppSettingsPanel.h"
 #endif
@@ -47,6 +50,7 @@ public:
 
     void setTunerVisible (bool shouldShow);
     void setSpectrumVisible (bool shouldShow);
+    void setSignalFlowVisible (bool shouldShow);
 
 protected:
   /** Finish APVTS body rows + zoom/timer. Call once from a derived ctor when
@@ -64,6 +68,13 @@ protected:
 
     /** Extra per-tick UI work after meters/overlays update. */
     virtual void onEditorTimerTick() {}
+
+    /** Inside page shown by the header Inside button (CircuitView by default). */
+    virtual juce::Component* getInsidePage();
+    virtual const juce::Component* getInsidePage() const;
+    virtual int getInsidePreferredWidth() const;
+    virtual int getInsidePreferredHeight() const;
+    virtual void onInsidePageShown();
 
     AudioEffectFrameworkProcessor& processor;
 
@@ -100,6 +111,8 @@ private:
     void darkModeSettingChanged() override;
     void applyAppSettingsDialogTitleBarTheme();
 #endif
+    void applyDesktopDisplayTheme();
+    void layoutSignalFlowPage();
     int getEditorWidth();
     int getNaturalHeight() const noexcept;
     int getBodyViewportHeight() const noexcept;
@@ -112,7 +125,12 @@ private:
     void layoutModelTelemetryOverlay(const juce::Rectangle<int>& bodyArea);
 
     std::unique_ptr<EffectUserParamsPanel> effectUserParamsPanel_;
+    std::unique_ptr<SignalFlowPanel> signalFlowPanel;
+    std::unique_ptr<ZdcInsidePanel> zdcInsidePanel;
     int lastMiddleProcessorGeneration_ = -1;
+
+    [[nodiscard]] bool isZdcInsideMiddle() const;
+    void hideInsidePages();
 
     TunerOverlay tunerOverlay;
     SpectrumOverlay spectrumOverlay;

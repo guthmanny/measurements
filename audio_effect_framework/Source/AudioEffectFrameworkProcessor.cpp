@@ -10,9 +10,13 @@
 #include "AudioEffectFrameworkProcessor.h"
 
 #include "kbuss/processor.hpp"
+#include "kbuss/signal_flow.hpp"
+
+#include "MudspAssetPaths.h"
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 #include "KbussParamUiUtils.h"
 #include "CompositeQualityUtils.h"
@@ -171,6 +175,7 @@ KbussEffectEngine& AudioEffectFrameworkProcessor::getKbussEngine() noexcept
 
 const KbussEffectEngine& AudioEffectFrameworkProcessor::getKbussEngine() const noexcept
 {
+  const_cast<AudioEffectFrameworkProcessor*>(this)->ensureEffectEngine();
   jassert(effectEngine_ != nullptr);
   return *effectEngine_;
 }
@@ -790,25 +795,126 @@ void AudioEffectFrameworkProcessor::updateMeterDisplay (float attackMs, float re
 
 //==============================================================================
 
+namespace
+{
+const kbuss::SignalFlowCatalog* sharedSignalFlowCatalog()
+{
+    static const auto loaded = []() -> std::optional<kbuss::SignalFlowCatalog>
+    {
+        const auto catalog = mudspCatalogFile();
+        const auto registry = mudspRegistryFile();
+        if (! catalog.existsAsFile() || ! registry.existsAsFile())
+            return std::nullopt;
+        return kbuss::SignalFlowCatalog::load (catalog.getFullPathName().toStdString(),
+                                               registry.getFullPathName().toStdString());
+    }();
+    return loaded ? &*loaded : nullptr;
+}
+} // namespace
+
+namespace
+{
+atom::graph::Graph toAtomGraph (const kbuss::SignalFlowGraph& src)
+{
+  atom::graph::Graph out;
+  out.schemaVersion = src.schema_version;
+  out.gfxKey = src.gfx_key;
+  out.displayName = src.display_name;
+  out.chainHash = src.chain_hash;
+  out.compositeSvg = src.composite_svg;
+  out.nodes.reserve (src.nodes.size());
+  for (const auto& node : src.nodes)
+  {
+    atom::graph::Node dst;
+    dst.id = node.id;
+    dst.label = node.label;
+    dst.op = node.op;
+    dst.osClass = node.os_class;
+    dst.bypassed = node.bypassed;
+    dst.selectable = node.selectable;
+    dst.bypassable = node.bypassable;
+    dst.svg = node.svg;
+    dst.svgInternal = node.svg_internal;
+    dst.kind = node.kind;
+    out.nodes.push_back (std::move (dst));
+  }
+  out.edges.reserve (src.edges.size());
+  for (const auto& edge : src.edges)
+    out.edges.push_back ({ edge.from, edge.to, edge.kind });
+  return out;
+}
+
+void addSequentialSignalEdges (atom::graph::Graph& graph)
+{
+  if (! graph.edges.empty())
+    return;
+
+  for (size_t i = 1; i < graph.nodes.size(); ++i)
+    graph.edges.push_back ({ graph.nodes[i - 1].id, graph.nodes[i].id, "signal" });
+}
+} // namespace
+
+atom::graph::Graph AudioEffectFrameworkProcessor::getEffectSignalFlowGraph() const
+{
+  atom::graph::Graph graph;
+
+  if (effectEngine_ == nullptr || ! effectEngine_->isReady())
+    return graph;
+
+  auto* proc = effectEngine_->getMiddleProcessor();
+  if (proc == nullptr)
+    return graph;
+
+  const auto gfxKey = effectEngine_->dynamicMiddleGfxKey();
+  const auto* catalog = sharedSignalFlowCatalog();
+  const auto tryBuild = [&] (const std::string& key) -> bool
+  {
+    if (catalog == nullptr || key.empty())
+      return false;
+    auto built = catalog->build (key);
+    if (! built)
+      return false;
+    kbuss::apply_module_topology (*built, proc->get_module_topology());
+    graph = toAtomGraph (*built);
+    addSequentialSignalEdges (graph);
+    return ! graph.empty();
+  };
+
+  if (tryBuild (gfxKey))
+    return graph;
+
+  const auto& desc = proc->description();
+  if (tryBuild (desc.gfx_key) || tryBuild (desc.composite_key))
+    return graph;
+
+  for (const auto& entry : proc->get_module_topology())
+  {
+    atom::graph::Node node;
+    node.id = entry.id;
+    node.label = entry.label;
+    node.bypassed = entry.bypassed;
+    graph.nodes.push_back (std::move (node));
+  }
+  addSequentialSignalEdges (graph);
+  return graph;
+}
+
 juce::Array<EffectTopologyModule> AudioEffectFrameworkProcessor::getEffectTopologyModules() const
 {
   juce::Array<EffectTopologyModule> modules;
-
-  if (effectEngine_ == nullptr || ! effectEngine_->isReady())
-    return modules;
-
-  if (auto* proc = effectEngine_->getMiddleProcessor())
+  for (const auto& node : getEffectSignalFlowGraph().nodes)
   {
-    for (const auto& entry : proc->get_module_topology())
-    {
-      EffectTopologyModule mod;
-      mod.id = juce::String (entry.id);
-      mod.displayName = juce::String (entry.label);
-      mod.bypassed = entry.bypassed;
-      modules.add (std::move (mod));
-    }
+    EffectTopologyModule mod;
+    mod.id = juce::String (node.id);
+    mod.displayName = juce::String (node.label);
+    mod.operatorId = juce::String (node.op);
+    mod.osClass = juce::String (node.osClass);
+    mod.svg = juce::String (node.svg);
+    mod.svgInternal = juce::String (node.svgInternal);
+    mod.bypassed = node.bypassed;
+    mod.bypassable = node.bypassable;
+    modules.add (std::move (mod));
   }
-
   return modules;
 }
 
@@ -818,7 +924,7 @@ juce::String AudioEffectFrameworkProcessor::getEffectTopologyTitle() const
     return {};
 
   if (auto* proc = effectEngine_->getMiddleProcessor())
-    return juce::String (proc->description().name) + " internal signal chain";
+    return juce::String (proc->description().name) + " signal flow";
 
   return {};
 }

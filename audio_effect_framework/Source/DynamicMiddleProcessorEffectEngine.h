@@ -30,6 +30,7 @@ public:
 
     [[nodiscard]] std::optional<std::string> dynamicMiddlePluginBundlePath() const override;
     [[nodiscard]] std::string_view dynamicMiddlePluginUid() const override;
+    [[nodiscard]] std::string dynamicMiddleGfxKey() const override;
 
 protected:
     void registerPluginFormats() override;

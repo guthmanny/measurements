@@ -1,7 +1,6 @@
 #include "CircuitSchematicPanel.h"
 
 #include "SchematicComponentApply.h"
-#include "SchematicSvgAdapter.h"
 
 #include <optional>
 #include <string_view>
@@ -101,11 +100,6 @@ juce::File resolveCircuitSvgFile(ds1_ac::CircuitKind circuit, bool useInternal)
     return resolveSvgRelative(rel.toRawUTF8());
 }
 
-juce::File resolveCompositeSvgFile()
-{
-    return resolveSvgRelative(ds1_ac::compositeSvgRelativePath());
-}
-
 void loadSvgIntoView(atom::SvgView& view, const juce::File& file, juce::String& status)
 {
     view.setSvg(std::string_view{});
@@ -155,37 +149,8 @@ CircuitSchematicPanel::CircuitSchematicPanel()
     signalOutputActiveLabel.setVisible(false);
     signalOutputOtherLabel.setJustificationType(juce::Justification::centredLeft);
     signalOutputOtherLabel.setVisible(false);
-    svgView.setOverlayClassifier(ds1_ac::classifyCircuitSvgId);
-    svgView.configureOverlaySelector = [](const juce::String& key, atom::ComboBox& combo)
-    {
-        if (key.startsWithIgnoreCase("OPAMP_"))
-            ds1_ac::populateOpampModelCombo(combo);
-        else if (key.startsWithIgnoreCase("DIODE_"))
-            ds1_ac::populateDiodeModelCombo(combo);
-        else if (key.startsWithIgnoreCase("BJT_NPN_") || key.startsWithIgnoreCase("BJT_PNP_"))
-            ds1_ac::populateBjtModelCombo(combo);
-        else if (key.startsWithIgnoreCase("JFET_"))
-            ds1_ac::populateJfetModelCombo(combo);
-        else if (ds1_ac::isSwitchOverlayKey(key))
-            ds1_ac::populateSwitchCombo(combo, key);
-    };
-    svgView.onOverlaySelectionChanged = [this](const juce::String& key, int selectedId)
-    {
-        if (key.startsWithIgnoreCase("OPAMP_"))
-            handleOpampOverlaySelection(key, selectedId);
-        else if (key.startsWithIgnoreCase("DIODE_"))
-            handleDiodeOverlaySelection(key, selectedId);
-        else if (key.startsWithIgnoreCase("BJT_NPN_") || key.startsWithIgnoreCase("BJT_PNP_"))
-            handleBjtOverlaySelection(key, selectedId);
-        else if (key.startsWithIgnoreCase("JFET_"))
-            handleJfetOverlaySelection(key, selectedId);
-        else if (ds1_ac::isSwitchOverlayKey(key))
-            handleSwitchOverlaySelection(key, selectedId);
-    };
-    svgView.onOverlayTextChanged = [this](const juce::String& key, const juce::String& text)
-    {
-        handleOverlayTextChange(key, text);
-    };
+    controller_.attach(svgView);
+    controller_.setBinding(&overlayBinding);
     internalToggle.setClickingTogglesState(true);
     internalToggle.setVisible(false);
     internalToggle.onClick = [this]
@@ -203,288 +168,223 @@ CircuitSchematicPanel::CircuitSchematicPanel()
     reloadSvg();
 }
 
+CircuitSchematicPanel::~CircuitSchematicPanel()
+{
+    controller_.setBinding(nullptr);
+}
+
 void CircuitSchematicPanel::setOpampModel(nx_opamp_model_e model)
 {
     opampModel_ = model;
-    syncOpampOverlaySelectors();
+    controller_.refresh();
 }
 
 void CircuitSchematicPanel::setDiodeModel(nx_diode_model_t model)
 {
     diodeModel_ = model;
-    syncDiodeOverlaySelectors();
+    controller_.refresh();
 }
 
 void CircuitSchematicPanel::setBjtModel(nx_bjt_npn_model_e model)
 {
     bjtModel_ = model;
-    syncBjtOverlaySelectors();
+    controller_.refresh();
 }
 
 void CircuitSchematicPanel::setJfetModel(nx_jfet_n_model_e model)
 {
     jfetModel_ = model;
-    syncJfetOverlaySelectors();
+    controller_.refresh();
 }
 
-void CircuitSchematicPanel::syncOpampModelFromSvg()
+std::optional<atom::schematic::OverlayValue> CircuitSchematicPanel::OverlayBinding::read(const juce::String& overlayKey)
 {
-    if (! ds1_ac::circuitUsesOpampModel(circuitKind_))
-        return;
-
-    const auto modelFromSvg = ds1_ac::defaultOpampModelFromSvgView(svgView);
-    if (modelFromSvg != opampModel_)
+    const auto kind = atom::schematic::deviceKindFromOverlay(overlayKey);
+    if (kind == atom::schematic::DeviceKind::Opamp)
     {
-        opampModel_ = modelFromSvg;
-        if (onOpampModelChanged)
-            onOpampModelChanged(opampModel_);
+        atom::schematic::OverlayValue value;
+        value.kind = atom::schematic::ValueKind::Device;
+        value.enumCode = static_cast<int>(owner.opampModel_);
+        value.comboId = ds1_ac::opampModelComboId(owner.opampModel_);
+        return value;
     }
-
-    syncOpampOverlaySelectors();
-}
-
-void CircuitSchematicPanel::syncOpampOverlaySelectors()
-{
-    if (! ds1_ac::circuitUsesOpampModel(circuitKind_))
-        return;
-
-    const auto keys = svgView.findOverlayKeysWithPrefix("OPAMP_");
-    if (keys.isEmpty())
-        return;
-
-    const int comboId = ds1_ac::opampModelComboId(opampModel_);
-    for (const auto& key : keys)
-        svgView.setOverlaySelectedId(key, comboId);
-
-    svgView.resized();
-}
-
-void CircuitSchematicPanel::syncDiodeModelFromSvg()
-{
-    if (! ds1_ac::circuitUsesDiodeModel(circuitKind_))
-        return;
-
-    const auto keys = svgView.findOverlayKeysWithPrefix("DIODE_");
-    nx_diode_model_t next = ds1_ac::defaultDiodeModelForCircuit(circuitKind_);
-    if (! keys.isEmpty())
-        next = ds1_ac::defaultDiodeModelFromSvgView(svgView);
-
-    if (next != diodeModel_)
+    if (kind == atom::schematic::DeviceKind::Diode)
     {
-        diodeModel_ = next;
-        if (onDiodeModelChanged)
-            onDiodeModelChanged(diodeModel_);
+        atom::schematic::OverlayValue value;
+        value.kind = atom::schematic::ValueKind::Device;
+        value.enumCode = static_cast<int>(owner.diodeModel_);
+        value.comboId = ds1_ac::diodeModelComboId(owner.diodeModel_);
+        return value;
     }
-
-    syncDiodeOverlaySelectors();
-}
-
-void CircuitSchematicPanel::syncDiodeOverlaySelectors()
-{
-    if (! ds1_ac::circuitUsesDiodeModel(circuitKind_))
-        return;
-
-    const auto keys = svgView.findOverlayKeysWithPrefix("DIODE_");
-    if (keys.isEmpty())
-        return;
-
-    const int comboId = ds1_ac::diodeModelComboId(diodeModel_);
-    for (const auto& key : keys)
-        svgView.setOverlaySelectedId(key, comboId);
-
-    svgView.resized();
-}
-
-void CircuitSchematicPanel::syncBjtModelFromSvg()
-{
-    if (! ds1_ac::circuitUsesBjtModel(circuitKind_))
-        return;
-
-    const auto keys = svgView.findOverlayKeysWithPrefix("BJT_NPN_");
-    nx_bjt_npn_model_e next = ds1_ac::defaultBjtModel(circuitKind_);
-    if (! keys.isEmpty())
-        next = ds1_ac::defaultBjtModelFromSvgView(svgView);
-
-    if (next != bjtModel_)
+    if (kind == atom::schematic::DeviceKind::BjtNpn || kind == atom::schematic::DeviceKind::BjtPnp)
     {
-        bjtModel_ = next;
-        if (onBjtModelChanged)
-            onBjtModelChanged(bjtModel_);
+        atom::schematic::OverlayValue value;
+        value.kind = atom::schematic::ValueKind::Device;
+        value.enumCode = static_cast<int>(owner.bjtModel_);
+        value.comboId = ds1_ac::bjtModelComboId(owner.bjtModel_);
+        return value;
     }
-
-    syncBjtOverlaySelectors();
-}
-
-void CircuitSchematicPanel::syncBjtOverlaySelectors()
-{
-    if (! ds1_ac::circuitUsesBjtModel(circuitKind_))
-        return;
-
-    const auto keys = svgView.findOverlayKeysWithPrefix("BJT_NPN_");
-    if (keys.isEmpty())
-        return;
-
-    const int comboId = ds1_ac::bjtModelComboId(bjtModel_);
-    for (const auto& key : keys)
-        svgView.setOverlaySelectedId(key, comboId);
-
-    svgView.resized();
-}
-
-void CircuitSchematicPanel::syncJfetModelFromSvg()
-{
-    if (! ds1_ac::circuitUsesJfetModel(circuitKind_))
-        return;
-
-    const auto keys = svgView.findOverlayKeysWithPrefix("JFET_");
-    nx_jfet_n_model_e next = ds1_ac::defaultJfetModel(circuitKind_);
-    if (! keys.isEmpty())
-        next = ds1_ac::defaultJfetModelFromSvgView(svgView);
-
-    if (next != jfetModel_)
+    if (kind == atom::schematic::DeviceKind::Jfet)
     {
-        jfetModel_ = next;
-        if (onJfetModelChanged)
-            onJfetModelChanged(jfetModel_);
+        atom::schematic::OverlayValue value;
+        value.kind = atom::schematic::ValueKind::Device;
+        value.enumCode = static_cast<int>(owner.jfetModel_);
+        value.comboId = ds1_ac::jfetModelComboId(owner.jfetModel_);
+        return value;
     }
-
-    syncJfetOverlaySelectors();
-}
-
-void CircuitSchematicPanel::syncJfetOverlaySelectors()
-{
-    if (! ds1_ac::circuitUsesJfetModel(circuitKind_))
-        return;
-
-    const auto keys = svgView.findOverlayKeysWithPrefix("JFET_");
-    if (keys.isEmpty())
-        return;
-
-    const int comboId = ds1_ac::jfetModelComboId(jfetModel_);
-    for (const auto& key : keys)
-        svgView.setOverlaySelectedId(key, comboId);
-
-    svgView.resized();
-}
-
-void CircuitSchematicPanel::handleOpampOverlaySelection(const juce::String& overlayKey, int selectedId)
-{
-    if (! overlayKey.startsWithIgnoreCase("OPAMP_"))
-        return;
-
-    const auto model = ds1_ac::opampModelFromComboId(selectedId);
-    if (model == opampModel_)
-        return;
-
-    opampModel_ = model;
-    syncOpampOverlaySelectors();
-
-    if (onOpampModelChanged)
-        onOpampModelChanged(model);
-}
-
-void CircuitSchematicPanel::handleDiodeOverlaySelection(const juce::String& overlayKey, int selectedId)
-{
-    if (! overlayKey.startsWithIgnoreCase("DIODE_"))
-        return;
-
-    const auto model = ds1_ac::diodeModelFromComboId(selectedId);
-    if (model == diodeModel_)
-        return;
-
-    diodeModel_ = model;
-    syncDiodeOverlaySelectors();
-
-    if (onDiodeModelChanged)
-        onDiodeModelChanged(model);
-}
-
-void CircuitSchematicPanel::handleBjtOverlaySelection(const juce::String& overlayKey, int selectedId)
-{
-    if (! overlayKey.startsWithIgnoreCase("BJT_NPN_") && ! overlayKey.startsWithIgnoreCase("BJT_PNP_"))
-        return;
-
-    const auto model = ds1_ac::bjtModelFromComboId(selectedId);
-    if (model == bjtModel_)
-        return;
-
-    bjtModel_ = model;
-    syncBjtOverlaySelectors();
-
-    if (onBjtModelChanged)
-        onBjtModelChanged(model);
-}
-
-void CircuitSchematicPanel::handleJfetOverlaySelection(const juce::String& overlayKey, int selectedId)
-{
-    if (! overlayKey.startsWithIgnoreCase("JFET_"))
-        return;
-
-    const auto model = ds1_ac::jfetModelFromComboId(selectedId);
-    if (model == jfetModel_)
-        return;
-
-    jfetModel_ = model;
-    syncJfetOverlaySelectors();
-
-    if (onJfetModelChanged)
-        onJfetModelChanged(model);
-}
-
-void CircuitSchematicPanel::handleSwitchOverlaySelection(const juce::String& overlayKey, int selectedId)
-{
-    if (! ds1_ac::isSwitchOverlayKey(overlayKey))
-        return;
-
-    const auto canonical = ds1_ac::switchCanonicalName(overlayKey);
-    const auto position = ds1_ac::switchPositionFromComboId(overlayKey, selectedId);
-    const auto previous = findComponentValue(componentValues_, canonical);
-    if (previous && juce::roundToInt(*previous) == static_cast<int>(position))
-        return;
-
-    componentValues_.values[canonical] = static_cast<double>(position);
-    syncSwitchOverlaySelectors();
-    notifyComponentValuesChanged();
-}
-
-void CircuitSchematicPanel::syncSwitchOverlaySelectors()
-{
-    const auto keys = svgView.findOverlayKeysWithPrefix("SWITCH_");
-    if (keys.isEmpty())
-        return;
-
-    for (const auto& key : keys)
+    if (kind == atom::schematic::DeviceKind::Switch)
     {
-        const auto canonical = ds1_ac::switchCanonicalName(key);
-        const auto stored = findComponentValue(componentValues_, canonical);
+        const auto canonical = ds1_ac::switchCanonicalName(overlayKey);
+        const auto stored = findComponentValue(owner.componentValues_, canonical);
         const auto fallback = canonical.equalsIgnoreCase("SW1") ? 1 : 0;
         const auto position = static_cast<uint8_t>(stored ? juce::jlimit(0, 255, juce::roundToInt(*stored))
                                                          : fallback);
-        svgView.setOverlaySelectedId(key, ds1_ac::switchComboId(key, position));
+        atom::schematic::OverlayValue value;
+        value.kind = atom::schematic::ValueKind::Switch;
+        value.leaf = canonical;
+        value.numeric = position;
+        value.comboId = ds1_ac::switchComboId(owner.circuitKind_, overlayKey, position);
+        return value;
     }
 
-    svgView.resized();
+    auto component = atom::schematic::canonicalLeaf(overlayKey);
+    if (component.isEmpty() || atom::schematic::isDeviceOrNameOverlay(component))
+        return std::nullopt;
+
+    auto lookupValue = [&](const juce::String& name)
+    {
+        auto found = owner.componentValues_.values.find(name);
+        if (found != owner.componentValues_.values.end())
+            return found;
+
+        for (auto candidate = owner.componentValues_.values.begin();
+             candidate != owner.componentValues_.values.end(); ++candidate)
+        {
+            if (candidate->first.equalsIgnoreCase(name))
+                return candidate;
+        }
+        return owner.componentValues_.values.end();
+    };
+
+    auto it = lookupValue(component);
+    if (it == owner.componentValues_.values.end())
+    {
+        const int dot = component.lastIndexOfChar('.');
+        if (dot >= 0)
+            it = lookupValue(component.substring(dot + 1));
+    }
+    if (it == owner.componentValues_.values.end())
+        return std::nullopt;
+
+    auto taperIt = owner.componentValues_.potTapers.find(it->first);
+    if (taperIt == owner.componentValues_.potTapers.end())
+    {
+        for (auto candidate = owner.componentValues_.potTapers.begin();
+             candidate != owner.componentValues_.potTapers.end(); ++candidate)
+        {
+            if (candidate->first.equalsIgnoreCase(it->first))
+            {
+                taperIt = candidate;
+                break;
+            }
+        }
+    }
+
+    atom::schematic::OverlayValue value;
+    value.kind = atom::schematic::ValueKind::Component;
+    value.leaf = it->first;
+    value.numeric = it->second;
+    if (taperIt != owner.componentValues_.potTapers.end())
+        value.potTaper = static_cast<int>(taperIt->second);
+    return value;
 }
 
-void CircuitSchematicPanel::handleOverlayTextChange(const juce::String& overlayKey, const juce::String& text)
+bool CircuitSchematicPanel::OverlayBinding::write(const juce::String& overlayKey,
+                                                 const atom::schematic::OverlayValue& value)
 {
-    if (overlayKey.startsWithIgnoreCase("OPAMP_") || overlayKey.startsWithIgnoreCase("DIODE_")
-        || overlayKey.startsWithIgnoreCase("BJT_NPN_") || overlayKey.startsWithIgnoreCase("BJT_PNP_")
-        || overlayKey.startsWithIgnoreCase("JFET_") || ds1_ac::isSwitchOverlayKey(overlayKey))
-        return;
+    if (value.kind == atom::schematic::ValueKind::Device)
+    {
+        const auto kind = atom::schematic::deviceKindFromOverlay(overlayKey);
+        if (kind == atom::schematic::DeviceKind::Opamp)
+        {
+            const auto model = ds1_ac::opampModelFromComboId(value.comboId);
+            if (model == owner.opampModel_)
+                return false;
+            owner.opampModel_ = model;
+            if (owner.onOpampModelChanged)
+                owner.onOpampModelChanged(model);
+            return true;
+        }
+        if (kind == atom::schematic::DeviceKind::Diode)
+        {
+            const auto model = ds1_ac::diodeModelFromComboId(value.comboId);
+            if (model == owner.diodeModel_)
+                return false;
+            owner.diodeModel_ = model;
+            if (owner.onDiodeModelChanged)
+                owner.onDiodeModelChanged(model);
+            return true;
+        }
+        if (kind == atom::schematic::DeviceKind::BjtNpn || kind == atom::schematic::DeviceKind::BjtPnp)
+        {
+            const auto model = ds1_ac::bjtModelFromComboId(value.comboId);
+            if (model == owner.bjtModel_)
+                return false;
+            owner.bjtModel_ = model;
+            if (owner.onBjtModelChanged)
+                owner.onBjtModelChanged(model);
+            return true;
+        }
+        if (kind == atom::schematic::DeviceKind::Jfet)
+        {
+            const auto model = ds1_ac::jfetModelFromComboId(value.comboId);
+            if (model == owner.jfetModel_)
+                return false;
+            owner.jfetModel_ = model;
+            if (owner.onJfetModelChanged)
+                owner.onJfetModelChanged(model);
+            return true;
+        }
+        return false;
+    }
 
-    const auto parsed = ds1_ac::SchematicComponentValues::parseLabelText(text);
-    if (! parsed)
-        return;
+    if (value.kind == atom::schematic::ValueKind::Switch)
+    {
+        const auto canonical = ds1_ac::switchCanonicalName(overlayKey);
+        const auto position = ds1_ac::switchPositionFromComboId(owner.circuitKind_, overlayKey, value.comboId);
+        const auto previous = findComponentValue(owner.componentValues_, canonical);
+        if (previous && juce::roundToInt(*previous) == static_cast<int>(position))
+            return false;
 
-    auto key = overlayKey;
-    const int colon = key.indexOfChar(':');
-    if (colon >= 0)
-        key = key.substring(colon + 1).trim();
-    componentValues_.values[key] = *parsed;
-    if (const auto taper = ds1_ac::SchematicComponentValues::parsePotTaperSuffix(text))
-        componentValues_.potTapers[key] = *taper;
-    notifyComponentValuesChanged();
+        owner.componentValues_.values[canonical] = static_cast<double>(position);
+        owner.notifyComponentValuesChanged();
+        return true;
+    }
+
+    auto key = atom::schematic::canonicalLeaf(overlayKey);
+    if (key.isEmpty())
+        return false;
+
+    owner.componentValues_.values[key] = value.numeric;
+    if (value.potTaper >= 0 && value.potTaper < NX_POT_TAPER_COUNT)
+        owner.componentValues_.potTapers[key] = static_cast<nx_pot_taper_e>(value.potTaper);
+    owner.notifyComponentValuesChanged();
+    return true;
+}
+
+bool CircuitSchematicPanel::OverlayBinding::configureSelector(const juce::String& overlayKey, juce::ComboBox& combo)
+{
+    if (ds1_ac::isSwitchOverlayKey(overlayKey))
+    {
+        ds1_ac::populateSwitchCombo(combo, overlayKey, owner.circuitKind_);
+        return true;
+    }
+    if (overlayKey.startsWithIgnoreCase("BJT_PNP_"))
+    {
+        atom::schematic::populateDeviceCombo("BJT_NPN_", combo);
+        return true;
+    }
+    return false;
 }
 
 void CircuitSchematicPanel::notifyComponentValuesChanged()
@@ -498,55 +398,6 @@ void CircuitSchematicPanel::applyOperatorValuesToOverlays()
     componentValues_ = ds1_ac::readStageComponentValues(pedalKind_, circuitKind_, useCompositeConfig_);
     const auto models = ds1_ac::readStageDeviceModels(pedalKind_, circuitKind_, useCompositeConfig_);
 
-    const auto keys = svgView.findDocumentOverlayKeysWithPrefix("");
-    for (const auto& key : keys)
-    {
-        if (key.startsWithIgnoreCase("OPAMP_") || key.startsWithIgnoreCase("DIODE_")
-            || key.startsWithIgnoreCase("BJT_NPN_") || key.startsWithIgnoreCase("BJT_PNP_")
-            || key.startsWithIgnoreCase("JFET_") || ds1_ac::isSwitchOverlayKey(key))
-            continue;
-
-        auto component = key;
-        const int colon = component.indexOfChar(':');
-        if (colon >= 0)
-            component = component.substring(colon + 1).trim();
-
-        auto it = componentValues_.values.find(component);
-        if (it == componentValues_.values.end())
-        {
-            it = componentValues_.values.end();
-            for (auto candidate = componentValues_.values.begin(); candidate != componentValues_.values.end(); ++candidate)
-            {
-                if (candidate->first.equalsIgnoreCase(component))
-                {
-                    it = candidate;
-                    break;
-                }
-            }
-        }
-
-        if (it == componentValues_.values.end())
-            continue;
-
-        auto taperIt = componentValues_.potTapers.find(it->first);
-        if (taperIt == componentValues_.potTapers.end())
-        {
-            for (auto candidate = componentValues_.potTapers.begin(); candidate != componentValues_.potTapers.end(); ++candidate)
-            {
-                if (candidate->first.equalsIgnoreCase(it->first))
-                {
-                    taperIt = candidate;
-                    break;
-                }
-            }
-        }
-
-        if (taperIt != componentValues_.potTapers.end())
-            svgView.setOverlayText(key, ds1_ac::SchematicComponentValues::formatLabelText(it->first, it->second, taperIt->second));
-        else
-            svgView.setOverlayText(key, ds1_ac::SchematicComponentValues::formatLabelText(it->first, it->second));
-    }
-
     if (models.hasOpamp)
         opampModel_ = models.opamp;
     if (models.hasDiode)
@@ -555,6 +406,8 @@ void CircuitSchematicPanel::applyOperatorValuesToOverlays()
         bjtModel_ = models.bjt;
     if (models.hasJfet)
         jfetModel_ = models.jfet;
+
+    controller_.refresh();
 }
 
 void CircuitSchematicPanel::updateInternalToggleVisibility()
@@ -664,11 +517,6 @@ void CircuitSchematicPanel::reloadSvg()
             onBjtModelChanged(bjtModel_);
         if (onJfetModelChanged && ds1_ac::circuitUsesJfetModel(circuitKind_))
             onJfetModelChanged(jfetModel_);
-        syncOpampOverlaySelectors();
-        syncDiodeOverlaySelectors();
-        syncBjtOverlaySelectors();
-        syncJfetOverlaySelectors();
-        syncSwitchOverlaySelectors();
     }
 
     notifyComponentValuesChanged();

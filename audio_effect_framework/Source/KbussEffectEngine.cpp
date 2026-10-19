@@ -6,6 +6,7 @@
 
 #include <juce_core/juce_core.h>
 
+#include "kbuss/processor.hpp"
 #include "plugins/builtin_plugins.hpp"
 
 KbussEffectEngine::KbussEffectEngine() = default;
@@ -13,6 +14,18 @@ KbussEffectEngine::KbussEffectEngine() = default;
 KbussEffectEngine::~KbussEffectEngine()
 {
     release();
+}
+
+std::string KbussEffectEngine::dynamicMiddleGfxKey() const
+{
+    if (auto* middle = getMiddleProcessor())
+    {
+        const auto& desc = middle->description();
+        if (! desc.gfx_key.empty())
+            return desc.gfx_key;
+        return desc.composite_key;
+    }
+    return {};
 }
 
 kbuss::PluginDescription KbussEffectEngine::makeDesc (const char* uid,

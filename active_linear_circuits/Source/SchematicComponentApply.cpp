@@ -7,6 +7,7 @@
 #include "nudsp/linear_circuits/ds_plus_opamp_f32.h"
 #include "nudsp/linear_circuits/guvnor_level_f32.h"
 #include "nudsp/linear_circuits/guvnor_postamp_f32.h"
+#include "nudsp/linear_circuits/crunchbox_preamp_f32.h"
 #include "nudsp/linear_circuits/guvnor_preamp_f32.h"
 #include "nudsp/linear_circuits/klon_centaur_tone_f32.h"
 #include "nudsp/linear_circuits/od1_post_f32.h"
@@ -20,6 +21,23 @@
 #include "nudsp/linear_circuits/sansamp_classic_pre_eq_f32.h"
 #include "nudsp/linear_circuits/sansamp_classic_preamp_f32.h"
 #include "nudsp/linear_circuits/sansamp_classic_spk_f32.h"
+#include "nudsp/linear_circuits/beod_bass_f32.h"
+#include "nudsp/linear_circuits/beod_preamp_f32.h"
+#include "nudsp/linear_circuits/beod_tight_f32.h"
+#include "nudsp/linear_circuits/beod_trim_f32.h"
+#include "nudsp/linear_circuits/dirty_shirley_mid_f32.h"
+#include "nudsp/linear_circuits/dirty_shirley_tight_f32.h"
+#include "nudsp/linear_circuits/fa1_buffer_f32.h"
+#include "nudsp/linear_circuits/fa1_volume_f32.h"
+#include "nudsp/linear_circuits/fa1_eq_f32.h"
+#include "nudsp/linear_circuits/bad_monkey_low_f32.h"
+#include "nudsp/nonlinear_circuits/ota_comp_f32.h"
+#include "nudsp/nonlinear_circuits/beod_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/beod_postgain_f32.h"
+#include "nudsp/nonlinear_circuits/beod_pregain_f32.h"
+#include "nudsp/linear_circuits/odr1_postamp_f32.h"
+#include "nudsp/linear_circuits/op_buffer_f32.h"
+#include "nudsp/linear_circuits/odr1_tone_f32.h"
 #include "nudsp/linear_circuits/sd1_tone_f32.h"
 #include "nudsp/linear_circuits/ts9_tone_f32.h"
 #include "nudsp/nonlinear_circuits/ac_booster_drive_f32.h"
@@ -28,25 +46,36 @@
 #include "nudsp/nonlinear_circuits/bjt_follower_out_f32.h"
 #include "nudsp/nonlinear_circuits/diode_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/ds1_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/crunchbox_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/crunchbox_clipper_presence_f32.h"
 #include "nudsp/nonlinear_circuits/guvnor_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/jfet_follower_f32.h"
 #include "nudsp/nonlinear_circuits/klon_centaur_f32.h"
 #include "nudsp/nonlinear_circuits/od1_drive_f32.h"
+#include "nudsp/nonlinear_circuits/odr1_clipper_f32.h"
+#include "nudsp/nonlinear_circuits/odr1_drive_f32.h"
 #include "nudsp/nonlinear_circuits/rat_clipper_f32.h"
 #include "nudsp/nonlinear_circuits/rc_booster_drive1_f32.h"
 #include "nudsp/nonlinear_circuits/ts9_opamp_f32.h"
 
 #include "extensions/white_box/pedals/ac_booster_f32.h"
+#include "extensions/white_box/pedals/angry_charlie_f32.h"
+#include "extensions/white_box/pedals/crunch_box_f32.h"
 #include "extensions/white_box/pedals/distortion_plus_f32.h"
 #include "extensions/white_box/pedals/ds1_f32.h"
 #include "extensions/white_box/pedals/guvnor_f32.h"
 #include "extensions/white_box/pedals/klon_f32.h"
 #include "extensions/white_box/pedals/od1_f32.h"
+#include "extensions/white_box/pedals/beod_f32.h"
+#include "extensions/white_box/pedals/dirty_shirley_f32.h"
+#include "extensions/white_box/pedals/odr1_f32.h"
 #include "extensions/white_box/pedals/rat_f32.h"
 #include "extensions/white_box/pedals/rc_booster_f32.h"
 #include "extensions/white_box/pedals/sansamp_classic_f32.h"
 #include "extensions/white_box/pedals/sd1_f32.h"
 #include "extensions/white_box/pedals/ts9_f32.h"
+#include "extensions/white_box/pedals/bad_monkey_f32.h"
+#include "extensions/white_box/pedals/dyna_comp_f32.h"
 
 #include <cmath>
 #include <type_traits>
@@ -78,14 +107,19 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
     auto applyPotValue = [&](auto& pot, const char* controlName, const char* const* valueNames, int valueNameCount)
     {
         if (key.equalsIgnoreCase(controlName))
-            pot.pot_params.control = juce::jlimit(0.0, 1.0, value);
-        else
         {
-            for (int i = 0; i < valueNameCount; ++i)
-            {
-                if (key.equalsIgnoreCase(valueNames[i]))
-                    pot.pot_params.value = value;
-            }
+            // Operator defaults duplicate pot resistance under GAIN/DRIVE/etc.; only 0..1 is a control.
+            if (value >= 0.0 && value <= 1.0)
+                pot.pot_params.control = value;
+            else if (value > 1.0)
+                pot.pot_params.value = value;
+            return;
+        }
+
+        for (int i = 0; i < valueNameCount; ++i)
+        {
+            if (key.equalsIgnoreCase(valueNames[i]))
+                pot.pot_params.value = value;
         }
     };
 
@@ -119,10 +153,52 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
         static constexpr const char* names[] = {"P1", "RT", "Rt", "TONE"};
         applyPotValue(cfg.tone, "TONE", names, 4);
     }
+    if constexpr (requires { cfg.presence.pot_params.value; })
+    {
+        if constexpr (requires { cfg.treble.pot_params.value; } && ! requires { cfg.mid.pot_params.value; })
+        {
+            // BEOD clipper: P1=10kC presence, P2=100kB treble (not P2 presence like crunchbox).
+            static constexpr const char* names[] = {"P1", "PRESENCE"};
+            applyPotValue(cfg.presence, "PRESENCE", names, 2);
+        }
+        else
+        {
+            static constexpr const char* names[] = {"P2", "PRESENCE"};
+            applyPotValue(cfg.presence, "PRESENCE", names, 2);
+        }
+    }
     if constexpr (requires { cfg.level.pot_params.value; })
     {
-        static constexpr const char* names[] = {"P1", "RV", "Rv", "LEVEL"};
-        applyPotValue(cfg.level, "LEVEL", names, 4);
+        if constexpr (requires { cfg.tone.pot_params.value; })
+        {
+            static constexpr const char* names[] = {"RV", "Rv", "LEVEL", "P3"};
+            applyPotValue(cfg.level, "LEVEL", names, 4);
+        }
+        else
+        {
+            static constexpr const char* names[] = {"P1", "RV", "Rv", "LEVEL", "P3"};
+            applyPotValue(cfg.level, "LEVEL", names, 5);
+        }
+    }
+    if constexpr (requires { cfg.volume.pot_params.value; })
+    {
+        static constexpr const char* names[] = {"P1", "VOLUME"};
+        applyPotValue(cfg.volume, "VOLUME", names, 2);
+    }
+    if constexpr (requires { cfg.low.pot_params.value; })
+    {
+        static constexpr const char* names[] = {"P1", "LOW"};
+        applyPotValue(cfg.low, "LOW", names, 2);
+    }
+    if constexpr (requires { cfg.sensitivity.pot_params.value; })
+    {
+        static constexpr const char* names[] = {"P1", "SENSITIVITY", "RSENS"};
+        applyPotValue(cfg.sensitivity, "SENSITIVITY", names, 3);
+    }
+    if constexpr (requires { cfg.attack.pot_params.value; })
+    {
+        static constexpr const char* names[] = {"P2", "ATTACK", "RATT"};
+        applyPotValue(cfg.attack, "ATTACK", names, 3);
     }
     if constexpr (requires { cfg.bass.pot_params.value; })
     {
@@ -141,6 +217,11 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
             static constexpr const char* names[] = {"P3", "TREBLE"};
             applyPotValue(cfg.treble, "TREBLE", names, 2);
         }
+        else if constexpr (requires { cfg.presence.pot_params.value; })
+        {
+            static constexpr const char* names[] = {"P2", "TREBLE"};
+            applyPotValue(cfg.treble, "TREBLE", names, 2);
+        }
         else
         {
             static constexpr const char* names[] = {"P2", "TREBLE"};
@@ -149,7 +230,10 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
     }
 
     if constexpr (requires { cfg.R1; })
+    {
         set(&Config::R1, "R1");
+        set(&Config::R1, "RIN");
+    }
     if constexpr (requires { cfg.R2; })
         set(&Config::R2, "R2");
     if constexpr (requires { cfg.R3; })
@@ -166,6 +250,18 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
         set(&Config::R8, "R8");
     if constexpr (requires { cfg.R9; })
         set(&Config::R9, "R9");
+    if constexpr (requires { cfg.R10; })
+        set(&Config::R10, "R10");
+    if constexpr (requires { cfg.R14; })
+        set(&Config::R14, "R14");
+    if constexpr (requires { cfg.R15; })
+        set(&Config::R15, "R15");
+    if constexpr (requires { cfg.Rota; })
+        set(&Config::Rota, "ROTA");
+    if constexpr (requires { cfg.Rc; })
+        set(&Config::Rc, "RC");
+    if constexpr (requires { cfg.Re; })
+        set(&Config::Re, "RE");
     if constexpr (requires { cfg.Rsh; })
         set(&Config::Rsh, "RSH");
     if constexpr (requires { cfg.Rs; })
@@ -194,12 +290,18 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
         set(&Config::C6, "C6");
         set(&Config::C6, "CF");
     }
+    if constexpr (requires { cfg.CF; })
+        set(&Config::CF, "CF");
     if constexpr (requires { cfg.C7; })
         set(&Config::C7, "C7");
     if constexpr (requires { cfg.C8; })
         set(&Config::C8, "C8");
     if constexpr (requires { cfg.C9; })
         set(&Config::C9, "C9");
+    if constexpr (requires { cfg.C10; })
+        set(&Config::C10, "C10");
+    if constexpr (requires { cfg.Cota; })
+        set(&Config::Cota, "COTA");
 
     if constexpr (requires { cfg.va; })
         set(&Config::va, "VA");
@@ -215,6 +317,8 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
         set(&Config::vce_sat, "VCE_SAT");
     if constexpr (requires { cfg.vd; })
         set(&Config::vd, "VD");
+    if constexpr (requires { cfg.vg_bias; })
+        set(&Config::vg_bias, "VA");
     if constexpr (requires { cfg.Aol; })
         set(&Config::Aol, "AOL");
     if constexpr (requires { cfg.Fu; })
@@ -248,6 +352,8 @@ void applyCommonFields(Config& cfg, const juce::String& rawKey, double value)
         applySwitch(cfg.sw_speaker_edge, "SW_SPEAKER_EDGE");
     if constexpr (requires { cfg.sw_close_miking.position; })
         applySwitch(cfg.sw_close_miking, "SW_CLOSE_MIKING");
+    if constexpr (requires { cfg.sw_tight.position; })
+        applySwitch(cfg.sw_tight, "SW_TIGHT");
 }
 
 template<typename Config>
@@ -266,7 +372,10 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
     };
 
     if constexpr (requires { cfg.gain.pot_params.value; })
+    {
         putPot(cfg.gain, "P1");
+        putPot(cfg.gain, "GAIN");
+    }
     if constexpr (requires { cfg.drive.pot_params.value; })
         putPot(cfg.drive, "P1");
     if constexpr (requires { cfg.distortion.pot_params.value; })
@@ -276,9 +385,45 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
     if constexpr (requires { cfg.p1.pot_params.value; })
         putPot(cfg.p1, "P1");
     if constexpr (requires { cfg.tone.pot_params.value; })
+    {
+        putPot(cfg.tone, "TONE");
         putPot(cfg.tone, "P1");
+    }
+    if constexpr (requires { cfg.presence.pot_params.value; })
+    {
+        putPot(cfg.presence, "PRESENCE");
+        if constexpr (requires { cfg.treble.pot_params.value; } && ! requires { cfg.mid.pot_params.value; })
+            putPot(cfg.presence, "P1");
+        else
+            putPot(cfg.presence, "P2");
+    }
     if constexpr (requires { cfg.level.pot_params.value; })
-        putPot(cfg.level, "P1");
+    {
+        putPot(cfg.level, "LEVEL");
+        putPot(cfg.level, "P3");
+        if constexpr (!requires { cfg.tone.pot_params.value; })
+            putPot(cfg.level, "P1");
+    }
+    if constexpr (requires { cfg.volume.pot_params.value; })
+    {
+        putPot(cfg.volume, "P1");
+        putPot(cfg.volume, "VOLUME");
+    }
+    if constexpr (requires { cfg.low.pot_params.value; })
+    {
+        putPot(cfg.low, "P1");
+        putPot(cfg.low, "LOW");
+    }
+    if constexpr (requires { cfg.sensitivity.pot_params.value; })
+    {
+        putPot(cfg.sensitivity, "P1");
+        putPot(cfg.sensitivity, "SENSITIVITY");
+    }
+    if constexpr (requires { cfg.attack.pot_params.value; })
+    {
+        putPot(cfg.attack, "P2");
+        putPot(cfg.attack, "ATTACK");
+    }
     if constexpr (requires { cfg.bass.pot_params.value; })
         putPot(cfg.bass, "P1");
     if constexpr (requires { cfg.mid.pot_params.value; })
@@ -288,11 +433,17 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
         if constexpr (requires { cfg.mid.pot_params.value; })
             putPot(cfg.treble, "P3");
         else
+        {
+            putPot(cfg.treble, "TREBLE");
             putPot(cfg.treble, "P2");
+        }
     }
 
     if constexpr (requires { cfg.R1; })
+    {
         put("R1", cfg.R1);
+        put("RIN", cfg.R1);
+    }
     if constexpr (requires { cfg.R2; })
         put("R2", cfg.R2);
     if constexpr (requires { cfg.R3; })
@@ -309,6 +460,18 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
         put("R8", cfg.R8);
     if constexpr (requires { cfg.R9; })
         put("R9", cfg.R9);
+    if constexpr (requires { cfg.R10; })
+        put("R10", cfg.R10);
+    if constexpr (requires { cfg.R14; })
+        put("R14", cfg.R14);
+    if constexpr (requires { cfg.R15; })
+        put("R15", cfg.R15);
+    if constexpr (requires { cfg.Rota; })
+        put("ROTA", cfg.Rota);
+    if constexpr (requires { cfg.Rc; })
+        put("RC", cfg.Rc);
+    if constexpr (requires { cfg.Re; })
+        put("RE", cfg.Re);
     if constexpr (requires { cfg.Rsh; })
         put("RSH", cfg.Rsh);
     if constexpr (requires { cfg.Rs; })
@@ -337,12 +500,18 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
         put("C6", cfg.C6);
         put("CF", cfg.C6);
     }
+    if constexpr (requires { cfg.CF; })
+        put("CF", cfg.CF);
     if constexpr (requires { cfg.C7; })
         put("C7", cfg.C7);
     if constexpr (requires { cfg.C8; })
         put("C8", cfg.C8);
     if constexpr (requires { cfg.C9; })
         put("C9", cfg.C9);
+    if constexpr (requires { cfg.C10; })
+        put("C10", cfg.C10);
+    if constexpr (requires { cfg.Cota; })
+        put("COTA", cfg.Cota);
 
     if constexpr (requires { cfg.va; })
         put("VA", cfg.va);
@@ -358,6 +527,8 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
         put("VCE_SAT", cfg.vce_sat);
     if constexpr (requires { cfg.vd; })
         put("VD", cfg.vd);
+    if constexpr (requires { cfg.vg_bias; })
+        put("VA", cfg.vg_bias);
     if constexpr (requires { cfg.Aol; })
         put("AOL", cfg.Aol);
     if constexpr (requires { cfg.Fu; })
@@ -380,6 +551,8 @@ void extractCommonFields(const Config& cfg, SchematicComponentValues& values, Op
         put("SW_SPEAKER_EDGE", static_cast<double>(cfg.sw_speaker_edge.position));
     if constexpr (requires { cfg.sw_close_miking.position; })
         put("SW_CLOSE_MIKING", static_cast<double>(cfg.sw_close_miking.position));
+    if constexpr (requires { cfg.sw_tight.position; })
+        put("SW_TIGHT", static_cast<double>(cfg.sw_tight.position));
 
     if (models == nullptr)
         return;
@@ -551,6 +724,96 @@ void readOperatorState(CircuitKind circuit,
                     nx_od1_drive_f32_t,
                     nx_od1_drive_config_t,
                     nx_od1_drive_get_config_f32);
+        READ_CONFIG(CircuitKind::Odr1Drive,
+                    nx_odr1_drive_create_f32,
+                    nx_odr1_drive_destroy_f32,
+                    nx_odr1_drive_f32_t,
+                    nx_odr1_drive_config_t,
+                    nx_odr1_drive_get_config_f32);
+        READ_CONFIG(CircuitKind::Odr1Clipper,
+                    nx_odr1_clipper_create_f32,
+                    nx_odr1_clipper_destroy_f32,
+                    nx_odr1_clipper_f32_t,
+                    nx_odr1_clipper_config_t,
+                    nx_odr1_clipper_get_config_f32);
+        READ_CONFIG(CircuitKind::Odr1Tone,
+                    nx_odr1_tone_create_f32,
+                    nx_odr1_tone_destroy_f32,
+                    nx_odr1_tone_f32_t,
+                    nx_odr1_tone_config_t,
+                    nx_odr1_tone_get_config_f32);
+        READ_CONFIG(CircuitKind::Odr1Postamp,
+                    nx_odr1_postamp_create_f32,
+                    nx_odr1_postamp_destroy_f32,
+                    nx_odr1_postamp_f32_t,
+                    nx_odr1_postamp_config_t,
+                    nx_odr1_postamp_get_config_f32);
+        READ_CONFIG(CircuitKind::BeodPreamp,
+                    nx_beod_preamp_create_f32,
+                    nx_beod_preamp_destroy_f32,
+                    nx_beod_preamp_f32_t,
+                    nx_beod_preamp_config_t,
+                    nx_beod_preamp_get_config_f32);
+        READ_CONFIG(CircuitKind::BeodTight,
+                    nx_beod_tight_create_f32,
+                    nx_beod_tight_destroy_f32,
+                    nx_beod_tight_f32_t,
+                    nx_beod_tight_config_t,
+                    nx_beod_tight_get_config_f32);
+        READ_CONFIG(CircuitKind::DirtyShirleyTight,
+                    nx_dirty_shirley_tight_create_f32,
+                    nx_dirty_shirley_tight_destroy_f32,
+                    nx_dirty_shirley_tight_f32_t,
+                    nx_dirty_shirley_tight_config_t,
+                    nx_dirty_shirley_tight_get_config_f32);
+        READ_CONFIG(CircuitKind::DirtyShirleyMid,
+                    nx_dirty_shirley_mid_create_f32,
+                    nx_dirty_shirley_mid_destroy_f32,
+                    nx_dirty_shirley_mid_f32_t,
+                    nx_dirty_shirley_mid_config_t,
+                    nx_dirty_shirley_mid_get_config_f32);
+        READ_CONFIG(CircuitKind::DirtyShirleyComposite,
+                    nx_dirty_shirley_create_f32,
+                    nx_dirty_shirley_destroy_f32,
+                    nx_dirty_shirley_f32_t,
+                    nx_dirty_shirley_config_t,
+                    nx_dirty_shirley_get_config_f32);
+        READ_CONFIG(CircuitKind::BeodPregain,
+                    nx_beod_pregain_create_f32,
+                    nx_beod_pregain_destroy_f32,
+                    nx_beod_pregain_f32_t,
+                    nx_beod_pregain_config_t,
+                    nx_beod_pregain_get_config_f32);
+        READ_CONFIG(CircuitKind::BeodPostgain,
+                    nx_beod_postgain_create_f32,
+                    nx_beod_postgain_destroy_f32,
+                    nx_beod_postgain_f32_t,
+                    nx_beod_postgain_config_t,
+                    nx_beod_postgain_get_config_f32);
+        READ_CONFIG(CircuitKind::BeodTrim,
+                    nx_beod_trim_create_f32,
+                    nx_beod_trim_destroy_f32,
+                    nx_beod_trim_f32_t,
+                    nx_beod_trim_config_t,
+                    nx_beod_trim_get_config_f32);
+        READ_CONFIG(CircuitKind::BeodClipper,
+                    nx_beod_clipper_create_f32,
+                    nx_beod_clipper_destroy_f32,
+                    nx_beod_clipper_f32_t,
+                    nx_beod_clipper_config_t,
+                    nx_beod_clipper_get_config_f32);
+        READ_CONFIG(CircuitKind::BeodBass,
+                    nx_beod_bass_create_f32,
+                    nx_beod_bass_destroy_f32,
+                    nx_beod_bass_f32_t,
+                    nx_beod_bass_config_t,
+                    nx_beod_bass_get_config_f32);
+        READ_CONFIG(CircuitKind::OpBuffer,
+                    nx_op_buffer_create_f32,
+                    nx_op_buffer_destroy_f32,
+                    nx_op_buffer_f32_t,
+                    nx_op_buffer_config_t,
+                    nx_op_buffer_get_config_f32);
         READ_CONFIG(CircuitKind::Sd1Tone,
                     nx_sd1_tone_create_f32,
                     nx_sd1_tone_destroy_f32,
@@ -647,6 +910,24 @@ void readOperatorState(CircuitKind circuit,
                     nx_guvnor_level_f32_t,
                     nx_guvnor_level_config_t,
                     nx_guvnor_level_get_config_f32);
+        READ_CONFIG(CircuitKind::CrunchboxPreamp,
+                    nx_crunchbox_preamp_create_f32,
+                    nx_crunchbox_preamp_destroy_f32,
+                    nx_crunchbox_preamp_f32_t,
+                    nx_crunchbox_preamp_config_t,
+                    nx_crunchbox_preamp_get_config_f32);
+        READ_CONFIG(CircuitKind::CrunchboxClipperPresence,
+                    nx_crunchbox_clipper_presence_create_f32,
+                    nx_crunchbox_clipper_presence_destroy_f32,
+                    nx_crunchbox_clipper_presence_f32_t,
+                    nx_crunchbox_clipper_presence_config_t,
+                    nx_crunchbox_clipper_presence_get_config_f32);
+        READ_CONFIG(CircuitKind::CrunchboxClipper,
+                    nx_crunchbox_clipper_create_f32,
+                    nx_crunchbox_clipper_destroy_f32,
+                    nx_crunchbox_clipper_f32_t,
+                    nx_crunchbox_clipper_config_t,
+                    nx_crunchbox_clipper_get_config_f32);
         READ_CONFIG(CircuitKind::RatOpamp,
                     nx_rat_opamp_create_f32,
                     nx_rat_opamp_destroy_f32,
@@ -713,12 +994,157 @@ void readOperatorState(CircuitKind circuit,
                     nx_sansamp_classic_output_f32_t,
                     nx_sansamp_classic_output_config_t,
                     nx_sansamp_classic_output_get_config_f32);
+        READ_CONFIG(CircuitKind::Fa1Buffer,
+                    nx_fa1_buffer_create_f32,
+                    nx_fa1_buffer_destroy_f32,
+                    nx_fa1_buffer_f32_t,
+                    nx_fa1_buffer_config_t,
+                    nx_fa1_buffer_get_config_f32);
+        READ_CONFIG(CircuitKind::Fa1Volume,
+                    nx_fa1_volume_create_f32,
+                    nx_fa1_volume_destroy_f32,
+                    nx_fa1_volume_f32_t,
+                    nx_fa1_volume_config_t,
+                    nx_fa1_volume_get_config_f32);
+        READ_CONFIG(CircuitKind::Fa1Eq,
+                    nx_fa1_eq_create_f32,
+                    nx_fa1_eq_destroy_f32,
+                    nx_fa1_eq_f32_t,
+                    nx_fa1_eq_config_t,
+                    nx_fa1_eq_get_config_f32);
+        READ_CONFIG(CircuitKind::BadMonkeyLow,
+                    nx_bad_monkey_low_create_f32,
+                    nx_bad_monkey_low_destroy_f32,
+                    nx_bad_monkey_low_f32_t,
+                    nx_bad_monkey_low_config_t,
+                    nx_bad_monkey_low_get_config_f32);
+        READ_CONFIG(CircuitKind::DynaCompCore,
+                    nx_ota_comp_create_f32,
+                    nx_ota_comp_destroy_f32,
+                    nx_ota_comp_f32_t,
+                    nx_ota_comp_config_t,
+                    nx_ota_comp_get_config_f32);
     default:
         break;
     }
 }
 
 #undef READ_CONFIG
+
+void fillBeodStageConfigsFromComposite(const nx_beod_config_t& parent,
+                                       nx_beod_preamp_config_t& preamp,
+                                       nx_beod_tight_config_t& tight,
+                                       nx_beod_pregain_config_t& pregain,
+                                       nx_beod_postgain_config_t& postgain,
+                                       nx_beod_trim_config_t& trim,
+                                       nx_beod_clipper_config_t& clipper,
+                                       nx_beod_bass_config_t& bass,
+                                       nx_rc_level_config_t& level)
+{
+    nx_beod_preamp_config_init(&preamp);
+    preamp.vcc = parent.vcc;
+    preamp.va = parent.va;
+    preamp.custom_opamp = parent.custom_opamp;
+    preamp.opamp_model = parent.opamp_model;
+
+    nx_beod_tight_config_init(&tight);
+    tight.tight = parent.tight;
+
+    nx_beod_pregain_config_init(&pregain);
+    pregain.gain = parent.gain;
+    pregain.vcc = parent.vcc;
+    pregain.va = parent.va;
+    pregain.custom_opamp = parent.custom_opamp;
+    pregain.opamp_model = parent.opamp_model;
+
+    nx_beod_postgain_config_init(&postgain);
+    postgain.vcc = parent.vcc;
+    postgain.va = parent.va;
+    postgain.custom_opamp = parent.custom_opamp;
+    postgain.opamp_model = parent.opamp_model;
+
+    nx_beod_trim_config_init(&trim);
+    trim.trim = parent.trim;
+    trim.vcc = parent.vcc;
+    trim.va = parent.va;
+    trim.custom_opamp = parent.custom_opamp;
+    trim.opamp_model = parent.opamp_model;
+
+    nx_beod_clipper_config_init(&clipper);
+    clipper.presence = parent.presence;
+    clipper.treble = parent.treble;
+
+    nx_beod_bass_config_init(&bass);
+    bass.bass = parent.bass;
+    bass.vcc = parent.vcc;
+    bass.va = parent.va;
+    bass.custom_opamp = parent.custom_opamp;
+    bass.opamp_model = parent.opamp_model;
+
+    nx_rc_level_config_init(&level);
+    level.level = parent.level;
+    level.C1 = parent.C1;
+    level.R1 = parent.R1;
+}
+
+void fillDirtyShirleyStageConfigsFromComposite(const nx_dirty_shirley_config_t& parent,
+                                               nx_beod_preamp_config_t& preamp,
+                                               nx_dirty_shirley_tight_config_t& tight,
+                                               nx_beod_pregain_config_t& pregain,
+                                               nx_beod_postgain_config_t& postgain,
+                                               nx_beod_trim_config_t& trim,
+                                               nx_beod_clipper_config_t& clipper,
+                                               nx_beod_bass_config_t& bass,
+                                               nx_dirty_shirley_mid_config_t& mid)
+{
+    nx_beod_preamp_config_init(&preamp);
+    preamp.vcc = parent.vcc;
+    preamp.va = parent.va;
+    preamp.custom_opamp = parent.custom_opamp;
+    preamp.opamp_model = parent.opamp_model;
+
+    nx_dirty_shirley_tight_config_init(&tight);
+    tight.sw_tight = parent.sw_tight;
+
+    nx_beod_pregain_config_init(&pregain);
+    pregain.gain = parent.gain;
+    pregain.vcc = parent.vcc;
+    pregain.va = parent.va;
+    pregain.custom_opamp = parent.custom_opamp;
+    pregain.opamp_model = parent.opamp_model;
+
+    nx_beod_postgain_config_init(&postgain);
+    postgain.vcc = parent.vcc;
+    postgain.va = parent.va;
+    postgain.custom_opamp = parent.custom_opamp;
+    postgain.opamp_model = parent.opamp_model;
+
+    nx_beod_trim_config_init(&trim);
+    trim.trim = parent.trim;
+    trim.vcc = parent.vcc;
+    trim.va = parent.va;
+    trim.custom_opamp = parent.custom_opamp;
+    trim.opamp_model = parent.opamp_model;
+
+    nx_beod_clipper_config_init(&clipper);
+    clipper.presence = parent.presence;
+    clipper.treble = parent.treble;
+
+    nx_beod_bass_config_init(&bass);
+    bass.bass = parent.bass;
+    bass.vcc = parent.vcc;
+    bass.va = parent.va;
+    bass.custom_opamp = parent.custom_opamp;
+    bass.opamp_model = parent.opamp_model;
+
+    nx_dirty_shirley_mid_config_init(&mid);
+    mid.level = parent.level;
+    mid.mid = parent.mid;
+    mid.vcc = parent.vcc;
+    mid.va = parent.va;
+    mid.custom_opamp = parent.custom_opamp;
+    mid.opamp_model = parent.opamp_model;
+}
 
 bool readCompositeStageState(PedalKind pedal,
                              CircuitKind circuit,
@@ -949,6 +1375,40 @@ bool readCompositeStageState(PedalKind pedal,
             return false;
         }
     }
+    case PedalKind::AngryCharlie:
+    {
+        nx_angry_charlie_config_t cfg{};
+        if (nx_angry_charlie_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::CrunchboxPreamp:
+            extractFromConfig(cfg.preamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::CrunchboxClipperPresence:
+            extractFromConfig(cfg.clipper_presence, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::CrunchBox:
+    {
+        nx_crunch_box_config_t cfg{};
+        if (nx_crunch_box_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::CrunchboxPreamp:
+            extractFromConfig(cfg.preamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::CrunchboxClipper:
+            extractFromConfig(cfg.clipper, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
     case PedalKind::Rat:
     {
         nx_rat_config_t cfg{};
@@ -967,6 +1427,178 @@ bool readCompositeStageState(PedalKind pedal,
             return true;
         case CircuitKind::RcLevel:
             extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::Odr1:
+    {
+        nx_odr1_config_t cfg{};
+        if (nx_odr1_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::JfetFollower:
+            extractFromConfig(cfg.input, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Odr1Drive:
+            extractFromConfig(cfg.drive, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Odr1Clipper:
+            extractFromConfig(cfg.clipper, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Odr1Tone:
+            extractFromConfig(cfg.tone, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Odr1Postamp:
+            extractFromConfig(cfg.postamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::OpBuffer:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::Beod:
+    {
+        nx_beod_config_t cfg{};
+        if (nx_beod_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        nx_beod_preamp_config_t preamp{};
+        nx_beod_tight_config_t tight{};
+        nx_beod_pregain_config_t pregain{};
+        nx_beod_postgain_config_t postgain{};
+        nx_beod_trim_config_t trim{};
+        nx_beod_clipper_config_t clipper{};
+        nx_beod_bass_config_t bass{};
+        nx_rc_level_config_t level{};
+        fillBeodStageConfigsFromComposite(cfg, preamp, tight, pregain, postgain, trim, clipper, bass, level);
+        switch (circuit)
+        {
+        case CircuitKind::BeodPreamp:
+            extractFromConfig(preamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodTight:
+            extractFromConfig(tight, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodPregain:
+            extractFromConfig(pregain, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodPostgain:
+            extractFromConfig(postgain, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodTrim:
+            extractFromConfig(trim, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodClipper:
+            extractFromConfig(clipper, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodBass:
+            extractFromConfig(bass, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(level, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::BadMonkey:
+    {
+        nx_bad_monkey_config_t cfg{};
+        if (nx_bad_monkey_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::JfetFollower:
+            extractFromConfig(cfg.input, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Ts9Opamp:
+            extractFromConfig(cfg.opamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::Ts9Tone:
+            extractFromConfig(cfg.tone, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BadMonkeyLow:
+            extractFromConfig(cfg.low, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.level, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BjtFollowerOut:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::DynaComp:
+    {
+        nx_dyna_comp_config_t cfg{};
+        if (nx_dyna_comp_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        switch (circuit)
+        {
+        case CircuitKind::BjtFollowerOut:
+            extractFromConfig(cfg.input, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::DynaCompCore:
+            extractFromConfig(cfg.compressor, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::RcLevel:
+            extractFromConfig(cfg.output, valuesOut, modelsOut);
+            return true;
+        default:
+            return false;
+        }
+    }
+    case PedalKind::DirtyShirley:
+    {
+        nx_dirty_shirley_config_t cfg{};
+        if (nx_dirty_shirley_config_init(&cfg) != NX_SUCCESS)
+            return false;
+        nx_beod_preamp_config_t preamp{};
+        nx_dirty_shirley_tight_config_t tight{};
+        nx_beod_pregain_config_t pregain{};
+        nx_beod_postgain_config_t postgain{};
+        nx_beod_trim_config_t trim{};
+        nx_beod_clipper_config_t clipper{};
+        nx_beod_bass_config_t bass{};
+        nx_dirty_shirley_mid_config_t mid{};
+        fillDirtyShirleyStageConfigsFromComposite(cfg, preamp, tight, pregain, postgain, trim, clipper, bass, mid);
+        switch (circuit)
+        {
+        case CircuitKind::BeodPreamp:
+            extractFromConfig(preamp, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::DirtyShirleyTight:
+            extractFromConfig(tight, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodPregain:
+            extractFromConfig(pregain, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodPostgain:
+            extractFromConfig(postgain, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodTrim:
+            extractFromConfig(trim, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodClipper:
+            extractFromConfig(clipper, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::BeodBass:
+            extractFromConfig(bass, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::DirtyShirleyMid:
+            extractFromConfig(mid, valuesOut, modelsOut);
+            return true;
+        case CircuitKind::DirtyShirleyComposite:
+            extractFromConfig(cfg, valuesOut, modelsOut);
             return true;
         default:
             return false;
@@ -1074,6 +1706,96 @@ void applySchematicComponentValues(CircuitKind circuit,
                      nx_od1_drive_config_t,
                      nx_od1_drive_get_config_f32,
                      nx_od1_drive_set_config_f32);
+        APPLY_CONFIG(CircuitKind::Odr1Drive,
+                     instance,
+                     nx_odr1_drive_f32_t,
+                     nx_odr1_drive_config_t,
+                     nx_odr1_drive_get_config_f32,
+                     nx_odr1_drive_set_config_f32);
+        APPLY_CONFIG(CircuitKind::Odr1Clipper,
+                     instance,
+                     nx_odr1_clipper_f32_t,
+                     nx_odr1_clipper_config_t,
+                     nx_odr1_clipper_get_config_f32,
+                     nx_odr1_clipper_set_config_f32);
+        APPLY_CONFIG(CircuitKind::Odr1Tone,
+                     instance,
+                     nx_odr1_tone_f32_t,
+                     nx_odr1_tone_config_t,
+                     nx_odr1_tone_get_config_f32,
+                     nx_odr1_tone_set_config_f32);
+        APPLY_CONFIG(CircuitKind::Odr1Postamp,
+                     instance,
+                     nx_odr1_postamp_f32_t,
+                     nx_odr1_postamp_config_t,
+                     nx_odr1_postamp_get_config_f32,
+                     nx_odr1_postamp_set_config_f32);
+        APPLY_CONFIG(CircuitKind::BeodPreamp,
+                     instance,
+                     nx_beod_preamp_f32_t,
+                     nx_beod_preamp_config_t,
+                     nx_beod_preamp_get_config_f32,
+                     nx_beod_preamp_set_config_f32);
+        APPLY_CONFIG(CircuitKind::BeodTight,
+                     instance,
+                     nx_beod_tight_f32_t,
+                     nx_beod_tight_config_t,
+                     nx_beod_tight_get_config_f32,
+                     nx_beod_tight_set_config_f32);
+        APPLY_CONFIG(CircuitKind::DirtyShirleyTight,
+                     instance,
+                     nx_dirty_shirley_tight_f32_t,
+                     nx_dirty_shirley_tight_config_t,
+                     nx_dirty_shirley_tight_get_config_f32,
+                     nx_dirty_shirley_tight_set_config_f32);
+        APPLY_CONFIG(CircuitKind::DirtyShirleyMid,
+                     instance,
+                     nx_dirty_shirley_mid_f32_t,
+                     nx_dirty_shirley_mid_config_t,
+                     nx_dirty_shirley_mid_get_config_f32,
+                     nx_dirty_shirley_mid_set_config_f32);
+        APPLY_CONFIG(CircuitKind::DirtyShirleyComposite,
+                     instance,
+                     nx_dirty_shirley_f32_t,
+                     nx_dirty_shirley_config_t,
+                     nx_dirty_shirley_get_config_f32,
+                     nx_dirty_shirley_set_config_f32);
+        APPLY_CONFIG(CircuitKind::BeodPregain,
+                     instance,
+                     nx_beod_pregain_f32_t,
+                     nx_beod_pregain_config_t,
+                     nx_beod_pregain_get_config_f32,
+                     nx_beod_pregain_set_config_f32);
+        APPLY_CONFIG(CircuitKind::BeodPostgain,
+                     instance,
+                     nx_beod_postgain_f32_t,
+                     nx_beod_postgain_config_t,
+                     nx_beod_postgain_get_config_f32,
+                     nx_beod_postgain_set_config_f32);
+        APPLY_CONFIG(CircuitKind::BeodTrim,
+                     instance,
+                     nx_beod_trim_f32_t,
+                     nx_beod_trim_config_t,
+                     nx_beod_trim_get_config_f32,
+                     nx_beod_trim_set_config_f32);
+        APPLY_CONFIG(CircuitKind::BeodClipper,
+                     instance,
+                     nx_beod_clipper_f32_t,
+                     nx_beod_clipper_config_t,
+                     nx_beod_clipper_get_config_f32,
+                     nx_beod_clipper_set_config_f32);
+        APPLY_CONFIG(CircuitKind::BeodBass,
+                     instance,
+                     nx_beod_bass_f32_t,
+                     nx_beod_bass_config_t,
+                     nx_beod_bass_get_config_f32,
+                     nx_beod_bass_set_config_f32);
+        APPLY_CONFIG(CircuitKind::OpBuffer,
+                     instance,
+                     nx_op_buffer_f32_t,
+                     nx_op_buffer_config_t,
+                     nx_op_buffer_get_config_f32,
+                     nx_op_buffer_set_config_f32);
         APPLY_CONFIG(CircuitKind::Sd1Tone,
                      instance,
                      nx_sd1_tone_f32_t,
@@ -1170,6 +1892,24 @@ void applySchematicComponentValues(CircuitKind circuit,
                      nx_guvnor_level_config_t,
                      nx_guvnor_level_get_config_f32,
                      nx_guvnor_level_set_config_f32);
+        APPLY_CONFIG(CircuitKind::CrunchboxPreamp,
+                     instance,
+                     nx_crunchbox_preamp_f32_t,
+                     nx_crunchbox_preamp_config_t,
+                     nx_crunchbox_preamp_get_config_f32,
+                     nx_crunchbox_preamp_set_config_f32);
+        APPLY_CONFIG(CircuitKind::CrunchboxClipperPresence,
+                     instance,
+                     nx_crunchbox_clipper_presence_f32_t,
+                     nx_crunchbox_clipper_presence_config_t,
+                     nx_crunchbox_clipper_presence_get_config_f32,
+                     nx_crunchbox_clipper_presence_set_config_f32);
+        APPLY_CONFIG(CircuitKind::CrunchboxClipper,
+                     instance,
+                     nx_crunchbox_clipper_f32_t,
+                     nx_crunchbox_clipper_config_t,
+                     nx_crunchbox_clipper_get_config_f32,
+                     nx_crunchbox_clipper_set_config_f32);
         APPLY_CONFIG(CircuitKind::RatOpamp,
                      instance,
                      nx_rat_opamp_f32_t,
@@ -1236,6 +1976,36 @@ void applySchematicComponentValues(CircuitKind circuit,
                      nx_sansamp_classic_output_config_t,
                      nx_sansamp_classic_output_get_config_f32,
                      nx_sansamp_classic_output_set_config_f32);
+        APPLY_CONFIG(CircuitKind::Fa1Buffer,
+                     instance,
+                     nx_fa1_buffer_f32_t,
+                     nx_fa1_buffer_config_t,
+                     nx_fa1_buffer_get_config_f32,
+                     nx_fa1_buffer_set_config_f32);
+        APPLY_CONFIG(CircuitKind::Fa1Volume,
+                     instance,
+                     nx_fa1_volume_f32_t,
+                     nx_fa1_volume_config_t,
+                     nx_fa1_volume_get_config_f32,
+                     nx_fa1_volume_set_config_f32);
+        APPLY_CONFIG(CircuitKind::Fa1Eq,
+                     instance,
+                     nx_fa1_eq_f32_t,
+                     nx_fa1_eq_config_t,
+                     nx_fa1_eq_get_config_f32,
+                     nx_fa1_eq_set_config_f32);
+        APPLY_CONFIG(CircuitKind::BadMonkeyLow,
+                     instance,
+                     nx_bad_monkey_low_f32_t,
+                     nx_bad_monkey_low_config_t,
+                     nx_bad_monkey_low_get_config_f32,
+                     nx_bad_monkey_low_set_config_f32);
+        APPLY_CONFIG(CircuitKind::DynaCompCore,
+                     instance,
+                     nx_ota_comp_f32_t,
+                     nx_ota_comp_config_t,
+                     nx_ota_comp_get_config_f32,
+                     nx_ota_comp_set_config_f32);
     default:
         break;
     }

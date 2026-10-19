@@ -121,6 +121,17 @@ if(UNIX AND NOT APPLE)
     )
 endif()
 
+# Must link after juce_recommended_warning_flags so -Wno-* wins on the compile line.
+add_library(ds1_ac_tracer_warning_quiet INTERFACE)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+    target_compile_options(ds1_ac_tracer_warning_quiet INTERFACE
+        -Wno-switch-enum
+        -Wno-float-equal
+        -Wno-overloaded-virtual
+        -Wno-deprecated-declarations
+    )
+endif()
+
 target_link_libraries(Ds1OpampAcTracer PRIVATE
     juce::juce_atom_theme
     juce::juce_core
@@ -132,6 +143,7 @@ target_link_libraries(Ds1OpampAcTracer PRIVATE
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags
+    ds1_ac_tracer_warning_quiet
 )
 
 target_include_directories(Ds1OpampAcTracer PRIVATE
@@ -140,3 +152,220 @@ target_include_directories(Ds1OpampAcTracer PRIVATE
 
 file(TO_CMAKE_PATH "${MUDSP_ROOT}" MUDSP_ROOT_CMAKE)
 target_compile_definitions(Ds1OpampAcTracer PRIVATE MUDSP_ROOT="${MUDSP_ROOT_CMAKE}")
+
+# JUCE writes Release builds under artefacts/Release/. The launcher used in this
+# tree is the copy directly under artefacts/.
+add_custom_command(TARGET Ds1OpampAcTracer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:Ds1OpampAcTracer>
+            "${CMAKE_BINARY_DIR}/Ds1OpampAcTracer_artefacts/$<TARGET_FILE_NAME:Ds1OpampAcTracer>"
+    VERBATIM)
+
+enable_testing()
+add_executable(angry_charlie_chain_metadata_test Tests/angry_charlie_chain_metadata_test.cpp)
+target_link_libraries(angry_charlie_chain_metadata_test PRIVATE NuDSP::nudsp)
+target_include_directories(angry_charlie_chain_metadata_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(angry_charlie_chain_metadata_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME angry_charlie_chain_metadata COMMAND $<TARGET_FILE:angry_charlie_chain_metadata_test>)
+
+add_executable(crunch_box_chain_metadata_test Tests/crunch_box_chain_metadata_test.cpp)
+target_link_libraries(crunch_box_chain_metadata_test PRIVATE NuDSP::nudsp)
+target_include_directories(crunch_box_chain_metadata_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(crunch_box_chain_metadata_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME crunch_box_chain_metadata COMMAND $<TARGET_FILE:crunch_box_chain_metadata_test>)
+
+add_executable(guvnor_chain_metadata_test Tests/guvnor_chain_metadata_test.cpp)
+target_link_libraries(guvnor_chain_metadata_test PRIVATE NuDSP::nudsp)
+target_include_directories(guvnor_chain_metadata_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(guvnor_chain_metadata_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME guvnor_chain_metadata COMMAND $<TARGET_FILE:guvnor_chain_metadata_test>)
+
+add_executable(odr1_drive_operator_test Tests/odr1_drive_operator_test.cpp)
+target_link_libraries(odr1_drive_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(odr1_drive_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(odr1_drive_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME odr1_drive_operator COMMAND $<TARGET_FILE:odr1_drive_operator_test>)
+
+add_executable(odr1_clipper_operator_test Tests/odr1_clipper_operator_test.cpp)
+target_link_libraries(odr1_clipper_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(odr1_clipper_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(odr1_clipper_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME odr1_clipper_operator COMMAND $<TARGET_FILE:odr1_clipper_operator_test>)
+
+add_executable(odr1_tone_operator_test Tests/odr1_tone_operator_test.cpp)
+target_link_libraries(odr1_tone_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(odr1_tone_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(odr1_tone_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME odr1_tone_operator COMMAND $<TARGET_FILE:odr1_tone_operator_test>)
+
+add_executable(odr1_postamp_operator_test Tests/odr1_postamp_operator_test.cpp)
+target_link_libraries(odr1_postamp_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(odr1_postamp_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(odr1_postamp_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME odr1_postamp_operator COMMAND $<TARGET_FILE:odr1_postamp_operator_test>)
+
+add_executable(beod_preamp_operator_test Tests/beod_preamp_operator_test.cpp)
+target_link_libraries(beod_preamp_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(beod_preamp_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(beod_preamp_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME beod_preamp_operator COMMAND $<TARGET_FILE:beod_preamp_operator_test>)
+
+add_executable(beod_tight_operator_test Tests/beod_tight_operator_test.cpp)
+target_link_libraries(beod_tight_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(beod_tight_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(beod_tight_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME beod_tight_operator COMMAND $<TARGET_FILE:beod_tight_operator_test>)
+
+add_executable(fa1_buffer_operator_test Tests/fa1_buffer_operator_test.cpp)
+target_link_libraries(fa1_buffer_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(fa1_buffer_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(fa1_buffer_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME fa1_buffer_operator COMMAND $<TARGET_FILE:fa1_buffer_operator_test>)
+
+add_executable(fa1_volume_operator_test Tests/fa1_volume_operator_test.cpp)
+target_link_libraries(fa1_volume_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(fa1_volume_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(fa1_volume_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME fa1_volume_operator COMMAND $<TARGET_FILE:fa1_volume_operator_test>)
+
+add_executable(fa1_eq_operator_test Tests/fa1_eq_operator_test.cpp)
+target_link_libraries(fa1_eq_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(fa1_eq_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(fa1_eq_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME fa1_eq_operator COMMAND $<TARGET_FILE:fa1_eq_operator_test>)
+
+add_executable(bad_monkey_low_operator_test Tests/bad_monkey_low_operator_test.cpp)
+target_link_libraries(bad_monkey_low_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(bad_monkey_low_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(bad_monkey_low_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME bad_monkey_low_operator COMMAND $<TARGET_FILE:bad_monkey_low_operator_test>)
+
+add_executable(dyna_comp_core_operator_test Tests/dyna_comp_core_operator_test.cpp)
+target_link_libraries(dyna_comp_core_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(dyna_comp_core_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(dyna_comp_core_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME dyna_comp_core_operator COMMAND $<TARGET_FILE:dyna_comp_core_operator_test>)
+
+add_executable(dirty_shirley_tight_operator_test Tests/dirty_shirley_tight_operator_test.cpp)
+target_link_libraries(dirty_shirley_tight_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(dirty_shirley_tight_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(dirty_shirley_tight_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME dirty_shirley_tight_operator COMMAND $<TARGET_FILE:dirty_shirley_tight_operator_test>)
+
+add_executable(dirty_shirley_mid_operator_test Tests/dirty_shirley_mid_operator_test.cpp)
+target_link_libraries(dirty_shirley_mid_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(dirty_shirley_mid_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(dirty_shirley_mid_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME dirty_shirley_mid_operator COMMAND $<TARGET_FILE:dirty_shirley_mid_operator_test>)
+
+add_executable(beod_pregain_operator_test Tests/beod_pregain_operator_test.cpp)
+target_link_libraries(beod_pregain_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(beod_pregain_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(beod_pregain_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME beod_pregain_operator COMMAND $<TARGET_FILE:beod_pregain_operator_test>)
+
+add_executable(beod_postgain_operator_test Tests/beod_postgain_operator_test.cpp)
+target_link_libraries(beod_postgain_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(beod_postgain_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(beod_postgain_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME beod_postgain_operator COMMAND $<TARGET_FILE:beod_postgain_operator_test>)
+
+add_executable(beod_trim_operator_test Tests/beod_trim_operator_test.cpp)
+target_link_libraries(beod_trim_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(beod_trim_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(beod_trim_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME beod_trim_operator COMMAND $<TARGET_FILE:beod_trim_operator_test>)
+
+add_executable(beod_clipper_operator_test Tests/beod_clipper_operator_test.cpp)
+target_link_libraries(beod_clipper_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(beod_clipper_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(beod_clipper_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME beod_clipper_operator COMMAND $<TARGET_FILE:beod_clipper_operator_test>)
+
+add_executable(beod_bass_operator_test Tests/beod_bass_operator_test.cpp)
+target_link_libraries(beod_bass_operator_test PRIVATE NuDSP::nudsp)
+target_include_directories(beod_bass_operator_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(beod_bass_operator_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME beod_bass_operator COMMAND $<TARGET_FILE:beod_bass_operator_test>)
+
+add_executable(beod_chain_metadata_test Tests/beod_chain_metadata_test.cpp)
+target_link_libraries(beod_chain_metadata_test PRIVATE NuDSP::nudsp)
+target_include_directories(beod_chain_metadata_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(beod_chain_metadata_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME beod_chain_metadata COMMAND $<TARGET_FILE:beod_chain_metadata_test>)
+
+add_executable(dirty_shirley_chain_metadata_test Tests/dirty_shirley_chain_metadata_test.cpp)
+target_link_libraries(dirty_shirley_chain_metadata_test PRIVATE NuDSP::nudsp)
+target_include_directories(dirty_shirley_chain_metadata_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(dirty_shirley_chain_metadata_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME dirty_shirley_chain_metadata COMMAND $<TARGET_FILE:dirty_shirley_chain_metadata_test>)
+
+add_executable(bad_monkey_chain_metadata_test Tests/bad_monkey_chain_metadata_test.cpp)
+target_link_libraries(bad_monkey_chain_metadata_test PRIVATE NuDSP::nudsp)
+target_include_directories(bad_monkey_chain_metadata_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(bad_monkey_chain_metadata_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME bad_monkey_chain_metadata COMMAND $<TARGET_FILE:bad_monkey_chain_metadata_test>)
+
+add_executable(dyna_comp_chain_metadata_test Tests/dyna_comp_chain_metadata_test.cpp)
+target_link_libraries(dyna_comp_chain_metadata_test PRIVATE NuDSP::nudsp)
+target_include_directories(dyna_comp_chain_metadata_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(dyna_comp_chain_metadata_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME dyna_comp_chain_metadata COMMAND $<TARGET_FILE:dyna_comp_chain_metadata_test>)
+
+add_executable(odr1_chain_metadata_test Tests/odr1_chain_metadata_test.cpp)
+target_link_libraries(odr1_chain_metadata_test PRIVATE NuDSP::nudsp)
+target_include_directories(odr1_chain_metadata_test PRIVATE "${MUDSP_ROOT}/include" "${MUDSP_ROOT}/core")
+set_target_properties(odr1_chain_metadata_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
+add_test(NAME odr1_chain_metadata COMMAND $<TARGET_FILE:odr1_chain_metadata_test>)

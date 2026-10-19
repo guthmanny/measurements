@@ -1,759 +1,413 @@
 #include "PluginEditor.h"
 
-#include <algorithm>
+#include "ChorusNuDspDefaults.h"
+
 #include <cmath>
-
-#if JucePlugin_Build_Standalone
-#include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
-
-#include "AppSettingsPanel.h"
-#include "JackCaptureRouting.h"
-#include "MeterDisplayUtils.h"
-#endif
 
 namespace
 {
-void updateChorusSliderDomainRange (juce::Slider* slider, double minDomain, double maxDomain)
+constexpr int kSliderLabelColumnWidth = 140;
+constexpr int kSliderLabelGap = 8;
+
+class LabeledSliderRow final : public juce::Component
 {
-  if (slider == nullptr || maxDomain <= minDomain)
-    return;
-
-  auto range = slider->getNormalisableRange();
-  range.start = minDomain;
-  range.end = maxDomain;
-  range.interval = 0.0;
-  slider->setNormalisableRange (range);
-}
-
-class SettingsCardRow final : public juce::Component
-{
- public:
-  SettingsCardRow(const juce::String& rowName, const juce::String& title, juce::Component& controlToEmbed, int height)
-      : label(rowName + "Label", title), control(controlToEmbed), rowHeight(height)
-  {
-    card.setMinPanelHeight(rowHeight);
-    label.setJustificationType(juce::Justification::centredLeft);
-    label.setFont(AtomLookAndFeel::getUIFont(AtomLookAndFeel::getSystemUIFontHeight(), juce::Font::plain));
-    label.setMinimumHorizontalScale(1.0f);
-    label.setAutoResizeEnabled(false);
-    card.addAndMakeVisible(label);
-    card.addAndMakeVisible(control);
-    addAndMakeVisible(card);
-
-    if (auto* combo = dynamic_cast<atom::ComboBox*>(&control))
+public:
+    LabeledSliderRow(const juce::String& title, atom::Slider& sliderToEmbed)
+        : label("sliderRowLabel", title),
+          slider(sliderToEmbed)
     {
-      combo->onChange = [this] { resized(); };
-    }
-  }
-
-  void resized() override
-  {
-    card.setBounds(getLocalBounds());
-    auto area = card.getLocalBounds().reduced(12, 8);
-    const float rowH = (float) area.getHeight();
-
-    const auto& font = label.getFont();
-    const int labelTextWidth =
-        juce::roundToInt(font.getStringWidthFloat(label.getText()) + 4.0f);
-
-    if (auto* combo = dynamic_cast<atom::ComboBox*>(&control))
-    {
-      combo->setSize(combo->getIdealWidth(), juce::roundToInt(rowH));
-
-      juce::FlexBox flex;
-      flex.flexDirection = juce::FlexBox::Direction::row;
-      flex.alignItems = juce::FlexBox::AlignItems::center;
-
-      juce::FlexItem labelItem((float) labelTextWidth, rowH, label);
-      labelItem.flexShrink = 0.0f;
-
-      juce::FlexItem spacer(0.0f, rowH);
-      spacer.flexGrow = 1.0f;
-
-      juce::FlexItem comboItem((float) combo->getWidth(), rowH, *combo);
-      comboItem.flexShrink = 0.0f;
-
-      flex.items.addArray({labelItem, spacer, comboItem});
-      flex.performLayout(area);
-      return;
+        label.setJustificationType(juce::Justification::centredLeft);
+        label.setFont(AtomLookAndFeel::getUIFont(AtomLookAndFeel::getSystemUIFontHeight(), juce::Font::plain));
+        label.setMinimumHorizontalScale(1.0f);
+        label.setAutoResizeEnabled(false);
+        label.setInterceptsMouseClicks(false, false);
+        addAndMakeVisible(label);
+        addAndMakeVisible(slider);
     }
 
-    constexpr int labelGap = 12;
-    label.setBounds(area.getX(), area.getY(), labelTextWidth, area.getHeight());
-    area.removeFromLeft(labelTextWidth + labelGap);
-    control.setBounds(area);
-  }
+    void resized() override
+    {
+        auto area = getLocalBounds();
+        label.setBounds(area.removeFromLeft(kSliderLabelColumnWidth));
+        area.removeFromLeft(kSliderLabelGap);
+        slider.setBounds(area);
+    }
 
- private:
-  atom::SettingsCard card;
-  atom::Label label;
-  juce::Component& control;
-  int rowHeight;
+private:
+    atom::Label label;
+    atom::Slider& slider;
 };
 
-#if JucePlugin_Build_Standalone
-void applySystemNativeTitleBarTheme(juce::Component& target)
+class PluginSelectorRow final : public juce::Component
 {
-  atom::setNativeTitleBarDarkMode(target, juce::Desktop::getInstance().isDarkModeActive());
+public:
+    PluginSelectorRow(const juce::String& title, atom::ComboBox& combo, int rowHeight)
+        : label("pluginSelectorLabel", title),
+          comboBox(combo),
+          rowHeight_(rowHeight)
+    {
+        card.setMinPanelHeight(rowHeight);
+        label.setJustificationType(juce::Justification::centredLeft);
+        label.setFont(AtomLookAndFeel::getUIFont(AtomLookAndFeel::getSystemUIFontHeight(), juce::Font::plain));
+        label.setMinimumHorizontalScale(1.0f);
+        label.setAutoResizeEnabled(false);
+
+        comboBox.setEditableText(false);
+        comboBox.onChange = [this] { resized(); };
+
+        card.addAndMakeVisible(label);
+        card.addAndMakeVisible(comboBox);
+        addAndMakeVisible(card);
+    }
+
+    void resized() override
+    {
+        card.setBounds(getLocalBounds());
+        auto area = card.getLocalBounds().reduced(12, 8);
+        const float rowH = (float) area.getHeight();
+
+        comboBox.setSize(comboBox.getIdealWidth(), juce::roundToInt(rowH));
+
+        const auto& font = label.getFont();
+        const int labelTextWidth =
+            juce::roundToInt(font.getStringWidthFloat(label.getText()) + 4.0f);
+
+        juce::FlexBox flex;
+        flex.flexDirection = juce::FlexBox::Direction::row;
+        flex.alignItems = juce::FlexBox::AlignItems::center;
+
+        juce::FlexItem labelItem((float) labelTextWidth, rowH, label);
+        labelItem.flexShrink = 0.0f;
+
+        juce::FlexItem spacer(0.0f, rowH);
+        spacer.flexGrow = 1.0f;
+
+        juce::FlexItem comboItem((float) comboBox.getWidth(), rowH, comboBox);
+        comboItem.flexShrink = 0.0f;
+
+        flex.items.addArray({ labelItem, spacer, comboItem });
+        flex.performLayout(area);
+    }
+
+private:
+    atom::SettingsCard card;
+    atom::Label label;
+    atom::ComboBox& comboBox;
+    int rowHeight_;
+};
+
+atom::graph::Graph makeChorusGraph()
+{
+    atom::graph::Graph graph;
+    graph.displayName = "Chorus";
+
+    atom::graph::Node lfo;
+    lfo.id = "lfo";
+    lfo.label = "LFO";
+    lfo.kind = "lfo";
+    lfo.selectable = false;
+    lfo.bypassable = false;
+
+    atom::graph::Node delay;
+    delay.id = "delay";
+    delay.label = "Delay Line";
+    delay.kind = "delay_line";
+    delay.selectable = false;
+    delay.bypassable = false;
+
+    graph.nodes.push_back(std::move(lfo));
+    graph.nodes.push_back(std::move(delay));
+    graph.edges.push_back({ "lfo", "delay", "signal" });
+    return graph;
 }
-#endif
+
+atom::graph::Graph makePhase90Graph()
+{
+    atom::graph::Graph graph;
+    graph.displayName = "Phase90";
+
+    atom::graph::Node lfo;
+    lfo.id = "lfo";
+    lfo.label = "LFO";
+    lfo.kind = "lfo";
+    lfo.selectable = false;
+    lfo.bypassable = false;
+
+    graph.nodes.push_back(std::move(lfo));
+    return graph;
+}
 }  // namespace
 
 ChorusAudioProcessorEditor::ChorusAudioProcessorEditor(ChorusAudioProcessor& p)
-    : juce::AudioProcessorEditor(&p), processor(p)
+    : AudioEffectFrameworkEditor(p, true),
+      chorusProcessor(p),
+      modelCombo("modelCombo")
 {
-  juce::LookAndFeel::setDefaultLookAndFeel(&atomLookAndFeel);
+    modelCombo.addItem("Chorus", 1);
+    modelCombo.addItem("Stereo Phase90", 2);
+    modelCombo.addItem("Mono Phase90", 3);
+    modelCombo.setTooltip("Select Chorus, Stereo Phase90, or Mono Phase90");
+    modelAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+        chorusProcessor.parameters.valueTreeState, ChorusAudioProcessor::kChorusModelParamId, modelCombo);
 
-  addAndMakeVisible(headerBar);
-  addAndMakeVisible(footerBar);
-  addAndMakeVisible(bodyViewport);
-  bodyViewport.setViewedComponent(&bodyContent, false);
-  bodyViewport.setScrollBarsShown(true, false);
-  bodyViewport.getVerticalScrollBar().setColour(juce::ScrollBar::thumbColourId, juce::Colours::grey);
+    modelSelectorRow = std::make_unique<PluginSelectorRow>("Effect", modelCombo, cardRowHeight);
+    bodyContent.addAndMakeVisible(*modelSelectorRow);
+    bodyComponents.add(modelSelectorRow.get());
 
-  // 模型选择：通过 Footer MIDI 端口图标弹出菜单
-  footerBar.getBtnMidiPort().onClick = [this]
-  {
-    juce::PopupMenu menu;
-    menu.addItem(1, "Chorus", true, processor.getEffectModel() == ChorusAudioProcessor::kChorus);
-    menu.addItem(2, "Phase90", true, processor.getEffectModel() == ChorusAudioProcessor::kPhase90);
+    configureUserSlider(rateSlider, " Hz");
+    configureUserSlider(depthSlider, " ms");
+    configureUserSlider(mixSlider, "");
+    mixSlider.setRange(0.0, 1.0, 0.01);
+    mixSlider.setTooltip("Dry/wet mix (0–1). Wet = Mix × Effect Max.");
+    mixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        chorusProcessor.parameters.valueTreeState, chorusProcessor.paramMix.paramID, mixSlider);
 
-    menu.showMenuAsync(juce::PopupMenu::Options(),
-                       [this](int result)
-                       {
-                         if (result == 0) return;
-                         ChorusAudioProcessor::EffectModel model;
-                         switch (result)
-                         {
-                           case 2:
-                             model = ChorusAudioProcessor::kPhase90;
-                             break;
-                           default:
-                             model = ChorusAudioProcessor::kChorus;
-                             break;
-                         }
-                         processor.setEffectModel(model);
-                         updateModelUI();
-                       });
-  };
-
-  headerBar.getBtnSettings().onClick = [this]
-  {
-#if JucePlugin_Build_Standalone
-    showAppSettingsDialog();
-#endif
-  };
-
-  headerBar.getBtnTuner().onClick = [this]
-  {
-    setTunerVisible (! tunerOverlay.isVisible());
-  };
-
-  headerBar.getBtnSpectrum().onClick = [this]
-  {
-    setSpectrumVisible (! spectrumOverlay.isVisible());
-  };
-
-  tunerOverlay.getContent().onCloseRequested = [this] { setTunerVisible (false); };
-  tunerOverlay.getContent().onPeriodicityThresholdChanged = [this] (float threshold)
-  {
-    processor.setTunerPeriodicityThreshold (threshold);
-  };
-  tunerOverlay.getContent().setPeriodicityThreshold (processor.getTunerPeriodicityThreshold());
-  addChildComponent (tunerOverlay);
-  tunerOverlay.setAlwaysOnTop (true);
-
-  spectrumOverlay.getContent().onCloseRequested = [this] { setSpectrumVisible (false); };
-  spectrumOverlay.getContent().onFftSizeChanged = [this] (int fftSize)
-  {
-    processor.setSpectrumFftSize (fftSize);
-    spectrumOverlay.getContent().clearSpectrum();
-  };
-  spectrumOverlay.getContent().setFftSize (processor.getSpectrumFftSize());
-  addChildComponent (spectrumOverlay);
-  spectrumOverlay.setAlwaysOnTop (true);
-
-  headerBar.getTapTempo().onBPMChanged = [this](double bpm)
-  {
-    // 根据当前模型，Tap Tempo 同步到对应的 Rate 参数
-    const String rateParamId = (processor.getEffectModel() == ChorusAudioProcessor::kPhase90)
-                                   ? processor.paramPhase90Rate.paramID
-                                   : processor.paramChorusRate.paramID;
-    if (auto* param = processor.parameters.valueTreeState.getParameter(rateParamId))
+    rateSlider.onValueChange = [this]
     {
-      const float rateHz = juce::jlimit (processor.getChorusMinLfoFreq(),
-                                         processor.getChorusMaxLfoFreq(),
-                                         (float) (bpm / 60.0));
-      param->setValueNotifyingHost(param->convertTo0to1(rateHz));
-    }
-  };
-
-  footerBar.onZoomChanged = [this](float scale) { applyZoom(scale); };
-
-  sliderAttachments.add(
-      new SliderAttachment(processor.parameters.valueTreeState, "inputgain", headerBar.getSliderInput()));
-  sliderAttachments.add(
-      new SliderAttachment(processor.parameters.valueTreeState, "gatethreshold", headerBar.getSliderGate()));
-  sliderAttachments.add(
-      new SliderAttachment(processor.parameters.valueTreeState, "outputgain", headerBar.getSliderOutput()));
-
-  const juce::Array<juce::AudioProcessorParameter*>& parameters = processor.getParameters();
-  bodyContentHeight = bodyMargin;
-
-  bodyContent.addAndMakeVisible (chorusLfoCurve);
-  bodyComponents.add (&chorusLfoCurve);
-  bodyContentHeight += lfoCurveBaseHeight + bodyPadding;
-
-  const juce::StringArray headerParamIds{"inputgain", "gatethreshold", "outputgain"};
-  // Gate advanced controls live only in Settings → Noise Gate.
-  const juce::StringArray settingsOnlyParamIds{"gatethreshmin", "gatethreshmax", "gateoffatmin", "gateratio",
-                                               "gateattack", "gaterelease", "gateknee", "gatekneewidth",
-                                               "meterattack", "meterrelease", "meterdisplayrange",
-                                               "chorusmaxdelaytime", "chorusminlfofreq", "chorusmaxlfofreq", "chorusmaxamount",
-                                               "midiccchorusrate", "midiccchorusdelay", "midiccchorusamount",
-                                               "midiccchoruswet", "midiccchorusfeedback"};
-
-  const auto uiFont = AtomLookAndFeel::getUIFont(AtomLookAndFeel::getSystemUIFontHeight(), juce::Font::plain);
-  const float uiFontHeight = AtomLookAndFeel::getSystemUIFontHeight();
-  float maxParamLabelWidth = 0.0f;
-  float maxValueTextWidth = 0.0f;
-
-  for (int i = 0; i < parameters.size(); ++i)
-  {
-    if (const auto* parameter = dynamic_cast<const juce::AudioProcessorParameterWithID*>(parameters[i]))
+        chorusProcessor.setMiddleParamDomain(chorusProcessor.viewParamId("rate"),
+                                             static_cast<float>(rateSlider.getValue()));
+    };
+    depthSlider.onValueChange = [this]
     {
-      if (headerParamIds.contains(parameter->paramID) || settingsOnlyParamIds.contains(parameter->paramID))
-        continue;
+        chorusProcessor.setMiddleParamDomain(chorusProcessor.viewParamId("amount"),
+                                             static_cast<float>(depthSlider.getValue()));
+    };
 
-      if (processor.parameters.parameterTypes[i] != "Slider") continue;
+    rateRow = std::make_unique<LabeledSliderRow>("Rate", rateSlider);
+    depthRow = std::make_unique<LabeledSliderRow>("Depth", depthSlider);
+    mixRow = std::make_unique<LabeledSliderRow>("Mix", mixSlider);
+    bodyContent.addAndMakeVisible(*rateRow);
+    bodyContent.addAndMakeVisible(*depthRow);
+    bodyContent.addAndMakeVisible(*mixRow);
+    bodyComponents.add(rateRow.get());
+    bodyComponents.add(depthRow.get());
+    bodyComponents.add(mixRow.get());
 
-      maxParamLabelWidth = juce::jmax(maxParamLabelWidth, uiFont.getStringWidthFloat(parameter->name));
-
-      if (auto* param = processor.parameters.valueTreeState.getParameter(parameter->paramID))
-      {
-        const float numW0 = uiFont.getStringWidthFloat(param->getText(0.0f, 0));
-        const float numW1 = uiFont.getStringWidthFloat(param->getText(1.0f, 0));
-        const float suffixW = uiFont.getStringWidthFloat(parameter->label);
-        maxValueTextWidth = juce::jmax(maxValueTextWidth, numW0 + suffixW, numW1 + suffixW);
-      }
-    }
-  }
-
-  const float labelReserveDlu = maxParamLabelWidth > 0.0f ? maxParamLabelWidth * 8.0f / uiFontHeight : 0.0f;
-  const float valueReserveDlu = maxValueTextWidth > 0.0f ? (maxValueTextWidth + 12.0f) * 8.0f / uiFontHeight : 0.0f;
-  savedLabelReserveDlu = labelReserveDlu;
-  savedValueReserveDlu = valueReserveDlu;
-
-  for (int i = 0; i < parameters.size(); ++i)
-  {
-    if (const auto* parameter = dynamic_cast<const juce::AudioProcessorParameterWithID*>(parameters[i]))
+    const auto limits = chorusProcessor.getChorusNuDspLimits();
+    delayModView.setDelayAxisLimits(limits.rateMin, limits.delayMax, limits.amountMax, limits.delayMin);
+    delayModView.onBack = [this] { setSignalFlowVisible(false); };
+    delayModView.onGeometryChanged = [this]
     {
-      if (headerParamIds.contains(parameter->paramID) || settingsOnlyParamIds.contains(parameter->paramID))
-        continue;
-
-      if (processor.parameters.parameterTypes[i] == "Slider")
-      {
-        auto* aSlider = sliders.add(new atom::Slider());
-
-        // 跟踪模型特定 slider 指针
-        if (parameter->paramID == "chorusrate")
-          chorusRateSlider = aSlider;
-        else if (parameter->paramID == "chorusdelay")
-          chorusDelaySlider = aSlider;
-        else if (parameter->paramID == "chorusamount")
-          chorusAmountSlider = aSlider;
-        else if (parameter->paramID == "choruswet")
-          chorusWetSlider = aSlider;
-        else if (parameter->paramID == "chorusfeedback")
-          chorusFeedbackSlider = aSlider;
-        else if (parameter->paramID == "phase90rate")
-          phase90RateSlider = aSlider;
-        else if (parameter->paramID == "center")
-          centerSlider = aSlider;
-        else if (parameter->paramID == "phase90amount")
-          phase90AmountSlider = aSlider;
-        else if (parameter->paramID == "phase90feedback")
-          phase90FeedbackSlider = aSlider;
-        else if (parameter->paramID == "mix")
-          mixSlider = aSlider;
-
-        aSlider->setTextValueSuffix(parameter->label);
-        aSlider->setValueLabelPos(atom::Slider::ValueLabelPos::Right);
-
-        atom::SliderStyleOverride styleOverride;
-        styleOverride.colors.labelText = parameter->name;
-        styleOverride.metrics.linearHorizontalLabelReserveDlu = labelReserveDlu;
-        styleOverride.metrics.linearHorizontalValueLabelReserveDlu = valueReserveDlu;
-        atomLookAndFeel.setSliderStyleOverride(*aSlider, styleOverride);
-
-        sliderAttachments.add(
-            new SliderAttachment(processor.parameters.valueTreeState, parameter->paramID, *aSlider));
-
-        bodyContent.addAndMakeVisible(aSlider);
-        bodyComponents.add(aSlider);
-        bodyContentHeight += sliderHeight + bodyPadding;
-      }
-      else if (processor.parameters.parameterTypes[i] == "ToggleButton")
-      {
-        auto* aButton = toggles.add(new atom::ToggleButton(parameter->paramID, {}));
-        aButton->setToggleState(parameter->getDefaultValue(), juce::dontSendNotification);
-
-        buttonAttachments.add(
-            new ButtonAttachment(processor.parameters.valueTreeState, parameter->paramID, *aButton));
-
-        auto* row = new SettingsCardRow(parameter->paramID + "Row", parameter->name, *aButton, cardRowHeight);
-        settingRows.add(row);
-        bodyContent.addAndMakeVisible(row);
-        bodyComponents.add(row);
-        bodyContentHeight += cardRowHeight + bodyPadding;
-      }
-      else if (processor.parameters.parameterTypes[i] == "ComboBox")
-      {
-        int comboListIndex = 0;
-        for (int j = 0; j < i; ++j)
-          if (processor.parameters.parameterTypes[j] == "ComboBox")
-            ++comboListIndex;
-
-        auto* aComboBox = comboBoxes.add(new atom::ComboBox());
-        aComboBox->setEditableText(false);
-        aComboBox->setJustificationType(juce::Justification::centredLeft);
-        aComboBox->addItemList(processor.parameters.comboBoxItemLists[comboListIndex], 1);
-
-        comboBoxAttachments.add(
-            new ComboBoxAttachment(processor.parameters.valueTreeState, parameter->paramID, *aComboBox));
-
-        auto* row = new SettingsCardRow(parameter->paramID + "Row", parameter->name, *aComboBox, cardRowHeight);
-        settingRows.add(row);
-        bodyContent.addAndMakeVisible(row);
-        bodyComponents.add(row);
-        bodyContentHeight += cardRowHeight + bodyPadding;
-
-        if (parameter->paramID == "lfoshape")
-          chorusLfoShapeRow = row;
-      }
-    }
-  }
-
-  bodyContentHeight += bodyMargin;
-
-  applyZoom(1.0f);
-  updateChorusLfoCurve();
-  updateModelUI();
-  refreshChorusParamRanges();
-  processor.addChangeListener (this);
-  startTimerHz (meter_display::kRefreshHz);
-
-#if JucePlugin_Build_Standalone
-  juce::Desktop::getInstance().addDarkModeSettingListener(this);
-#endif
-}
-
-ChorusAudioProcessorEditor::~ChorusAudioProcessorEditor()
-{
-  stopTimer();
-  processor.removeChangeListener (this);
-
-#if JucePlugin_Build_Standalone
-  juce::Desktop::getInstance().removeDarkModeSettingListener(this);
-#endif
-
-  for (auto* slider : sliders) atomLookAndFeel.clearSliderStyleOverride(*slider);
-
-  juce::LookAndFeel::setDefaultLookAndFeel(nullptr);
-}
-
-int ChorusAudioProcessorEditor::getHeaderHeight() const noexcept
-{
-  return juce::roundToInt((float)headerBaseHeight * zoomFactor);
-}
-
-int ChorusAudioProcessorEditor::getFooterHeight() const noexcept
-{
-  return juce::roundToInt((float)footerBaseHeight * zoomFactor);
-}
-
-int ChorusAudioProcessorEditor::getBodyContentHeight() const noexcept
-{
-  return juce::roundToInt((float)bodyContentHeight * zoomFactor);
-}
-
-int ChorusAudioProcessorEditor::getEditorWidth()
-{
-  const int headerW = headerBar.getMinimumContentWidth(getHeaderHeight());
-  const int footerW = footerBar.getMinimumContentWidth(getFooterHeight());
-  return juce::jmax(headerW, footerW);
-}
-
-int ChorusAudioProcessorEditor::getNaturalHeight() const noexcept
-{
-  return getHeaderHeight() + getBodyContentHeight() + getFooterHeight();
-}
-
-int ChorusAudioProcessorEditor::getBodyRowHeight (const juce::Component* component) const noexcept
-{
-  if (component == &chorusLfoCurve)
-    return lfoCurveBaseHeight;
-
-  if (dynamic_cast<const atom::Slider*> (component) != nullptr)
-    return sliderHeight;
-
-  return cardRowHeight;
-}
-
-void ChorusAudioProcessorEditor::updateChorusLfoCurve()
-{
-  if (processor.getEffectModel() != ChorusAudioProcessor::kChorus)
-    return;
-
-  auto readParam = [this] (const juce::String& id, float fallback) -> float
-  {
-    if (auto* p = processor.parameters.valueTreeState.getParameter (id))
-      return p->convertFrom0to1 (p->getValue());
-    return fallback;
-  };
-
-  const auto limits = processor.getChorusNuDspLimits();
-  const float rateHz = juce::jlimit (processor.getChorusMinLfoFreq(),
-                                     processor.getChorusMaxLfoFreq(),
-                                     readParam (processor.paramChorusRate.paramID, limits.rateDefault));
-  const float delayMs = juce::jlimit (limits.delayMin,
-                                      processor.getChorusMaxDelayTime(),
-                                      readParam (processor.paramChorusDelay.paramID, limits.delayDefault));
-  const float amountMs = juce::jlimit (limits.amountMin,
-                                       processor.getChorusMaxAmount(),
-                                       readParam (processor.paramChorusAmount.paramID, limits.amountDefault));
-  const bool triangle = readParam (processor.paramChorusLfoShape.paramID, 0.0f) >= 0.5f;
-
-  chorusLfoCurve.setAxisLimits (processor.getChorusMinLfoFreq(),
-                                processor.getChorusMaxDelayTime(),
-                                processor.getChorusMaxAmount(),
-                                limits.delayMin);
-  chorusLfoCurve.setParameters (rateHz, delayMs, amountMs, triangle);
-}
-
-void ChorusAudioProcessorEditor::applyZoom(float newZoom)
-{
-  zoomFactor = juce::jlimit(0.75f, 1.25f, newZoom);
-
-  const int width = getEditorWidth();
-  const int height = getNaturalHeight();
-
-  setResizeLimits(width, height, width, height);
-  setSize(width, height);
-
-  bodyContent.setSize(width, getBodyContentHeight());
-  resized();
-}
-
-void ChorusAudioProcessorEditor::setTunerVisible (bool shouldShow)
-{
-  processor.setTunerEnabled (shouldShow);
-  tunerOverlay.setVisible (shouldShow);
-  tunerOverlay.getContent().setTuningModeActive (shouldShow);
-
-#if JucePlugin_Build_Standalone
-  if (shouldShow)
-  {
-    if (auto* window = findParentComponentOfClass<juce::StandaloneFilterWindow>())
-      chorus_jack::prepareJackInputForTuning (window->getDeviceManager());
-  }
-#endif
-
-  if (shouldShow)
-  {
-    tunerOverlay.setBounds (getLocalBounds());
-    tunerOverlay.toFront (false);
-    tunerOverlay.getContent().clearPitch();
-  }
-}
-
-void ChorusAudioProcessorEditor::setSpectrumVisible (bool shouldShow)
-{
-  processor.setSpectrumEnabled (shouldShow);
-  spectrumOverlay.setVisible (shouldShow);
-
-  if (shouldShow)
-  {
-    spectrumOverlay.setBounds (getLocalBounds());
-    spectrumOverlay.toFront (false);
-    spectrumOverlay.getContent().setFftSize (processor.getSpectrumFftSize());
-    spectrumOverlay.getContent().clearSpectrum();
-    lastSpectrumFrameId = 0;
-    startTimerHz (meter_display::kRefreshHz);
-  }
-  else
-  {
-    startTimerHz (meter_display::kRefreshHz);
-  }
-}
-
-void ChorusAudioProcessorEditor::refreshChorusParamRanges()
-{
-  const auto limits = processor.getChorusNuDspLimits();
-  const float minRate = processor.getChorusMinLfoFreq();
-  const float maxRate = processor.getChorusMaxLfoFreq();
-  const float maxDelay = processor.getChorusMaxDelayTime();
-  const float maxAmount = processor.getChorusMaxAmount();
-
-  if (chorusRateSlider != nullptr)
-    updateChorusSliderDomainRange (chorusRateSlider, (double) minRate, (double) maxRate);
-
-  if (chorusDelaySlider != nullptr)
-    updateChorusSliderDomainRange (chorusDelaySlider, (double) limits.delayMin, (double) maxDelay);
-
-  if (chorusAmountSlider != nullptr)
-    updateChorusSliderDomainRange (chorusAmountSlider, (double) limits.amountMin, (double) maxAmount);
-}
-
-void ChorusAudioProcessorEditor::changeListenerCallback (juce::ChangeBroadcaster* source)
-{
-  if (source == &processor)
-  {
-    refreshChorusParamRanges();
-    updateChorusLfoCurve();
-  }
-}
-
-void ChorusAudioProcessorEditor::timerCallback()
-{
-  auto readParam = [this](const juce::String& id, float fallback) -> float
-  {
-    if (auto* p = processor.parameters.valueTreeState.getParameter(id))
-      return p->convertFrom0to1(p->getValue());
-    return fallback;
-  };
-
-  headerBar.applyMeterSettings(
-      meter_display::displayRangeDbFromChoiceIndex(juce::roundToInt(
-          readParam(processor.paramMeterDisplayRange.paramID,
-                    (float) processor.paramMeterDisplayRange.defaultChoice))));
-
-  const float attackMs = readParam(processor.paramMeterAttack.paramID, processor.paramMeterAttack.defaultValue);
-  const float releaseSec = readParam(processor.paramMeterRelease.paramID, processor.paramMeterRelease.defaultValue);
-  const int displayRangeDbSpan = meter_display::displayRangeDbFromChoiceIndex(juce::roundToInt(
-      readParam(processor.paramMeterDisplayRange.paramID,
-                (float) processor.paramMeterDisplayRange.defaultChoice)));
-
-  processor.updateMeterDisplay(attackMs, releaseSec, displayRangeDbSpan,
-                               1.0f / (float) meter_display::kRefreshHz);
-
-  headerBar.setMeterDisplayLevels(processor.getMeterDisplayMonoNormalized(),
-                                  processor.getMeterDisplayLeftNormalized(),
-                                  processor.getMeterDisplayRightNormalized());
-
-  updateChorusLfoCurve();
-
-  // Keep header GATE knob within the Settings-defined threshold range.
-  {
-    float minDb = readParam(processor.paramGateThreshMin.paramID, processor.paramGateThreshMin.defaultValue);
-    float maxDb = readParam(processor.paramGateThreshMax.paramID, processor.paramGateThreshMax.defaultValue);
-    if (minDb > maxDb)
-      std::swap(minDb, maxDb);
-    if (maxDb - minDb < 0.1f)
-      maxDb = juce::jmin(0.0f, minDb + 0.1f);
-
-    auto& gateSlider = headerBar.getSliderGate();
-    if (std::abs(gateSlider.getMinimum() - (double)minDb) > 1.0e-4
-        || std::abs(gateSlider.getMaximum() - (double)maxDb) > 1.0e-4)
-      gateSlider.setRange((double)minDb, (double)maxDb, 0.01);
-
-    if (auto* threshParam = processor.parameters.valueTreeState.getParameter(processor.paramGateThreshold.paramID))
+        if (delayModView.isVisible())
+            applyZoom(zoomFactor);
+    };
+    delayModView.onShapeChanged = [this](bool triangle)
     {
-      const float threshDb = threshParam->convertFrom0to1(threshParam->getValue());
-      const float clamped = juce::jlimit(minDb, maxDb, threshDb);
-      if (std::abs(clamped - threshDb) > 1.0e-3f)
-        threshParam->setValueNotifyingHost(threshParam->convertTo0to1(clamped));
-    }
-  }
-
-  if (tunerOverlay.isVisible())
-  {
-    tunerOverlay.getContent().setInputDbFs (processor.getTunerInputDbFs(),
-                                            processor.getTunerSampleRate(),
-                                            processor.getTunerInputDbFsRight());
-    tunerOverlay.getContent().setPitchResult (processor.getTunerResult());
-  }
-
-  if (spectrumOverlay.isVisible()
-      && processor.copySpectrumMagnitudesIfNew (lastSpectrumFrameId, spectrumScratch))
-  {
-    spectrumOverlay.getContent().setSpectrumMagnitudes (spectrumScratch,
-                                                        processor.getSpectrumSampleRate(),
-                                                        processor.getSpectrumFftSize());
-  }
-}
-
-void ChorusAudioProcessorEditor::paint(juce::Graphics& g)
-{
-  g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
-}
-
-void ChorusAudioProcessorEditor::resized()
-{
-  auto bounds = getLocalBounds();
-  const int headerH = getHeaderHeight();
-  const int footerH = getFooterHeight();
-
-  headerBar.setBounds(bounds.removeFromTop(headerH));
-  footerBar.setBounds(bounds.removeFromBottom(footerH));
-  bodyViewport.setBounds(bounds);
-
-  if (tunerOverlay.isVisible())
-    tunerOverlay.setBounds(getLocalBounds());
-
-  if (spectrumOverlay.isVisible())
-    spectrumOverlay.setBounds(getLocalBounds());
-
-  bodyContent.setSize(juce::jmax(getWidth(), getEditorWidth()), juce::jmax(getBodyContentHeight(), bounds.getHeight()));
-
-  auto area = bodyContent.getLocalBounds().reduced(juce::roundToInt((float)bodyMargin * zoomFactor), 0);
-  for (auto* component : bodyComponents)
-  {
-    if (!component->isVisible()) continue;
-    const int rowHeight = juce::roundToInt ((float) getBodyRowHeight (component) * zoomFactor);
-    component->setBounds(area.removeFromTop(rowHeight));
-    area.removeFromTop(juce::roundToInt((float)bodyPadding * zoomFactor));
-  }
-}
-
-//==============================================================================
-// 模型切换：显示/隐藏对应的参数
-//==============================================================================
-
-void ChorusAudioProcessorEditor::updateModelUI()
-{
-  const bool isChorus = (processor.getEffectModel() == ChorusAudioProcessor::kChorus);
-
-  // Chorus 参数可见性
-  chorusLfoCurve.setVisible (isChorus);
-  if (chorusRateSlider != nullptr) chorusRateSlider->setVisible(isChorus);
-  if (chorusDelaySlider != nullptr) chorusDelaySlider->setVisible(isChorus);
-  if (chorusAmountSlider != nullptr) chorusAmountSlider->setVisible(isChorus);
-  if (chorusWetSlider != nullptr) chorusWetSlider->setVisible(isChorus);
-  if (chorusFeedbackSlider != nullptr) chorusFeedbackSlider->setVisible(isChorus);
-  if (chorusLfoShapeRow != nullptr) chorusLfoShapeRow->setVisible(isChorus);
-
-  // Phase90 参数可见性
-  if (phase90RateSlider != nullptr) phase90RateSlider->setVisible(!isChorus);
-  if (centerSlider != nullptr) centerSlider->setVisible(!isChorus);
-  if (phase90AmountSlider != nullptr) phase90AmountSlider->setVisible(!isChorus);
-  if (phase90FeedbackSlider != nullptr) phase90FeedbackSlider->setVisible(!isChorus);
-  if (mixSlider != nullptr) mixSlider->setVisible(!isChorus);
-
-  // 更新 body content 高度并重新布局
-  bodyContentHeight = bodyMargin;
-  for (auto* component : bodyComponents)
-  {
-    if (!component->isVisible()) continue;
-    bodyContentHeight += getBodyRowHeight (component) + bodyPadding;
-  }
-  bodyContentHeight += bodyMargin;
-
-  applyZoom(zoomFactor);
-}
-
-#if JucePlugin_Build_Standalone
-void ChorusAudioProcessorEditor::applyAppSettingsDialogTitleBarTheme()
-{
-  if (appSettingsDialog == nullptr) return;
-
-  applySystemNativeTitleBarTheme(*appSettingsDialog);
-}
-
-void ChorusAudioProcessorEditor::darkModeSettingChanged() { applyAppSettingsDialogTitleBarTheme(); }
-
-void ChorusAudioProcessorEditor::showAppSettingsDialog (AppSettingsPanel::Page initialPage)
-{
-  if (appSettingsDialog != nullptr)
-  {
-    if (auto* panel = dynamic_cast<AppSettingsPanel*> (appSettingsDialog->getContentComponent()))
-      panel->selectPage (initialPage);
-
-    appSettingsDialog->toFront(true);
-    appSettingsDialog->grabKeyboardFocus();
-    return;
-  }
-
-  auto* window = findParentComponentOfClass<juce::StandaloneFilterWindow>();
-  if (window == nullptr) return;
-
-  auto* panel = new AppSettingsPanel (window->getDeviceManager(), processor, atomLookAndFeel);
-  panel->selectPage (initialPage);
-
-  const int prefW = panel->getPreferredWidth();
-  const int prefH = panel->getPreferredHeight(); // tallest nav page
-  panel->setSize (prefW, prefH);
-
-  const int minPanelW = panel->getMinimumWidth();
-  constexpr int kMaxMinW = 720;
-  const int clampedMinW = juce::jmin (minPanelW, kMaxMinW);
-  const int minDialogW = juce::jmax (560, clampedMinW + 20);
-  const int minDialogH = juce::jmax (360, panel->getMinimumHeight());
-
-  juce::DialogWindow::LaunchOptions options;
-  options.dialogTitle = "Settings";
-  options.dialogBackgroundColour = getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId);
-  options.escapeKeyTriggersCloseButton = true;
-  options.useNativeTitleBar = true;
-  options.resizable = true;
-  options.useBottomRightCornerResizer = false;
-  options.content.setOwned(panel);
-  options.componentToCentreAround = window;
-
-  auto* dialog = options.create();
-  appSettingsDialog = dialog;
-
-  if (dialog != nullptr)
-  {
-    dialog->setResizeLimits(minDialogW, minDialogH, 1600, 1200);
-    dialog->setAlwaysOnTop(true);
-    applyAppSettingsDialogTitleBarTheme();
-
-    juce::Component::SafePointer<juce::Component> safeDialog(dialog);
-    juce::Timer::callAfterDelay(0,
-                                [safeDialog]()
-                                {
-                                  if (safeDialog != nullptr) applySystemNativeTitleBarTheme(*safeDialog);
-                                });
-
-    juce::Component::SafePointer<ChorusAudioProcessorEditor> safeEditor(this);
-    dialog->enterModalState(true,
-                            juce::ModalCallbackFunction::create(
-                                [safeEditor](int)
-                                {
-                                  if (safeEditor != nullptr) safeEditor->appSettingsDialog = nullptr;
-                                }),
-                            true);
-  }
-}
-
-void ChorusAudioProcessorEditor::showStandaloneOptionsMenu()
-{
-  auto* window = findParentComponentOfClass<juce::StandaloneFilterWindow>();
-  if (window == nullptr) return;
-
-  juce::PopupMenu menu;
-  menu.addItem(1, TRANS("Settings..."));
-  menu.addSeparator();
-  menu.addItem(2, TRANS("Save current state..."));
-  menu.addItem(3, TRANS("Load a saved state..."));
-  menu.addSeparator();
-  menu.addItem(4, TRANS("Reset to default state"));
-
-  juce::Component::SafePointer<juce::StandaloneFilterWindow> safeWindow(window);
-  menu.showMenuAsync(
-      juce::PopupMenu::Options(),
-      [safeWindow, safeEditor = juce::Component::SafePointer<ChorusAudioProcessorEditor>(this)](int result)
-      {
-        if (result == 0) return;
-
-        if (result == 1)
+        chorusProcessor.setMiddleParamDomain("lfo_type", triangle ? 1.0f : 0.0f);
+    };
+    delayModView.onRateLimitsChanged = [this](float minHz, float maxHz)
+    {
+        auto writeIfChanged = [](juce::RangedAudioParameter* param, float domain)
         {
-          if (safeEditor != nullptr) safeEditor->showAppSettingsDialog();
-          return;
+            if (param == nullptr)
+                return;
+            const float normalized = param->convertTo0to1(domain);
+            if (std::abs(param->getValue() - normalized) > 1.0e-5f)
+                param->setValueNotifyingHost(normalized);
+        };
+        writeIfChanged(chorusProcessor.parameters.valueTreeState.getParameter(
+                           chorusProcessor.paramRateMin.paramID),
+                       minHz);
+        writeIfChanged(chorusProcessor.parameters.valueTreeState.getParameter(
+                           chorusProcessor.paramRateMax.paramID),
+                       maxHz);
+        applyRateSliderRange();
+        const float rate = static_cast<float>(rateSlider.getValue());
+        const float clamped = juce::jlimit(minHz, maxHz, rate);
+        if (std::abs(clamped - rate) > 1.0e-4f)
+        {
+            rateSlider.setValue(clamped, juce::dontSendNotification);
+            chorusProcessor.setMiddleParamDomain(chorusProcessor.viewParamId("rate"), clamped);
         }
+    };
+    delayModView.onDelayChanged = [this](float delayMs)
+    {
+        chorusProcessor.setMiddleParamDomain(chorusProcessor.viewParamId("delay"), delayMs);
+    };
+    delayModView.onAmountChanged = [this](float amountMs)
+    {
+        chorusProcessor.setMiddleParamDomain(chorusProcessor.viewParamId("amount"), amountMs);
+        if (!depthSlider.isMouseButtonDown())
+            depthSlider.setValue(amountMs, juce::dontSendNotification);
+    };
+    delayModView.onEffectMaxChanged = [this](float effectMax)
+    {
+        if (auto* param = chorusProcessor.parameters.valueTreeState.getParameter(
+                chorusProcessor.paramEffectMax.paramID))
+            param->setValueNotifyingHost(param->convertTo0to1(effectMax));
+    };
+    addChildComponent(delayModView);
+    delayModView.setVisible(false);
 
-        if (safeWindow != nullptr) safeWindow->handleMenuResult(result);
-      });
+    completeBodyConstruction();
+    syncTapTempo();
+    applyRateSliderRange();
+    refreshUserControls();
+    refreshDelayModView();
+    updateChorusRowVisibility();
+    recalculateBodyContentHeight();
+    applyZoom(1.0f);
 }
-#endif
+
+ChorusAudioProcessorEditor::~ChorusAudioProcessorEditor() = default;
+
+void ChorusAudioProcessorEditor::configureUserSlider(atom::Slider& slider, const juce::String& suffix)
+{
+    slider.setSliderStyle(juce::Slider::LinearHorizontal);
+    slider.setTextValueSuffix(suffix);
+    slider.setSliderSnapsToMousePosition(false);
+    slider.setValueLabelPos(atom::Slider::ValueLabelPos::Right);
+
+    atom::SliderStyleOverride styleOverride;
+    styleOverride.metrics.linearHorizontalValueLabelReserveDlu = 72.0f;
+    atomLookAndFeel.setSliderStyleOverride(slider, styleOverride);
+}
+
+void ChorusAudioProcessorEditor::applyRateSliderRange()
+{
+    const auto limits = chorusProcessor.getChorusNuDspLimits();
+    const float rateMin = chorusProcessor.hostParamValue(chorusProcessor.paramRateMin.paramID, limits.rateMin);
+    const float rateMax = chorusProcessor.hostParamValue(chorusProcessor.paramRateMax.paramID, limits.rateMax);
+    const float lo = juce::jmin(rateMin, rateMax);
+    const float hi = juce::jmax(lo + 0.01f, juce::jmax(rateMin, rateMax));
+    if (std::abs(rateSlider.getMinimum() - (double) lo) < 1.0e-4
+        && std::abs(rateSlider.getMaximum() - (double) hi) < 1.0e-4)
+        return;
+    rateSlider.setRange(lo, hi, 0.01);
+}
+
+int ChorusAudioProcessorEditor::getBodyComponentBaseHeight(const juce::Component* component) const noexcept
+{
+    if (modelSelectorRow != nullptr && component == modelSelectorRow.get())
+        return cardRowHeight;
+
+    if ((rateRow != nullptr && component == rateRow.get())
+        || (depthRow != nullptr && component == depthRow.get())
+        || (mixRow != nullptr && component == mixRow.get()))
+        return sliderRowHeight;
+
+    return AudioEffectFrameworkEditor::getBodyComponentBaseHeight(component);
+}
+
+void ChorusAudioProcessorEditor::onEditorTimerTick()
+{
+    if (!delayModView.isInteracting())
+        refreshUserControls();
+    if (delayModView.isVisible() && !delayModView.isInteracting())
+        refreshDelayModView();
+    updateChorusRowVisibility();
+}
+
+juce::Component* ChorusAudioProcessorEditor::getInsidePage()
+{
+    return &delayModView;
+}
+
+const juce::Component* ChorusAudioProcessorEditor::getInsidePage() const
+{
+    return &delayModView;
+}
+
+int ChorusAudioProcessorEditor::getInsidePreferredWidth() const
+{
+    return delayModView.getPreferredWidth();
+}
+
+int ChorusAudioProcessorEditor::getInsidePreferredHeight() const
+{
+    return delayModView.getPreferredHeight();
+}
+
+void ChorusAudioProcessorEditor::onInsidePageShown()
+{
+    refreshDelayModView();
+}
+
+void ChorusAudioProcessorEditor::syncTapTempo()
+{
+    headerBar.getTapTempo().onBPMChanged = [this](double bpm)
+    {
+        const auto limits = chorusProcessor.getChorusNuDspLimits();
+        const float minHz = chorusProcessor.hostParamValue(chorusProcessor.paramRateMin.paramID, limits.rateMin);
+        const float maxHz = chorusProcessor.hostParamValue(chorusProcessor.paramRateMax.paramID, limits.rateMax);
+        const float rateHz = juce::jlimit(juce::jmin(minHz, maxHz), juce::jmax(minHz, maxHz),
+                                          (float) (bpm / 60.0));
+        chorusProcessor.setMiddleParamDomain(chorusProcessor.viewParamId("rate"), rateHz);
+        rateSlider.setValue(rateHz, juce::dontSendNotification);
+    };
+}
+
+void ChorusAudioProcessorEditor::updateChorusRowVisibility()
+{
+    const bool chorus = !chorusProcessor.isPhase90();
+    const bool changed = (depthRow != nullptr && depthRow->isVisible() != chorus)
+                         || (mixRow != nullptr && mixRow->isVisible() != chorus);
+    if (depthRow != nullptr)
+        depthRow->setVisible(chorus);
+    if (mixRow != nullptr)
+        mixRow->setVisible(chorus);
+    if (changed)
+    {
+        recalculateBodyContentHeight();
+        applyZoom(zoomFactor);
+    }
+}
+
+void ChorusAudioProcessorEditor::refreshUserControls()
+{
+    applyRateSliderRange();
+    const auto limits = chorusProcessor.getChorusNuDspLimits();
+    depthSlider.setRange(limits.amountMin, limits.amountMax, 0.1);
+
+    const float rate =
+        chorusProcessor.getMiddleParamDomain(chorusProcessor.viewParamId("rate"), limits.rateDefault);
+    if (!rateSlider.isMouseButtonDown())
+        rateSlider.setValue(juce::jlimit(static_cast<float>(rateSlider.getMinimum()),
+                                         static_cast<float>(rateSlider.getMaximum()), rate),
+                            juce::dontSendNotification);
+
+    if (chorusProcessor.isPhase90())
+        return;
+
+    const float amount =
+        chorusProcessor.getMiddleParamDomain(chorusProcessor.viewParamId("amount"), limits.amountDefault);
+    if (!depthSlider.isMouseButtonDown())
+        depthSlider.setValue(amount, juce::dontSendNotification);
+}
+
+void ChorusAudioProcessorEditor::refreshDelayModView()
+{
+    const int modelIndex = chorusProcessor.currentModelIndex();
+    const int generation = chorusProcessor.middleProcessorGeneration();
+    const bool phase90 = chorusProcessor.isPhase90();
+
+    if (modelIndex != lastModelIndex_ || generation != lastMiddleGeneration_)
+    {
+        lastModelIndex_ = modelIndex;
+        lastMiddleGeneration_ = generation;
+        auto graph = chorusProcessor.getEffectSignalFlowGraph();
+        if (graph.empty())
+            graph = phase90 ? makePhase90Graph() : makeChorusGraph();
+        delayModView.setGraph(std::move(graph));
+        delayModView.setDelayCurveVisible(!phase90);
+    }
+
+    const auto limits = chorusProcessor.getChorusNuDspLimits();
+    delayModView.setRateLimits(
+        chorusProcessor.hostParamValue(chorusProcessor.paramRateMin.paramID, limits.rateMin),
+        chorusProcessor.hostParamValue(chorusProcessor.paramRateMax.paramID, limits.rateMax));
+    delayModView.setEffectMax(
+        chorusProcessor.hostParamValue(chorusProcessor.paramEffectMax.paramID,
+                                       chorusProcessor.paramEffectMax.defaultValue));
+
+    const float rate =
+        chorusProcessor.getMiddleParamDomain(chorusProcessor.viewParamId("rate"), limits.rateDefault);
+    const float delay = phase90 ? limits.delayDefault
+                                : chorusProcessor.getMiddleParamDomain(chorusProcessor.viewParamId("delay"),
+                                                                        limits.delayDefault);
+    const float amount = phase90 ? 0.0f
+                                 : chorusProcessor.getMiddleParamDomain(chorusProcessor.viewParamId("amount"),
+                                                                         limits.amountDefault);
+    const bool triangle = chorusProcessor.getMiddleParamDomain("lfo_type", 0.0f) >= 0.5f;
+    delayModView.setDelayParameters(rate, delay, amount, triangle);
+}

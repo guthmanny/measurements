@@ -19,6 +19,7 @@
 #include "SpectrumAnalyzer.h"
 #include "PluginParameter.h"
 #include "EffectTopologyModule.h"
+#include "core/SignalFlowGraph.h"
 
 //==============================================================================
 
@@ -156,11 +157,28 @@ class AudioEffectFrameworkProcessor : public AudioProcessor
 
   /** Middle effect internal module chain (empty if unsupported). */
   juce::Array<EffectTopologyModule> getEffectTopologyModules() const;
+  /** Catalog + live topology as an atom signal-flow graph (nodes + edges). */
+  atom::graph::Graph getEffectSignalFlowGraph() const;
   juce::String getEffectTopologyTitle() const;
   bool setEffectTopologyModuleBypassed (const juce::String& moduleId, bool bypassed);
+  void clearEffectTopologyBypassOverrides() { effectTopologyBypassOverrides_.clear(); }
 
   /** Override in plugin subclass to push effect-specific kbuss parameters. */
   virtual void updateCustomEffectParameters() {}
+
+  /** View/Inside parameters (LFO rate, delay, …) belong on DelayModView, not the main panel. */
+  virtual bool isInsideViewParam(const juce::String& paramId) const
+  {
+    juce::ignoreUnused(paramId);
+    return false;
+  }
+
+  /** Host APVTS params that should stay off the main body (settings / Inside only). */
+  virtual bool isSettingsOnlyParam(const juce::String& paramId) const
+  {
+    juce::ignoreUnused(paramId);
+    return false;
+  }
 
   /** Middle-processor kbuss parameter domains (UI + preset). */
   void setMiddleParamDomain(const juce::String& paramId, float domainValue);

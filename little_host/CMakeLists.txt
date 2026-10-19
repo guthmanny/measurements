@@ -14,6 +14,12 @@ set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_DEMOS OFF CACHE BOOL "" FORCE)
 set(BUILD_SSMEL_ENGINE OFF CACHE BOOL "" FORCE)
 
+get_filename_component(_gfx_packs_root "${CMAKE_SOURCE_DIR}/../../atomtheme-gfx-packs" ABSOLUTE)
+if(EXISTS "${_gfx_packs_root}/packs")
+    set(GFX_PACKS_ROOT "${_gfx_packs_root}" CACHE PATH "Path to atomtheme-gfx-packs checkout" FORCE)
+endif()
+set(KBUSS_BUNDLE_GFX_PACKS "ON" CACHE STRING "Bundle gfx into .kbplug" FORCE)
+
 aef_setup_dependencies()
 
 set(AEF_BUILD_STANDALONE ON CACHE BOOL "" FORCE)
@@ -53,7 +59,7 @@ target_compile_definitions(LittleHost PRIVATE
     LITTLE_HOST_PLUGIN_DIR="${LITTLE_HOST_PLUGIN_DIR}")
 
 set(_little_host_dynamic_deps dynamic_ds1)
-foreach(_stem IN ITEMS ts9 klon distortion_plus guvnor sd1 od1 ac_booster rc_booster rat odr1 sansamp_classic gain)
+foreach(_stem IN ITEMS ts9 klon distortion_plus guvnor sd1 od1 ac_booster rc_booster rat odr1 sansamp_classic gain zdc c4_comp dyna_comp beod dirty_shirley angry_charlie)
     if(TARGET dynamic_${_stem})
         list(APPEND _little_host_dynamic_deps dynamic_${_stem})
     endif()

@@ -35,8 +35,15 @@ constexpr PedalMenuEntry kPedalMenuEntries[] = {
     {"Klon", ds1_ac::PedalKind::Klon},
     {"Distortion+", ds1_ac::PedalKind::DistortionPlus},
     {"Guv'nor", ds1_ac::PedalKind::Guvnor},
+    {"Angry Charlie", ds1_ac::PedalKind::AngryCharlie},
+    {"Crunch Box", ds1_ac::PedalKind::CrunchBox},
     {"RAT", ds1_ac::PedalKind::Rat},
     {"SansAmp Classic", ds1_ac::PedalKind::SansampClassic},
+    {"ODR-1", ds1_ac::PedalKind::Odr1},
+    {"BEOD", ds1_ac::PedalKind::Beod},
+    {"Dirty Shirley", ds1_ac::PedalKind::DirtyShirley},
+    {"Bad Monkey", ds1_ac::PedalKind::BadMonkey},
+    {"Dyna Comp", ds1_ac::PedalKind::DynaComp},
 };
 
 int circuitIndex(ds1_ac::CircuitKind circuit) noexcept
@@ -399,7 +406,13 @@ void MainComponent::updatePlotView()
     acPanel->setOpampModel(schematicPanel->getOpampModel());
   else if (usesOpamp)
     acPanel->setOpampModel(getOpampModelFromSelection());
-  if (usesDiode && schematicPanel != nullptr) acPanel->setDiodeModel(schematicPanel->getDiodeModel());
+  if (usesDiode)
+  {
+    if (schematicPanel != nullptr)
+      acPanel->setDiodeModel(schematicPanel->getDiodeModel());
+    else
+      acPanel->setDiodeModel(ds1_ac::defaultDiodeModelForCircuit(circuit));
+  }
   if (usesBjt && schematicPanel != nullptr)
     acPanel->setBjtModel(schematicPanel->getBjtModel());
   else if (usesBjt)
@@ -446,8 +459,9 @@ void MainComponent::updatePlotView()
                           juce::dontSendNotification);
   }
 
-  opampModelBox.setVisible(false);
-  opampModelBox.setEnabled(false);
+  const bool usesDeviceModel = usesOpamp || usesDiode || usesBjt || usesJfet;
+  opampModelBox.setVisible(usesDeviceModel);
+  opampModelBox.setEnabled(usesDeviceModel);
 
   taperLabel.setVisible(usesPotTaper);
   taperLabel.setEnabled(usesPotTaper);
@@ -525,7 +539,8 @@ void MainComponent::syncDeviceModelCombo(ds1_ac::CircuitKind circuit)
   if (ds1_ac::circuitUsesOpampModel(circuit))
   {
     ds1_ac::populateOpampModelCombo(opampModelBox);
-    opampModelBox.setSelectedId(ds1_ac::opampModelComboId(NX_OPAMP_BA728), juce::dontSendNotification);
+    opampModelBox.setSelectedId(
+        ds1_ac::opampModelComboId(ds1_ac::defaultOpampModelForCircuit(circuit)), juce::dontSendNotification);
     return;
   }
 

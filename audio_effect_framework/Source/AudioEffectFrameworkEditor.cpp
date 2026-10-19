@@ -4,9 +4,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 #include "EffectUserParamsPanel.h"
+#include "GfxPedalPanel.h"
 #include "MeterDisplayUtils.h"
+#include "SignalFlowPanel.h"
+#include "ZdcInsidePanel.h"
 
 #if JucePlugin_Build_Standalone
 #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
@@ -94,7 +98,9 @@ void applySystemNativeTitleBarTheme(juce::Component& target)
 AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProcessor& p, bool deferBodyBuild)
     : juce::AudioProcessorEditor(&p), processor(p)
 {
+  prefetchGfxPackArt(processor);
   juce::LookAndFeel::setDefaultLookAndFeel(&atomLookAndFeel);
+  applyDesktopDisplayTheme();
 
   addAndMakeVisible(headerBar);
   addAndMakeVisible(footerBar);
@@ -119,6 +125,31 @@ AudioEffectFrameworkEditor::AudioEffectFrameworkEditor(AudioEffectFrameworkProce
   {
     setSpectrumVisible (! spectrumOverlay.isVisible());
   };
+
+  headerBar.getBtnInside().onClick = [this]
+  {
+    setSignalFlowVisible (true);
+  };
+
+  signalFlowPanel = std::make_unique<SignalFlowPanel>(processor, atomLookAndFeel);
+  signalFlowPanel->onBack = [this] { setSignalFlowVisible (false); };
+  signalFlowPanel->onGeometryChanged = [this]
+  {
+    if (signalFlowPanel != nullptr && signalFlowPanel->isVisible())
+      applyZoom (zoomFactor);
+  };
+  addChildComponent (*signalFlowPanel);
+  signalFlowPanel->setVisible (false);
+
+  zdcInsidePanel = std::make_unique<ZdcInsidePanel>(processor, atomLookAndFeel);
+  zdcInsidePanel->onBack = [this] { setSignalFlowVisible (false); };
+  zdcInsidePanel->onGeometryChanged = [this]
+  {
+    if (zdcInsidePanel != nullptr && zdcInsidePanel->isVisible())
+      applyZoom (zoomFactor);
+  };
+  addChildComponent (*zdcInsidePanel);
+  zdcInsidePanel->setVisible (false);
 
   tunerOverlay.getContent().onCloseRequested = [this] { setTunerVisible (false); };
   tunerOverlay.getContent().onPeriodicityThresholdChanged = [this] (float threshold)
@@ -196,6 +227,11 @@ void AudioEffectFrameworkEditor::completeBodyConstruction()
   buildParameterBodyRows();
 
   effectUserParamsPanel_ = std::make_unique<EffectUserParamsPanel>(processor, atomLookAndFeel);
+  effectUserParamsPanel_->onGeometryChanged = [this]
+  {
+    recalculateBodyContentHeight();
+    applyZoom(zoomFactor);
+  };
   bodyContent.addAndMakeVisible(*effectUserParamsPanel_);
   bodyComponents.add(effectUserParamsPanel_.get());
 
@@ -245,9 +281,37 @@ void AudioEffectFrameworkEditor::syncEffectUserParamsPanelIfNeeded()
   if (generation == lastMiddleProcessorGeneration_ && ! (engineReady && panelStillEmpty))
     return;
 
+  const bool insideVisible = (signalFlowPanel != nullptr && signalFlowPanel->isVisible())
+                          || (zdcInsidePanel != nullptr && zdcInsidePanel->isVisible());
+
   lastMiddleProcessorGeneration_ = generation;
+  prefetchGfxPackArt(processor);
   effectUserParamsPanel_->rebuildFromMiddleProcessor();
   effectUserParamsPanel_->setVisible(effectUserParamsPanel_->preferredHeight() > 0);
+
+  const bool hideHostBypassRow = effectUserParamsPanel_->usingGraphicPanel();
+  for (auto* component : bodyComponents)
+  {
+    if (component != nullptr && component->getName() == processor.paramBypass.paramID)
+      component->setVisible(! hideHostBypassRow);
+  }
+  if (hideHostBypassRow)
+    modelTelemetryLabel.setVisible(false);
+
+  // Graphic mode must not sit in a short leftover viewport: that clips the
+  // pedal at whatever height the last model used.
+  bodyViewport.setScrollBarsShown(! hideHostBypassRow, false);
+
+  if (insideVisible)
+    setSignalFlowVisible (true);
+
+  // First-time gfx packs decode asynchronously; fitToArtwork() then shrinks
+  // the canvas. Don't apply the unfitted size here — publishGraphicGeometry
+  // resizes once the face is ready.
+  if (effectUserParamsPanel_->usingGraphicPanel()
+      && ! effectUserParamsPanel_->usingReadyGraphicPanel())
+    return;
+
   recalculateBodyContentHeight();
   applyZoom(zoomFactor);
 }
@@ -274,7 +338,8 @@ void AudioEffectFrameworkEditor::buildParameterBodyRows()
 
     if (const auto* parameter = dynamic_cast<const juce::AudioProcessorParameterWithID*>(parameters[i]))
     {
-      if (headerParamIds.contains(parameter->paramID) || settingsOnlyParamIds.contains(parameter->paramID))
+      if (headerParamIds.contains(parameter->paramID) || settingsOnlyParamIds.contains(parameter->paramID)
+          || processor.isSettingsOnlyParam(parameter->paramID))
         continue;
 
       if (processor.parameters.parameterTypes[i] != "Slider") continue;
@@ -301,7 +366,8 @@ void AudioEffectFrameworkEditor::buildParameterBodyRows()
 
     if (const auto* parameter = dynamic_cast<const juce::AudioProcessorParameterWithID*>(parameters[i]))
     {
-      if (headerParamIds.contains(parameter->paramID) || settingsOnlyParamIds.contains(parameter->paramID))
+      if (headerParamIds.contains(parameter->paramID) || settingsOnlyParamIds.contains(parameter->paramID)
+          || processor.isSettingsOnlyParam(parameter->paramID))
         continue;
 
       if (processor.parameters.parameterTypes[i] == "Slider")
@@ -332,6 +398,7 @@ void AudioEffectFrameworkEditor::buildParameterBodyRows()
             new ButtonAttachment(processor.parameters.valueTreeState, parameter->paramID, *aButton));
 
         auto* row = new SettingsCardRow(parameter->paramID + "Row", parameter->name, *aButton, cardRowHeight);
+        row->setName(parameter->paramID);
         settingRows.add(row);
         bodyContent.addAndMakeVisible(row);
         bodyComponents.add(row);
@@ -402,11 +469,20 @@ int AudioEffectFrameworkEditor::getEditorWidth()
 {
   const int headerW = headerBar.getMinimumContentWidth(getHeaderHeight());
   const int footerW = footerBar.getMinimumContentWidth(getFooterHeight());
-  return juce::jmax(headerW, footerW);
+  const int gfxW = (effectUserParamsPanel_ != nullptr && effectUserParamsPanel_->preferredWidth() > 0)
+                       ? juce::roundToInt(static_cast<float>(effectUserParamsPanel_->preferredWidth()
+                                                             + bodyMargin * 2)
+                                          * zoomFactor)
+                       : 0;
+  const auto* inside = getInsidePage();
+  const int insideW = (inside != nullptr && inside->isVisible()) ? getInsidePreferredWidth() : 0;
+  return juce::jmax(headerW, footerW, gfxW, insideW);
 }
 
 int AudioEffectFrameworkEditor::getNaturalHeight() const noexcept
 {
+  if (const auto* inside = getInsidePage(); inside != nullptr && inside->isVisible())
+    return getHeaderHeight() + getInsidePreferredHeight() + getFooterHeight();
   return getHeaderHeight() + getBodyViewportHeight() + getFooterHeight();
 }
 
@@ -414,8 +490,13 @@ void AudioEffectFrameworkEditor::applyZoom(float newZoom)
 {
   zoomFactor = juce::jlimit(0.75f, 1.25f, newZoom);
 
-  const int width = getEditorWidth();
-  const int height = getNaturalHeight();
+  int width = getEditorWidth();
+  int height = getNaturalHeight();
+  if (auto* display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay())
+  {
+    width = juce::jmin(width, display->userArea.getWidth());
+    height = juce::jmin(height, display->userArea.getHeight());
+  }
 
   setResizeLimits(width, height, width, height);
   setSize(width, height);
@@ -459,6 +540,114 @@ void AudioEffectFrameworkEditor::setSpectrumVisible (bool shouldShow)
     spectrumOverlay.getContent().clearSpectrum();
     lastSpectrumFrameId = 0;
   }
+}
+
+bool AudioEffectFrameworkEditor::isZdcInsideMiddle() const
+{
+  auto* middle = processor.getKbussEngine().getMiddleProcessor();
+  if (middle == nullptr)
+    return false;
+  if (middle->supports_ir())
+    return true;
+  const auto& uid = middle->description().uid;
+  return uid.find ("zdc") != std::string::npos;
+}
+
+void AudioEffectFrameworkEditor::hideInsidePages()
+{
+  if (signalFlowPanel != nullptr)
+    signalFlowPanel->setVisible (false);
+  if (zdcInsidePanel != nullptr)
+    zdcInsidePanel->setVisible (false);
+}
+
+juce::Component* AudioEffectFrameworkEditor::getInsidePage()
+{
+  if (zdcInsidePanel != nullptr && isZdcInsideMiddle())
+    return zdcInsidePanel.get();
+  return signalFlowPanel.get();
+}
+
+const juce::Component* AudioEffectFrameworkEditor::getInsidePage() const
+{
+  if (zdcInsidePanel != nullptr && isZdcInsideMiddle())
+    return zdcInsidePanel.get();
+  return signalFlowPanel.get();
+}
+
+int AudioEffectFrameworkEditor::getInsidePreferredWidth() const
+{
+  if (const auto* zdc = zdcInsidePanel.get(); zdc != nullptr && isZdcInsideMiddle())
+    return zdc->getPreferredWidth();
+  return signalFlowPanel != nullptr ? signalFlowPanel->getPreferredWidth() : 0;
+}
+
+int AudioEffectFrameworkEditor::getInsidePreferredHeight() const
+{
+  if (const auto* zdc = zdcInsidePanel.get(); zdc != nullptr && isZdcInsideMiddle())
+    return zdc->getPreferredHeight();
+  return signalFlowPanel != nullptr ? signalFlowPanel->getPreferredHeight() : 0;
+}
+
+void AudioEffectFrameworkEditor::onInsidePageShown()
+{
+  if (auto* zdc = dynamic_cast<ZdcInsidePanel*> (getInsidePage()))
+  {
+    zdc->refreshFromProcessor();
+    return;
+  }
+
+  if (signalFlowPanel == nullptr)
+    return;
+  signalFlowPanel->refreshFromProcessor();
+  signalFlowPanel->applyDisplayMode();
+}
+
+void AudioEffectFrameworkEditor::setSignalFlowVisible (bool shouldShow)
+{
+  hideInsidePages();
+
+  auto* page = getInsidePage();
+  if (page == nullptr)
+    return;
+
+  page->setVisible (shouldShow);
+  bodyViewport.setVisible (! shouldShow);
+
+  if (shouldShow)
+  {
+    onInsidePageShown();
+    applyZoom (zoomFactor);
+    layoutSignalFlowPage();
+    page->toFront (false);
+    modelTelemetryLabel.setVisible (false);
+    return;
+  }
+
+  applyZoom (zoomFactor);
+  setModelTelemetryOverlayText (lastModelTelemetryText);
+}
+
+void AudioEffectFrameworkEditor::layoutSignalFlowPage()
+{
+  auto* page = getInsidePage();
+  if (page == nullptr || ! page->isVisible())
+    return;
+
+  auto body = getLocalBounds();
+  body.removeFromTop (getHeaderHeight());
+  body.removeFromBottom (getFooterHeight());
+  page->setBounds (body);
+}
+
+void AudioEffectFrameworkEditor::applyDesktopDisplayTheme()
+{
+  const auto theme = juce::Desktop::getInstance().isDarkModeActive()
+                         ? atom::ThemeType::Dark
+                         : atom::ThemeType::Light;
+  atomLookAndFeel.setTheme (theme);
+  if (signalFlowPanel != nullptr)
+    signalFlowPanel->applyDisplayMode();
 }
 
 void AudioEffectFrameworkEditor::timerCallback()
@@ -527,6 +716,8 @@ void AudioEffectFrameworkEditor::timerCallback()
   }
 
   syncEffectUserParamsPanelIfNeeded();
+  if (effectUserParamsPanel_ != nullptr)
+    effectUserParamsPanel_->syncGraphicState();
 
   {
     const auto telemetryText = processor.getMiddleModelTelemetryText();
@@ -562,6 +753,8 @@ void AudioEffectFrameworkEditor::resized()
   if (spectrumOverlay.isVisible())
     spectrumOverlay.setBounds(getLocalBounds());
 
+  layoutSignalFlowPage();
+
   bodyContent.setSize(juce::jmax(getWidth(), getEditorWidth()), juce::jmax(getBodyContentHeight(), bounds.getHeight()));
 
   auto area = bodyContent.getLocalBounds().reduced(juce::roundToInt((float)bodyMargin * zoomFactor), 0);
@@ -577,7 +770,10 @@ void AudioEffectFrameworkEditor::resized()
 
 void AudioEffectFrameworkEditor::setModelTelemetryOverlayText(const juce::String& text)
 {
-  const bool shouldShow = text.isNotEmpty();
+  const auto* inside = getInsidePage();
+  const bool shouldShow = text.isNotEmpty()
+                          && (effectUserParamsPanel_ == nullptr || ! effectUserParamsPanel_->usingGraphicPanel())
+                          && (inside == nullptr || ! inside->isVisible());
   if (shouldShow != modelTelemetryLabel.isVisible())
     modelTelemetryLabel.setVisible(shouldShow);
 
@@ -612,7 +808,11 @@ void AudioEffectFrameworkEditor::applyAppSettingsDialogTitleBarTheme()
   applySystemNativeTitleBarTheme(*appSettingsDialog);
 }
 
-void AudioEffectFrameworkEditor::darkModeSettingChanged() { applyAppSettingsDialogTitleBarTheme(); }
+void AudioEffectFrameworkEditor::darkModeSettingChanged()
+{
+  applyDesktopDisplayTheme();
+  applyAppSettingsDialogTitleBarTheme();
+}
 
 void AudioEffectFrameworkEditor::showAppSettingsDialog (AppSettingsPanel::Page initialPage)
 {
